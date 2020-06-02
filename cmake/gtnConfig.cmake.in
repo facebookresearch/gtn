@@ -1,0 +1,36 @@
+# gtn
+#
+# IMPORTED targets
+# ^^^^^^^^^^^^^^^^
+#
+# Configuration file for gtn. Provides the following
+# `IMPORTED` targets:
+#
+# ``gtn::gtn``
+#   The complete gtn library.
+#
+# The above targets can be linked with your build using ``target_link_library``.
+# Example:
+#
+#   add_executable(myexecutable mySource.cpp)
+#   target_link_library(myexecutable PRIVATE gtn::gtn)
+#
+# The above properly links gtn with myexecutable. No call to
+# ``target_include_directories`` is required.
+#
+
+@PACKAGE_INIT@
+
+# Library/main target
+if(NOT TARGET gtn::gtn)
+  if(EXISTS @PACKAGE_CMAKE_DIR@/gtnTargets.cmake)
+    include(@PACKAGE_CMAKE_DIR@/gtnTargets.cmake)
+  endif()
+endif()
+
+# For legacy configurations
+set(gtn_LIBRARIES gtn::gtn)
+if (EXISTS @PACKAGE_INCLUDE_DIRS@)
+  set(gtn_INCLUDE_DIRS @PACKAGE_INCLUDE_DIRS@)
+endif()
+

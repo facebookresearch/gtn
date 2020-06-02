@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.5.1)
+project(gtn-examples)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+function(build_example SRCFILE)
+  get_filename_component(src_name ${SRCFILE} NAME_WE)
+  set(target "${src_name}")
+  add_executable(${target} ${SRCFILE})
+  target_link_libraries(${target} PRIVATE gtn)
+endfunction(build_example)
+
+build_example(asg.cpp)
+build_example(ctc.cpp)
+build_example(priors.cpp)
+build_example(tutorial.cpp)
+build_example(learned_decompositions.cpp)
