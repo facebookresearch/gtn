@@ -6,11 +6,13 @@ project(gtn)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ----------------------------- Configuration -----------------------------
 option(GTN_BUILD_TESTS "Build tests for gtn" ON)
 option(GTN_BUILD_BENCHMARKS "Build benchmarks for gtn" ON)
 option(GTN_BUILD_EXAMPLES "Build examples for gtn" ON)
+option(GTN_BUILD_PYTHON_BINDINGS "Build python bindings for gtn" OFF)
 
 # ----------------------------- Lib -----------------------------
 # Core lib sources -- maybe make me a submodule eventually
@@ -43,6 +45,12 @@ endif()
 # Examples
 if (GTN_BUILD_EXAMPLES)
   add_subdirectory(${PROJECT_SOURCE_DIR}/examples)
+endif()
+
+# Python Bindings
+if (GTN_BUILD_PYTHON_BINDINGS)
+  add_subdirectory(pybind)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/bindings/python)
 endif()
 
 

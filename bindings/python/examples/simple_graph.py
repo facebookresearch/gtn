@@ -2,6 +2,6 @@
 
 import gtn 
 
-from gtn.graph import Arc
+from gtn.graph import Node
 
 
