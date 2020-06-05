@@ -21,6 +21,7 @@ add_library(
   gtn
   ${GTN_SOURCES}
 )
+add_subdirectory(${PROJECT_SOURCE_DIR}/gtn)
 
 target_include_directories(
   gtn
