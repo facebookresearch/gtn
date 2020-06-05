@@ -49,7 +49,11 @@ endif()
 
 # Python Bindings
 if (GTN_BUILD_PYTHON_BINDINGS)
+<<<<<<< HEAD
   add_subdirectory(pybind)
+=======
+  add_subdirectory(${PROJECT_SOURCE_DIR}/pybind11)
+>>>>>>> pybind
   add_subdirectory(${PROJECT_SOURCE_DIR}/bindings/python)
 endif()
 
