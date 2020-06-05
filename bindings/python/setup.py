@@ -1,26 +1,21 @@
 #!/usr/bin/env python3
 
-import os
-import platform
-import re
-import subprocess
-import sys
+import os 
+import platform 
+import re 
+import subprocess 
+import sys 
+from packaging import version 
+from setuptools import Extension, setup 
+from setuptools.command.build_ext import build_ext 
 
-from packaging import version
-from setuptools import Extension, setup
-from setuptools.command.build_ext import build_ext
+class CMakeExtension(Extension) : 
+    def __init__(self, name) : 
+        Extension.__init__(self, name, sources =[]) 
 
-
-class CMakeExtension(Extension):
-    def __init__(self, name, sourcedir=''):
-        Extension.__init__(self, name, sources=[])
-        self.sourcedir = os.path.abspath(sourcedir)
-        print(os.path.abspath(sourcedir))
-
-
-class CMakeBuild(build_ext):
-    def run(self):
-        try:
+class CMakeBuild(build_ext) : 
+    def run(self) : 
+        try : 
             out = subprocess.check_output(["cmake", "--version"])
         except OSError:
             raise RuntimeError(
@@ -36,24 +31,29 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
-        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        print (extdir)
-        # required for auto-detection of auxiliary "native" libs
+        extdir = os.path.abspath("gtn")
+        srcdir = os.path.abspath("../..")
+        #required for auto - detection of auxiliary "native" libs
         if not extdir.endswith(os.path.sep):
             extdir += os.path.sep
 
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-                      '-DPYTHON_EXECUTABLE=' + sys.executable, 
-                      '-DGTN_SOURCE_DIR=' + "/private/home/vineelkpratap/gtn/gtn/" ]
+                      '-DPYTHON_EXECUTABLE=' + sys.executable,
+                      '-DPROJECT_SOURCE_DIR=' + srcdir,
+                      '-DGTN_BUILD_PYTHON_BINDINGS=ON',
+                      '-DGTN_BUILD_EXAMPLES=OFF',
+                      '-DGTN_BUILD_BENCHMARKS=OFF',
+                      '-DGTN_BUILD_TESTS=OFF'
+                      ]
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
         if platform.system() == "Windows":
-            # cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
-            # if sys.maxsize > 2**32:
-            #     cmake_args += ['-A', 'x64']
-            # build_args += ['--', '/m']
+            #cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
+            #if sys.maxsize > 2 * *32:
+            #cmake_args += ['-A', 'x64']
+            #build_args += ['--', '/m']
             raise RuntimeError("gtn doesn't support building on Windows yet")
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
@@ -64,10 +64,7 @@ class CMakeBuild(build_ext):
                                                               self.distribution.get_version())
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
-        print("cmake_args", cmake_args)
-        print ("build_args", build_args)
-        print("ext.sourcedir", ext.sourcedir)
-        subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
+        subprocess.check_call(['cmake', srcdir] + cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
 
 setup(
@@ -79,6 +76,10 @@ setup(
     long_description="",
     ext_modules=[
         CMakeExtension("gtn._graph"),
+        CMakeExtension("gtn._autograd"),
+        CMakeExtension("gtn._utils"),
+        CMakeExtension("gtn._functions"),
+        CMakeExtension("gtn._torch"),
     ],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,

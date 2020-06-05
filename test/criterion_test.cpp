@@ -102,7 +102,6 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
     };
 
     Graph emissions = emissions_graph(emissions_vec, T, N);
-
     // The log probabilities are already normalized,
     // so this should be close to 0
     auto z = forward(emissions);
