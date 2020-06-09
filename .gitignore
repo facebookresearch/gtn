@@ -41,3 +41,7 @@ build
 __pycache__
 *.egg-info
 *.cpython-*.so
+
+#cmake 
+CMakeCache.txt
+CMakeFiles
