@@ -74,4 +74,18 @@ void draw(
     const SymbolMap& isymbols = SymbolMap(),
     const SymbolMap& osymbols = SymbolMap());
 
+/*
+ * Compute fwd and bwd for a given criterion graph
+ */
+void sequenceCriterion(
+    float* input,
+    Graph criterion,
+    int numTimeSteps,
+    int numFeatures,
+    std::vector<int> labels,
+    std::vector<float> lossScales,
+    float* loss,
+    float* inputGrad
+);
+
 } // namespace gtn
