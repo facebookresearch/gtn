@@ -4,6 +4,8 @@ import torch
 import math 
 from gtn.torch import CTCLoss
 from torch.autograd import gradcheck
+from torch.autograd.functional import jacobian
+from  torch.autograd.gradcheck import get_numerical_jacobian, get_analytical_jacobian
 
 class TestCTCCriterion(unittest.TestCase):
     def test_fwd_trivial(self):
@@ -52,17 +54,20 @@ class TestCTCCriterion(unittest.TestCase):
         self.assertTrue(log_probs.grad.allclose(expected_grad))
 
     # Jacobian test does not work at fp32 precision
-    # def test_jacobian(self):
-    #     T = 25
-    #     N = 10
-    #     B = 5
-    #     inputs = torch.randn(B, N, T, dtype=torch.float,requires_grad=True)
-    #     m = torch.nn.LogSoftmax(2)
-    #     log_probs = m(inputs)
-    #     log_probs.retain_grad()
-    #     input = (log_probs, [[0,1,2,3] * B], N-1) #,[0],[1,1,1]
-    #     test = gradcheck(CTCLoss, input, eps=1e-3, rtol=1e-2, raise_exception=False)
-    #     print(test)
+    def test_jacobian(self):
+        T = 25
+        N = 10
+        B = 5
+        labels = [[0,1,2,3], [0], [1,2], [1, 1], [3,1,0]]
+        def fw(input):
+            return CTCLoss(input, labels, N-1)
+
+        inputs = torch.randn(B, N, T, dtype=torch.float, requires_grad=True)
+
+        m = torch.nn.LogSoftmax(2)
+        log_probs = m(inputs)
+        log_probs.retain_grad()
+        self.assertTrue(gradcheck(fw, log_probs, eps=1e-2, rtol=1e-1, atol=1e-2, raise_exception=False))
 
 
 
