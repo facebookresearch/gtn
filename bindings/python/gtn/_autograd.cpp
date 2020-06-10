@@ -8,5 +8,5 @@ namespace py = pybind11;
 using namespace py::literals;
 
 PYBIND11_MODULE(_autograd, m) {
-  m.def("add", backward, "graph"_a);
+  m.def("backward", backward, "graph"_a);
 }

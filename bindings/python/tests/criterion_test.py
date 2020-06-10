@@ -67,7 +67,7 @@ class TestCTCCriterion(unittest.TestCase):
         m = torch.nn.LogSoftmax(2)
         log_probs = m(inputs)
         log_probs.retain_grad()
-        self.assertTrue(gradcheck(fw, log_probs, eps=1e-2, rtol=1e-1, atol=1e-2, raise_exception=False))
+        self.assertTrue(gradcheck(fw, log_probs, eps=1e-2, rtol=1e-2, atol=1e-2, raise_exception=False))
 
 
 
