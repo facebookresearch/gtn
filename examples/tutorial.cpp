@@ -38,7 +38,7 @@ void simpleAcceptors() {
   // Draw the graph in dot format to file
   draw(graph, "simple_fsa.dot", symbols);
   // Compile to pdf with
-  // dot -Tpdf graph.dot graph.pdf
+  // dot -Tpdf graph.dot -o graph.pdf
 
   // One can load a graph from an istream
   std::stringstream in(
