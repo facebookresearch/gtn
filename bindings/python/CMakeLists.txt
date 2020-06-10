@@ -22,5 +22,4 @@ add_pybind11_extension(_graph)
 add_pybind11_extension(_functions)
 add_pybind11_extension(_utils) 
 add_pybind11_extension(_autograd)
-add_pybind11_extension(_torch)
 
