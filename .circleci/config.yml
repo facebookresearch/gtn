@@ -1,0 +1,13 @@
+version: 2.0
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:2020.01
+    steps:
+      - checkout
+      - run:
+          name: RunTests
+          command: |
+            sudo apt-get update && sudo apt-get -y install cmake && \
+            mkdir build && cd build && cmake .. && make -j2 && make test
