@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
-from gtn.graph import Graph 
-from gtn.utils import draw
-from gtn.functions import sum
+from gtn import *
 
 # Recognizes "aba*"
 g1= Graph(False)

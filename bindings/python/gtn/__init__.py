@@ -1,3 +1,7 @@
-#!/ usr / bin / env python3
+#!/usr/bin/env python3
 
-__all__ = [ "graph", "autograd", "functions", "utils" ]
+from gtn._graph import *
+from gtn._functions import *
+from gtn._autograd import *
+from gtn._utils import *
+
