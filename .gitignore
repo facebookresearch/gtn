@@ -36,3 +36,12 @@ build
 *.exe
 *.out
 *.app
+
+# pybind
+__pycache__
+*.egg-info
+*.cpython-*.so
+
+#cmake 
+CMakeCache.txt
+CMakeFiles

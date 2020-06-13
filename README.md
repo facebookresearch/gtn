@@ -27,3 +27,14 @@ Run tests:
 ```
 make test
 ```
+
+
+## Using python bindings:
+```
+git submodule init && git submodule update
+cd bindings/python
+pip install -e .
+
+#### Running examples
+python /private/home/vineelkpratap/gtn/gtn/bindings/python/examples/simple_graph.py
+```
