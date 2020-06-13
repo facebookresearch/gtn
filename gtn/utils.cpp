@@ -319,5 +319,4 @@ void draw(
   }
   draw(graph, out, isymbols, osymbols);
 }
-
 } // namespace gtn
