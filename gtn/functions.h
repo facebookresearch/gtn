@@ -20,8 +20,18 @@ enum class Projection {
 };
 
 /* Performs a deep clone of a graph with an option to project to either the
- * input or output labels. The operation is recorded in the autograd tape. */
+ * input or output labels. The operation is recorded in the autograd tape. For a
+ * version which is not recorded on the autograd tape, see `copy`. */
 Graph clone(Graph other, Projection projection = Projection::NONE);
+
+/* Performs a deep clone of a graph with an option to project to either the
+ * input or output labels. The operation is NOT recorded in the autograd tape.
+ * For a version of this function that does record on autograd tape, see
+ * `clone`.
+ */
+Graph copy(Graph other, Projection projection = Projection::NONE);
+
+void copy(Graph other, Projection projection, Graph& out);
 
 /* Removes the output labels from the graph and records the operation in the
  * autograd tape. This function makes a copy of the input graph. */

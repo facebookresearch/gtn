@@ -17,18 +17,28 @@ Graph clone(Graph other, Projection projection /* = Projection::NONE */) {
     }
   };
   Graph g(gradFunc, {other});
+  copy(other, projection, g);
+  return g;
+}
+
+Graph copy(Graph other, Projection projection /* = Projection::NONE */) {
+  Graph g;
+  copy(other, projection, g);
+  return g;
+}
+
+void copy(Graph other, Projection projection, Graph& out) {
   for (const auto& node : other.nodes()) {
-    g.addNode(node.start(), node.accept());
+    out.addNode(node.start(), node.accept());
   }
   for (const auto& arc : other.arcs()) {
-    g.addArc(
+    out.addArc(
         arc.upNode()->index(),
         arc.downNode()->index(),
         projection == Projection::OUTPUT ? arc.olabel() : arc.ilabel(),
         projection == Projection::INPUT ? arc.ilabel() : arc.olabel(),
         arc.weight());
   }
-  return g;
 }
 
 Graph projectInput(Graph other) {

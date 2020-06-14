@@ -30,7 +30,7 @@ TEST_CASE("Test Scalar Ops", "[functions.scalars]") {
   CHECK(result.item() == 1.0);
 }
 
-TEST_CASE("Test Project/Clone", "[fuctions.clone]") {
+TEST_CASE("Test Project/Copy", "[fuctions.copy]") {
   Graph graph =
       load(std::stringstream("0 1\n"
                              "3 4\n"
@@ -43,9 +43,9 @@ TEST_CASE("Test Project/Clone", "[fuctions.clone]") {
                              "2 4 1 1 3\n"
                              "3 4 0 2 2\n"));
 
-  // Test clone
-  Graph cloned = clone(graph);
-  CHECK(equals(graph, cloned));
+  // Test copy
+  Graph copied = copy(graph);
+  CHECK(equals(graph, copied));
 
   // Test projecting input
   Graph inputExpected =
