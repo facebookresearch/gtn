@@ -182,6 +182,7 @@ class Graph {
   GradFunc gradFunc() {
     return sharedData_->gradFunc_;
   };
+
   std::vector<Graph> inputs() {
     return sharedData_->inputs_;
   };

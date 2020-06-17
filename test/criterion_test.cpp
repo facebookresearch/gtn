@@ -102,7 +102,7 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
     };
 
     Graph emissions = emissions_graph(emissions_vec, T, N);
-    
+
     // The log probabilities are already normalized,
     // so this should be close to 0
     auto z = forward(emissions);
@@ -190,15 +190,11 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
   const int T = 5, N = 6;
 
   std::vector<std::vector<int>> targets = {
-      {2, 1, 5, 1, 3},
-      {4, 3, 5},
-      {3, 2, 2, 1},
+      {2, 1, 5, 1, 3}, {4, 3, 5}, {3, 2, 2, 1},
   };
 
   std::vector<float> expected_loss = {
-      7.7417464256287,
-      6.4200420379639,
-      8.2780694961548,
+      7.7417464256287, 6.4200420379639, 8.2780694961548,
   };
 
   std::vector<std::vector<float>> emissions_vecs = {

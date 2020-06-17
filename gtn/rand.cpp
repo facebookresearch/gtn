@@ -42,7 +42,7 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
 
   arcs.resize(acceptLength - 1);
   auto gradFunc = [arcs = arcs](
-                      std::vector<Graph>& /* inputs */, Graph deltas) {
+      std::vector<Graph>& /* inputs */, Graph deltas) {
     // The arcs in deltas should be in the same order as in arcs
     for (int i = 0; i < deltas.numArcs(); i++) {
       arcs[i]->addGrad(deltas.arcs()[i].grad());

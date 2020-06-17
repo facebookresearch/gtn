@@ -1,6 +1,7 @@
 #include <sstream>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "gtn/gtn.h"
 
@@ -28,6 +29,8 @@ PYBIND11_MODULE(_graph, m) {
           "add_arc",
           py::overload_cast<int, int, int, int, float>(&Graph::addArc),
           py::return_value_policy::reference)
+      .def("arcs", &Graph::arcs)
+      .def("nodes", &Graph::nodes)
       .def("num_arcs", &Graph::numArcs)
       .def("num_nodes", &Graph::numNodes)
       .def("num_start", &Graph::numStart)
@@ -35,6 +38,7 @@ PYBIND11_MODULE(_graph, m) {
       .def("item", &Graph::item)
       .def("acceptor", &Graph::acceptor)
       .def("calc_grad", &Graph::calcGrad)
+      .def("zero_grad", &Graph::zeroGrad)
       .def("__repr__", [](const Graph& a) {
         std::ostringstream ss;
         print(a, ss);
