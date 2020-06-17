@@ -8,57 +8,23 @@
 
 namespace gtn {
 
-Graph clone(Graph other, Projection projection /* = Projection::NONE */) {
+  // TODO add test for this
+Graph negate(Graph other) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
-    if (inputs[0].calcGrad()) {
-      for (int i = 0; i < deltas.numArcs(); i++) {
-        inputs[0].arcs()[i].addGrad(deltas.arcs()[i].grad());
-      }
-    }
+    inputs[0].addGrad(negate(deltas));
   };
-  Graph g(gradFunc, {other});
-  copy(other, projection, g);
-  return g;
-}
-
-Graph copy(Graph other, Projection projection /* = Projection::NONE */) {
-  Graph g;
-  copy(other, projection, g);
-  return g;
-}
-
-void copy(Graph other, Projection projection, Graph& out) {
-  for (const auto& node : other.nodes()) {
-    out.addNode(node.start(), node.accept());
-  }
-  for (const auto& arc : other.arcs()) {
-    out.addArc(
-        arc.upNode()->index(),
-        arc.downNode()->index(),
-        projection == Projection::OUTPUT ? arc.olabel() : arc.ilabel(),
-        projection == Projection::INPUT ? arc.ilabel() : arc.olabel(),
-        arc.weight());
-  }
-}
-
-Graph projectInput(Graph other) {
-  return clone(other, Projection::INPUT);
-}
-
-Graph projectOutput(Graph other) {
-  return clone(other, Projection::OUTPUT);
+  Graph result(gradFunc, {other});
+  result.addNode(true);
+  result.addNode(false, true);
+  result.addArc(0, 1, 0, 0, -other.item());
+  return result;
 }
 
 Graph add(Graph lhs, Graph rhs) {
   float weight = lhs.item() + rhs.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
-    auto delta = deltas.arcs()[0].grad();
-    if (inputs[0].calcGrad()) {
-      inputs[0].arcs()[0].addGrad(delta);
-    }
-    if (inputs[1].calcGrad()) {
-      inputs[1].arcs()[0].addGrad(delta);
-    }
+    inputs[0].addGrad(deltas);
+    inputs[1].addGrad(deltas);
   };
   Graph result(gradFunc, {lhs, rhs});
   result.addNode(true);
@@ -70,13 +36,8 @@ Graph add(Graph lhs, Graph rhs) {
 Graph subtract(Graph lhs, Graph rhs) {
   float weight = lhs.item() - rhs.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
-    auto delta = deltas.arcs()[0].grad();
-    if (inputs[0].calcGrad()) {
-      inputs[0].arcs()[0].addGrad(delta);
-    }
-    if (inputs[1].calcGrad()) {
-      inputs[1].arcs()[0].addGrad(-delta);
-    }
+    inputs[0].addGrad(deltas);
+    inputs[1].addGrad(negate(deltas));
   };
   Graph result(gradFunc, {lhs, rhs});
   result.addNode(true);
@@ -85,12 +46,43 @@ Graph subtract(Graph lhs, Graph rhs) {
   return result;
 }
 
+Graph clone(Graph other, Projection projection /* = Projection::NONE */) {
+  auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
+    inputs[0].addGrad(deltas);
+  };
+  Graph out(gradFunc, {other});
+  for (const auto& node : other.nodes()) {
+    out.addNode(node.start(), node.accept());
+  }
+  for (const auto& arc : other.arcs()) {
+    out.addArc(
+        arc.upNode()->index(),
+        arc.downNode()->index(),
+        projection == Projection::OUTPUT ? arc.olabel() : arc.ilabel(),
+        projection == Projection::INPUT ? arc.ilabel() : arc.olabel(),
+        arc.weight());
+  }
+  return out;
+}
+
+Graph projectInput(Graph other) {
+  return clone(other, Projection::INPUT);
+}
+
+Graph projectOutput(Graph other) {
+  return clone(other, Projection::OUTPUT);
+}
+
 Graph closure(Graph graph) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
-    // Arcs in the new graph were added in the same order.
-    for (int i = 0; i < inputs[0].numArcs(); i++) {
-      auto grad = deltas.arcs()[i].grad();
-      inputs[0].arcs()[i].addGrad(grad);
+    if (inputs[0].calcGrad()) {
+      auto grad = Graph::deepCopy(inputs[0]);
+      // *NB* this assumes arcs in the new graph are the same order
+      // as in the old graph.
+      for (int i = 0; i < grad.numArcs(); i++) {
+        grad.arcs()[i].setWeight(deltas.arcs()[i].weight());
+      }
+      inputs[0].addGrad(grad);
     }
   };
 
@@ -123,16 +115,18 @@ Graph sum(std::vector<Graph> graphs) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     int gidx = 0;
     for (auto& graph : inputs) {
-      if (!graph.calcGrad()) {
-        continue;
-      }
-      for (auto& n : graph.nodes()) {
-        // The out arcs of the node will be in the same order
-        auto deltan = deltas.node(n.index() + gidx);
-        for (int i = 0; i < n.numOut(); i++) {
-          auto grad = deltan->out()[i]->grad();
-          n.out()[i]->addGrad(grad);
+      // TODO add check for when one of the inputs has calc grad set to false
+      if (graph.calcGrad()) {
+        auto grad = Graph::deepCopy(graph);
+        for (int i = 0; i < graph.numNodes(); i++) {
+          // The out arcs of the node will be in the same order
+          auto deltan = deltas.node(i + gidx);
+          auto n = grad.node(i);
+          for (int j = 0; j < n->numOut(); j++) {
+            n->out()[j]->setWeight(deltan->out()[j]->weight());
+          }
         }
+        graph.addGrad(grad);
       }
       gidx += graph.numNodes();
     }
@@ -397,21 +391,36 @@ Graph compose(Graph first, Graph second) {
    * (TODO we may want to merge these arcs in general, though this may be
    * better implemented in a more explicit way with e.g. minimize.)  */
   auto gradFunc = [gradInfo = std::move(gradInfo)](
-      std::vector<Graph> & inputs, Graph /* deltas */) {
+      std::vector<Graph>& inputs, Graph deltas) {
     // In this case the arc's parents are always from the
     // first and second input graphs respectively.
-    // delta are unused since we have pointers to them in gradInfo
-    bool calcGradFirst = inputs[0].calcGrad();
-    bool calcGradSecond = inputs[1].calcGrad();
+    bool calcGrad1 = inputs[0].calcGrad();
+    bool calcGrad2 = inputs[1].calcGrad();
+    Graph grad1 = calcGrad1 ? Graph::deepCopy(inputs[0]) : Graph{};
+    Graph grad2 = calcGrad2 ? Graph::deepCopy(inputs[1]) : Graph{};
+    // TODO fill function needed
+    for (auto& a: grad1.arcs()) {
+      a.setWeight(0);
+    }
+    for (auto& a: grad2.arcs()) {
+      a.setWeight(0);
+    }
     for (auto& arcs : gradInfo) {
-      auto grad = std::get<2>(arcs)->grad();
-      if (calcGradFirst && std::get<0>(arcs)) {
-        std::get<0>(arcs)->addGrad(grad);
+      auto idx = std::get<2>(arcs)->index();
+      auto arcGrad = deltas.arcs()[idx].weight();
+      if (calcGrad1 && std::get<0>(arcs)) {
+        auto i = std::get<0>(arcs)->index();
+        grad1.arcs()[i].setWeight(
+          grad1.arcs()[i].weight() + arcGrad);
       }
-      if (calcGradSecond && std::get<1>(arcs)) {
-        std::get<1>(arcs)->addGrad(grad);
+      if (calcGrad2 && std::get<1>(arcs)) {
+        auto i = std::get<1>(arcs)->index();
+        grad2.arcs()[i].setWeight(
+          grad2.arcs()[i].weight() + arcGrad);
       }
     }
+    inputs[0].addGrad(grad1);
+    inputs[1].addGrad(grad2);
   };
   return Graph(ngraph, gradFunc, {first, second});
 }
@@ -428,38 +437,46 @@ inline float logadd(float a, float b) {
   return std::max(a, b) + std::log1p(std::exp(-std::abs(a - b)));
 }
 
-void forwardGrad(Graph input, Graph output, std::vector<float>& scores) {
-  std::queue<Node*> computed;
-  auto delta = output.arcs()[0].grad();
+void forwardGrad(
+    Graph input,
+    float output,
+    const Graph& deltas,
+    std::vector<float>& scores) {
+  std::queue<int> computed;
   std::vector<int> degrees;
   degrees.reserve(input.numNodes());
   std::vector<float> grads(input.numNodes(), 0.0);
-  for (auto& n : input.nodes()) {
-    degrees[n.index()] = n.numOut();
-    if (n.accept()) {
-      grads[n.index()] = delta * std::exp(scores[n.index()] - output.item());
-      if (n.numOut() == 0) {
-        computed.push(&n);
+  for (int i = 0; i < input.numNodes(); i++) {
+    auto n = input.node(i);
+    degrees[i] = n->numOut();
+    if (n->accept()) {
+      grads[i] = deltas.item() * std::exp(scores[i] - output);
+      if (n->numOut() == 0) {
+        computed.push(i);
       }
     }
   }
 
+  auto grad = Graph::deepCopy(input);
   while (!computed.empty()) {
-    auto node = computed.front();
+    auto i = computed.front();
     computed.pop();
-    auto score = scores[node->index()];
-    auto grad = grads[node->index()];
-    for (auto arc : node->in()) {
+    auto score = scores[i];
+    auto gradn = grads[i];
+    for (int j = 0; j < input.node(i)->numIn(); j++) {
+      auto arc = input.node(i)->in()[j];
       auto un = arc->upNode();
       auto arcGrad =
-          grad * std::exp(arc->weight() + scores[un->index()] - score);
-      arc->addGrad(arcGrad);
+          gradn * std::exp(arc->weight() + scores[un->index()] - score);
+      auto garc = grad.node(i)->in()[j];
+      garc->setWeight(arcGrad);
       grads[un->index()] += arcGrad;
       if ((--degrees[un->index()]) == 0) {
-        computed.push(un);
+        computed.push(un->index());
       }
     }
   }
+  input.addGrad(grad);
 }
 
 Graph forward(Graph graph) {
@@ -501,9 +518,9 @@ Graph forward(Graph graph) {
     score = logadd(score, scores[a->index()]);
   }
 
-  auto gradFunc = [scores = std::move(scores)](
+  auto gradFunc = [scores = std::move(scores), output = score](
       std::vector<Graph> & inputs, Graph deltas) mutable {
-    forwardGrad(inputs[0], deltas, scores);
+    forwardGrad(inputs[0], output, deltas, scores);
   };
 
   Graph result(gradFunc, {graph});

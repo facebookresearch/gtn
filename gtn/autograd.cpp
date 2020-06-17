@@ -28,15 +28,17 @@ void backward(Graph graph) {
   recurse(graph);
 
   // Seed the initial deltas
-  for (auto& a : graph.arcs()) {
-    a.addGrad(1.0);
+  auto deltas = Graph::deepCopy(graph);
+  deltas.setCalcGrad(false);
+  for (auto& a : deltas.arcs()) {
+    a.setWeight(1.0);
   }
+  graph.addGrad(deltas);
 
   // Compute gradients
   for (auto iter = tape.rbegin(); iter != tape.rend(); iter++) {
     if (iter->gradFunc()) {
-      auto inputs = iter->inputs();
-      iter->gradFunc()(inputs, *iter);
+      iter->gradFunc()(iter->inputs(), iter->grad());
     }
   }
 }

@@ -3,6 +3,7 @@
 #include "catch.hpp"
 
 #include "gtn/graph.h"
+#include "gtn/utils.h"
 
 using namespace gtn;
 
@@ -133,5 +134,86 @@ TEST_CASE("Test Graph", "[graph]") {
     g.addArc(1, 2, 2, 1);
     g.addArc(1, 2, 2, 2);
     CHECK(!g.acceptor());
+  }
+}
+
+TEST_CASE("Test copy", "[Graph::deepCopy]") {
+  Graph graph =
+      load(std::stringstream("0 1\n"
+                             "3 4\n"
+                             "0 1 0 2 2\n"
+                             "0 2 1 3 1\n"
+                             "1 2 0 1 2\n"
+                             "2 3 0 0 1\n"
+                             "2 3 1 2 1\n"
+                             "1 4 0 1 2\n"
+                             "2 4 1 1 3\n"
+                             "3 4 0 2 2\n"));
+
+  // Test copy
+  Graph copied = Graph::deepCopy(graph);
+  CHECK(equals(copied, graph));
+  CHECK(copied.calcGrad() == graph.calcGrad());
+  CHECK(copied.id() != graph.id());
+
+  copied.addArc(0, 3, 0);
+  CHECK(!equals(copied, graph));
+}
+
+
+TEST_CASE("Test gradient functionality", "[graph grad]") {
+  {
+    // calcGrad is false
+    Graph g(false);
+    CHECK_THROWS(g.grad());
+
+    g.addGrad(Graph{});
+    CHECK_THROWS(g.grad());
+  }
+
+  {
+    // No gradient yet
+    Graph g(true);
+    CHECK_THROWS(g.grad());
+
+    // Empty gradient
+    g.addGrad(Graph{});
+    CHECK(equals(g.grad(), Graph{}));
+
+    // No gradient
+    g.zeroGrad();
+    CHECK_THROWS(g.grad());
+
+    g.addNode();
+    g.addNode();
+    g.addArc(0, 1, 0);
+
+    Graph grad;
+    grad.addNode();
+    grad.addNode();
+    grad.addArc(0, 1, 0, 0, 1.0);
+
+    g.addGrad(grad);
+    CHECK(equals(g.grad(), grad));
+
+    // Grads accumulate properly
+    g.addGrad(grad);
+    Graph expected;
+    expected.addNode();
+    expected.addNode();
+    expected.addArc(0, 1, 0, 0, 2.0);
+    CHECK(equals(g.grad(), expected));
+  }
+
+  {
+    // calcGrad propgates properly
+    Graph g1(true);
+    Graph g2(false);
+    Graph g3(nullptr, {g1, g2});
+    CHECK(g3.calcGrad());
+
+    Graph g4(false);
+    Graph g5(nullptr, {g2, g4});
+    CHECK(!g5.calcGrad());
   }
 }

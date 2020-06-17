@@ -102,7 +102,7 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
     };
 
     Graph emissions = emissions_graph(emissions_vec, T, N);
-    
+
     // The log probabilities are already normalized,
     // so this should be close to 0
     auto z = forward(emissions);
@@ -124,9 +124,9 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     bool allClose = true;
     for (int t = 0; t < T; t++) {
-      auto node = emissions.node(t);
+      auto node = emissions.grad().node(t);
       for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->grad();
+        auto g = node->out()[n]->weight();
         allClose &= (std::abs(expected_grad[t * N + n] - g) < 1e-5);
       }
     }
@@ -175,9 +175,9 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     bool allClose = true;
     for (int t = 0; t < T; t++) {
-      auto node = emissions.node(t);
+      auto node = emissions.grad().node(t);
       for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->grad();
+        auto g = node->out()[n]->weight();
         allClose &= (std::abs(expected_grad[t * N + n] - g) < 1e-5);
       }
     }
@@ -285,9 +285,9 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
 
     bool allClose = true;
     for (int t = 0; t < T; t++) {
-      auto node = emissions.node(t);
+      auto node = emissions.grad().node(t);
       for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->grad();
+        auto g = node->out()[n]->weight();
         allClose &= (std::abs(emissions_grad[t * N + n] - g) < 1e-4);
       }
     }
@@ -304,9 +304,9 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
   };
 
   for (int i = 0; i < N; i++) {
-    auto node = transitions.node(i + 1);
+    auto node = transitions.grad().node(i + 1);
     for (int j = 0; j < N; j++) {
-      auto g = node->out()[j]->grad();
+      auto g = node->out()[j]->weight();
       allClose &= (std::abs(trans_grad[i + j * N] - g) < 1e-4);
     }
   }

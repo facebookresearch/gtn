@@ -18,19 +18,22 @@ TEST_CASE("Test Scalar Ops", "[functions.scalars]") {
   g1.addNode(false, true);
   g1.addArc(0, 1, 0, 0, 3.0);
 
+  auto result = negate(g1);
+  CHECK(result.item() == -3.0);
+
   Graph g2;
   g2.addNode(true);
   g2.addNode(false, true);
   g2.addArc(0, 1, 0, 0, 4.0);
 
-  auto result = add(g1, g2);
+  result = add(g1, g2);
   CHECK(result.item() == 7.0);
 
   result = subtract(g2, g1);
   CHECK(result.item() == 1.0);
 }
 
-TEST_CASE("Test Project/Copy", "[fuctions.copy]") {
+TEST_CASE("Test Project/clone", "[fuctions.clone]") {
   Graph graph =
       load(std::stringstream("0 1\n"
                              "3 4\n"
@@ -43,9 +46,9 @@ TEST_CASE("Test Project/Copy", "[fuctions.copy]") {
                              "2 4 1 1 3\n"
                              "3 4 0 2 2\n"));
 
-  // Test copy
-  Graph copied = copy(graph);
-  CHECK(equals(graph, copied));
+  // Test clone
+  Graph cloned = clone(graph);
+  CHECK(equals(graph, cloned));
 
   // Test projecting input
   Graph inputExpected =

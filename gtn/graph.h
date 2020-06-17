@@ -18,7 +18,7 @@ class Arc {
    * for an arc is 0 (e.g. the multiplicative identity) and the additive
    * identity is -infinity. Path scores are accumulated with the logadd or
    * max operations and the score for a path is accumulated with addition. */
-  Arc(Node* upNode, Node* downNode, int ilabel, int olabel, float weight);
+  Arc(Node* upNode, Node* downNode, int ilabel, int olabel, float weight, int index);
 
   Node* upNode() const {
     return upNode_;
@@ -41,16 +41,8 @@ class Arc {
   void setWeight(float weight) {
     weight_ = weight;
   };
-
-  // Autograd functionality
-  float grad() const {
-    return grad_;
-  };
-  void addGrad(float grad) {
-    grad_ += grad;
-  };
-  void zeroGrad() {
-    grad_ = 0;
+  int index() const {
+    return index_;
   };
 
  private:
@@ -59,7 +51,8 @@ class Arc {
   int ilabel_;
   int olabel_;
   float weight_;
-  float grad_;
+  /* TODO The arcs index in the graph, this is most likely a temporary hack. */
+  int index_;
 };
 
 class Node {
@@ -134,13 +127,19 @@ class Graph {
   Arc* addArc(int upNode, int downNode, int label, double) = delete;
 
   // Get the score on a single arc graph.
-  float item();
+  float item() const;
 
   bool hasNode(int index);
   Node* node(int index);
 
+  const std::deque<Arc>& arcs() const {
+    return sharedData_->arcs_;
+  };
   std::deque<Arc>& arcs() {
     return sharedData_->arcs_;
+  };
+  const std::deque<Node>& nodes() const {
+    return sharedData_->nodes_;
   };
   std::deque<Node>& nodes() {
     return sharedData_->nodes_;
@@ -166,9 +165,14 @@ class Graph {
   bool acceptor() const {
     return sharedData_->acceptor_;
   }
+
+  void addGrad(const Graph& other);
+
   bool calcGrad() const {
     return sharedData_->calcGrad_;
   };
+
+  Graph& grad();
 
   void makeAccept(Node* n) {
     if (!n->accept()) {
@@ -176,15 +180,17 @@ class Graph {
       n->setAccept(true);
     }
   };
-
+  void setCalcGrad(bool calcGrad);
   void zeroGrad();
   std::uintptr_t id();
   GradFunc gradFunc() {
     return sharedData_->gradFunc_;
   };
-  std::vector<Graph> inputs() {
+  std::vector<Graph>& inputs() {
     return sharedData_->inputs_;
   };
+
+  static Graph deepCopy(const Graph& other);
 
   static constexpr int epsilon{-1};
 
@@ -200,6 +206,7 @@ class Graph {
     GradFunc gradFunc_{nullptr};
     std::vector<Graph> inputs_;
     bool acceptor_{true};
+    std::unique_ptr<Graph> grad_{nullptr};
     bool calcGrad_;
   };
 
