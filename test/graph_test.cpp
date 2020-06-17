@@ -160,7 +160,6 @@ TEST_CASE("Test copy", "[Graph::deepCopy]") {
   CHECK(!equals(copied, graph));
 }
 
-
 TEST_CASE("Test gradient functionality", "[graph grad]") {
   {
     // calcGrad is false

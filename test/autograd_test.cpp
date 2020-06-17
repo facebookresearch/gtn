@@ -119,7 +119,6 @@ TEST_CASE("Test Clone/Project Grad", "[functions.clone (grad)]") {
 }
 
 TEST_CASE("Test Compose Grad", "[functions.compose (grad)]") {
-
   Graph first;
   first.addNode(true);
   first.addNode();
@@ -138,7 +137,6 @@ TEST_CASE("Test Compose Grad", "[functions.compose (grad)]") {
   first.addArc(3, 4, 0, 0, 0);
   first.addArc(3, 4, 1, 1, 1);
   first.addArc(3, 4, 2, 2, 2);
-
 
   Graph second;
   second.addNode(true);

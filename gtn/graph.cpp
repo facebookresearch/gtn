@@ -115,11 +115,11 @@ void Graph::addGrad(const Graph& other) {
     if (sharedData_->grad_) {
       auto& gradArcs = sharedData_->grad_->arcs();
       for (int i = 0; i < numArcs(); i++) {
-        gradArcs[i].setWeight(
-          gradArcs[i].weight() + other.arcs()[i].weight());
+        gradArcs[i].setWeight(gradArcs[i].weight() + other.arcs()[i].weight());
       }
     } else {
-    // TODO Avoid the extra copy here if it's possible. Maybe we can have a "move" version
+      // TODO Avoid the extra copy here if it's possible. Maybe we can have a
+      // "move" version
       sharedData_->grad_ = std::make_unique<Graph>(deepCopy(other));
     }
   }
@@ -169,7 +169,13 @@ void Node::addOutArc(Arc* arc) {
   out_.push_back(arc);
 }
 
-Arc::Arc(Node* upNode, Node* downNode, int ilabel, int olabel, float weight, int index)
+Arc::Arc(
+    Node* upNode,
+    Node* downNode,
+    int ilabel,
+    int olabel,
+    float weight,
+    int index)
     : upNode_(upNode),
       downNode_(downNode),
       ilabel_(ilabel),

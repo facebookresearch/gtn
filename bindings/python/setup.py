@@ -79,7 +79,6 @@ setup(
         CMakeExtension("gtn._autograd"),
         CMakeExtension("gtn._utils"),
         CMakeExtension("gtn._functions"),
-        CMakeExtension("gtn._torch"),
     ],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,

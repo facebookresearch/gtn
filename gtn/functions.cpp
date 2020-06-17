@@ -8,7 +8,6 @@
 
 namespace gtn {
 
-  // TODO add test for this
 Graph negate(Graph other) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(negate(deltas));
@@ -391,7 +390,7 @@ Graph compose(Graph first, Graph second) {
    * (TODO we may want to merge these arcs in general, though this may be
    * better implemented in a more explicit way with e.g. minimize.)  */
   auto gradFunc = [gradInfo = std::move(gradInfo)](
-      std::vector<Graph>& inputs, Graph deltas) {
+                      std::vector<Graph>& inputs, Graph deltas) {
     // In this case the arc's parents are always from the
     // first and second input graphs respectively.
     bool calcGrad1 = inputs[0].calcGrad();
@@ -399,10 +398,10 @@ Graph compose(Graph first, Graph second) {
     Graph grad1 = calcGrad1 ? Graph::deepCopy(inputs[0]) : Graph{};
     Graph grad2 = calcGrad2 ? Graph::deepCopy(inputs[1]) : Graph{};
     // TODO fill function needed
-    for (auto& a: grad1.arcs()) {
+    for (auto& a : grad1.arcs()) {
       a.setWeight(0);
     }
-    for (auto& a: grad2.arcs()) {
+    for (auto& a : grad2.arcs()) {
       a.setWeight(0);
     }
     for (auto& arcs : gradInfo) {
@@ -410,13 +409,11 @@ Graph compose(Graph first, Graph second) {
       auto arcGrad = deltas.arcs()[idx].weight();
       if (calcGrad1 && std::get<0>(arcs)) {
         auto i = std::get<0>(arcs)->index();
-        grad1.arcs()[i].setWeight(
-          grad1.arcs()[i].weight() + arcGrad);
+        grad1.arcs()[i].setWeight(grad1.arcs()[i].weight() + arcGrad);
       }
       if (calcGrad2 && std::get<1>(arcs)) {
         auto i = std::get<1>(arcs)->index();
-        grad2.arcs()[i].setWeight(
-          grad2.arcs()[i].weight() + arcGrad);
+        grad2.arcs()[i].setWeight(grad2.arcs()[i].weight() + arcGrad);
       }
     }
     inputs[0].addGrad(grad1);
@@ -519,7 +516,7 @@ Graph forward(Graph graph) {
   }
 
   auto gradFunc = [scores = std::move(scores), output = score](
-      std::vector<Graph> & inputs, Graph deltas) mutable {
+                      std::vector<Graph>& inputs, Graph deltas) mutable {
     forwardGrad(inputs[0], output, deltas, scores);
   };
 

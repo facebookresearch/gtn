@@ -120,7 +120,6 @@ void interestingAcceptors() {
     graph.addArc(1, 2, 1);
     draw(graph, "epsilons.dot", symbols);
   }
-
 }
 
 // Simple operations on WFSAs (and WFSTs)
