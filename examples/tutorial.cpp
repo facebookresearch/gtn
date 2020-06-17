@@ -270,17 +270,25 @@ void differentiableAcceptors() {
   // Differentiate through the computation.
   backward(loss);
 
-  // Access the gradient w.r.t. the arc score
-  for (auto& arc : g1.arcs()) {
-    arc.grad();
+  // Access the graph gradient
+  Graph grad = g1.grad();
+  // The gradient with respect to the input graph arcs are the weights on the
+  // arcs of the gradient graph.
+  for (auto& arc : grad.arcs()) {
+    arc.weight();
   }
   // The intermediate graphs a and b also have gradients.
-  a.arcs()[0].grad();
-  b.arcs()[0].grad();
+  a.grad().arcs()[0].weight();
+  b.grad().arcs()[0].weight();
 
   // If gradient computation is disabled, accessing
-  // the gradient is undefined.
-  g2.arcs()[0].grad(); // Undefined!
+  // the gradient throws.
+  try {
+    g2.grad();
+  } catch (const std::logic_error& e) {
+    std::cout << e.what() << std::endl;
+  }
+
 
   // Zero the gradients before re-using the graphs in
   // a new computation, otherwise the gradients will
