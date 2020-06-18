@@ -133,6 +133,13 @@ void Graph::addGrad(const Graph& other) {
   }
 }
 
+bool Graph::isGradAvailable() const {
+  if (!sharedData_->calcGrad_) {
+    return false;
+  }
+  return sharedData_->grad_ != nullptr;
+}
+
 void Graph::setCalcGrad(bool calcGrad) {
   sharedData_->calcGrad_ = calcGrad;
   if (!calcGrad) {

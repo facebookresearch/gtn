@@ -18,7 +18,12 @@ class Arc {
    * for an arc is 0 (e.g. the multiplicative identity) and the additive
    * identity is -infinity. Path scores are accumulated with the logadd or
    * max operations and the score for a path is accumulated with addition. */
-  Arc(Node* upNode, Node* downNode, int ilabel, int olabel, float weight, int index);
+  Arc(Node* upNode,
+      Node* downNode,
+      int ilabel,
+      int olabel,
+      float weight,
+      int index);
 
   Node* upNode() const {
     return upNode_;
@@ -172,6 +177,7 @@ class Graph {
   bool calcGrad() const {
     return sharedData_->calcGrad_;
   };
+  bool isGradAvailable() const;
 
   Graph& grad();
 

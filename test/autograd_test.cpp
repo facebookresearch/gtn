@@ -160,6 +160,24 @@ TEST_CASE("Test Compose Grad", "[functions.compose (grad)]") {
   }
 }
 
+TEST_CASE("Test Grad Available", "[functions.isGradAvailable (grad)]") {
+  {
+    Graph g;
+    g.addNode(true);
+    g.addNode();
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 1);
+    g.addArc(0, 1, 1, 1, 2);
+    g.addArc(0, 1, 2, 2, 3);
+    g.addArc(1, 2, 0, 0, 1);
+    g.addArc(1, 2, 1, 1, 2);
+    g.addArc(1, 2, 2, 2, 3);
+    CHECK(!g.isGradAvailable());
+    backward(forward(g));
+    CHECK(g.isGradAvailable());
+  }
+}
+
 TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
   {
     Graph g;
