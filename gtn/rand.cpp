@@ -53,7 +53,7 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
         auto& arc = grad.arcs()[arcs[i]->index()];
         arc.setWeight(arc.weight() + arcGrad);
       }
-      inputs[0].addGrad(grad);
+      inputs[0].addGrad(std::move(grad));
     }
   };
 

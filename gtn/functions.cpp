@@ -81,7 +81,7 @@ Graph closure(Graph graph) {
       for (int i = 0; i < grad.numArcs(); i++) {
         grad.arcs()[i].setWeight(deltas.arcs()[i].weight());
       }
-      inputs[0].addGrad(grad);
+      inputs[0].addGrad(std::move(grad));
     }
   };
 
@@ -114,7 +114,6 @@ Graph sum(std::vector<Graph> graphs) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     int gidx = 0;
     for (auto& graph : inputs) {
-      // TODO add check for when one of the inputs has calc grad set to false
       if (graph.calcGrad()) {
         auto grad = Graph::deepCopy(graph);
         for (int i = 0; i < graph.numNodes(); i++) {
@@ -125,7 +124,7 @@ Graph sum(std::vector<Graph> graphs) {
             n->out()[j]->setWeight(deltan->out()[j]->weight());
           }
         }
-        graph.addGrad(grad);
+        graph.addGrad(std::move(grad));
       }
       gidx += graph.numNodes();
     }
@@ -416,8 +415,8 @@ Graph compose(Graph first, Graph second) {
         grad2.arcs()[i].setWeight(grad2.arcs()[i].weight() + arcGrad);
       }
     }
-    inputs[0].addGrad(grad1);
-    inputs[1].addGrad(grad2);
+    inputs[0].addGrad(std::move(grad1));
+    inputs[1].addGrad(std::move(grad2));
   };
   return Graph(ngraph, gradFunc, {first, second});
 }
@@ -473,7 +472,7 @@ void forwardGrad(
       }
     }
   }
-  input.addGrad(grad);
+  input.addGrad(std::move(grad));
 }
 
 Graph forward(Graph graph) {

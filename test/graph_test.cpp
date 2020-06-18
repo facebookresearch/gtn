@@ -215,4 +215,28 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
     Graph g5(nullptr, {g2, g4});
     CHECK(!g5.calcGrad());
   }
+
+  {
+    Graph g;
+    g.addNode();
+    g.addNode();
+    g.addArc(0, 1, 0);
+
+    auto grad = Graph::deepCopy(g);
+
+    // this should make a copy of grad
+    g.addGrad(grad);
+
+    g.grad().addArc(0, 0, 1);
+    CHECK(equals(grad, g));
+    CHECK(!equals(grad, g.grad()));
+
+    // this should not make a copy of grad
+    g.zeroGrad();
+    g.addGrad(std::move(grad));
+
+    // Probably accessing grad should be undefined at this point..
+    g.grad().addArc(0, 0, 1);
+    CHECK(equals(g.grad(), grad));
+  }
 }

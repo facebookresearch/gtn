@@ -110,7 +110,7 @@ Graph& Graph::grad() {
   return *sharedData_->grad_;
 }
 
-void Graph::addGrad(const Graph& other) {
+void Graph::addGrad(Graph&& other) {
   if (calcGrad()) {
     if (sharedData_->grad_) {
       auto& gradArcs = sharedData_->grad_->arcs();
@@ -118,9 +118,17 @@ void Graph::addGrad(const Graph& other) {
         gradArcs[i].setWeight(gradArcs[i].weight() + other.arcs()[i].weight());
       }
     } else {
-      // TODO Avoid the extra copy here if it's possible. Maybe we can have a
-      // "move" version
-      sharedData_->grad_ = std::make_unique<Graph>(deepCopy(other));
+      sharedData_->grad_ = std::make_unique<Graph>(other);
+    }
+  }
+}
+
+void Graph::addGrad(const Graph& other) {
+  if (calcGrad()) {
+    if (sharedData_->grad_) {
+      addGrad(std::move(const_cast<Graph&>(other)));
+    } else {
+      addGrad(deepCopy(other));
     }
   }
 }

@@ -167,6 +167,7 @@ class Graph {
   }
 
   void addGrad(const Graph& other);
+  void addGrad(Graph&& other);
 
   bool calcGrad() const {
     return sharedData_->calcGrad_;
