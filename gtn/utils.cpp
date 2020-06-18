@@ -265,13 +265,11 @@ void draw(
     return symbols.at(label);
   };
 
-  auto drawNode = [
-    acceptor = graph.acceptor(),
-    &out,
-    &isymbols,
-    &osymbols,
-    &label_to_string
-  ](auto node) {
+  auto drawNode = [acceptor = graph.acceptor(),
+                   &out,
+                   &isymbols,
+                   &osymbols,
+                   &label_to_string](auto node) {
     std::string style = node->start() || node->accept() ? "bold" : "solid";
     std::string shape = node->accept() ? "doublecircle" : "circle";
     out << "  " << node->index() << " [label = \"" << node->index()

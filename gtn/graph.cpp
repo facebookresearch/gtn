@@ -27,9 +27,8 @@ Graph::Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs)
     sharedData_->gradFunc_ = std::move(gradFunc);
     sharedData_->inputs_ = std::move(inputs);
   } else {
-    // clear the gradFunc and inputs just in case they were set in `data`
-    sharedData_->gradFunc_ = nullptr;
-    sharedData_->inputs_ = {};
+    // clears the gradient data in case it was set in `data`
+    setCalcGrad(false);
   }
 }
 
@@ -60,7 +59,7 @@ Arc* Graph::addArc(
     int olabel,
     float weight /* = 0 */) {
   sharedData_->acceptor_ &= (ilabel == olabel);
-  arcs().emplace_back(upNode, downNode, ilabel, olabel, weight);
+  arcs().emplace_back(upNode, downNode, ilabel, olabel, weight, numArcs());
   auto pArc = &arcs().back();
   upNode->addOutArc(pArc);
   downNode->addInArc(pArc);
@@ -82,7 +81,7 @@ Arc* Graph::addArc(
   return addArc(up, down, ilabel, olabel, weight);
 }
 
-float Graph::item() {
+float Graph::item() const {
   if (numArcs() != 1) {
     throw std::invalid_argument(
         "[Graph::item] Cannot convert Graph with more than 1 arc to a scalar.");
@@ -101,14 +100,70 @@ Node* Graph::node(int index) {
   return &nodes()[index];
 }
 
-void Graph::zeroGrad() {
-  for (auto& arc : arcs()) {
-    arc.zeroGrad();
+Graph& Graph::grad() {
+  if (!calcGrad()) {
+    throw std::logic_error("[Graph::grad] Gradient calculation disabled.");
   }
+  if (!sharedData_->grad_) {
+    throw std::logic_error("[Graph::grad] Gradient not calculated yet.");
+  }
+  return *sharedData_->grad_;
+}
+
+void Graph::addGrad(Graph&& other) {
+  if (calcGrad()) {
+    if (sharedData_->grad_) {
+      auto& gradArcs = sharedData_->grad_->arcs();
+      for (int i = 0; i < numArcs(); i++) {
+        gradArcs[i].setWeight(gradArcs[i].weight() + other.arcs()[i].weight());
+      }
+    } else {
+      sharedData_->grad_ = std::make_unique<Graph>(other);
+    }
+  }
+}
+
+void Graph::addGrad(const Graph& other) {
+  if (calcGrad()) {
+    if (sharedData_->grad_) {
+      addGrad(std::move(const_cast<Graph&>(other)));
+    } else {
+      addGrad(deepCopy(other));
+    }
+  }
+}
+
+void Graph::setCalcGrad(bool calcGrad) {
+  sharedData_->calcGrad_ = calcGrad;
+  if (!calcGrad) {
+    sharedData_->gradFunc_ = nullptr;
+    sharedData_->inputs_.clear();
+    sharedData_->grad_.reset();
+  }
+}
+
+void Graph::zeroGrad() {
+  sharedData_->grad_.reset();
 }
 
 std::uintptr_t Graph::id() {
   return reinterpret_cast<std::uintptr_t>(sharedData_.get());
+}
+
+Graph Graph::deepCopy(const Graph& other) {
+  Graph out(other.calcGrad());
+  for (const auto& node : other.nodes()) {
+    out.addNode(node.start(), node.accept());
+  }
+  for (const auto& arc : other.arcs()) {
+    out.addArc(
+        arc.upNode()->index(),
+        arc.downNode()->index(),
+        arc.ilabel(),
+        arc.olabel(),
+        arc.weight());
+  }
+  return out;
 }
 
 Node::Node(int index, bool start /* = false */, bool accept /* = false */)
@@ -122,11 +177,17 @@ void Node::addOutArc(Arc* arc) {
   out_.push_back(arc);
 }
 
-Arc::Arc(Node* upNode, Node* downNode, int ilabel, int olabel, float weight)
+Arc::Arc(
+    Node* upNode,
+    Node* downNode,
+    int ilabel,
+    int olabel,
+    float weight,
+    int index)
     : upNode_(upNode),
       downNode_(downNode),
       ilabel_(ilabel),
       olabel_(olabel),
       weight_(weight),
-      grad_(0.0) {}
+      index_(index) {}
 } // namespace gtn

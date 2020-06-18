@@ -124,9 +124,9 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     bool allClose = true;
     for (int t = 0; t < T; t++) {
-      auto node = emissions.node(t);
+      auto node = emissions.grad().node(t);
       for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->grad();
+        auto g = node->out()[n]->weight();
         allClose &= (std::abs(expected_grad[t * N + n] - g) < 1e-5);
       }
     }
@@ -175,9 +175,9 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     bool allClose = true;
     for (int t = 0; t < T; t++) {
-      auto node = emissions.node(t);
+      auto node = emissions.grad().node(t);
       for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->grad();
+        auto g = node->out()[n]->weight();
         allClose &= (std::abs(expected_grad[t * N + n] - g) < 1e-5);
       }
     }
@@ -190,11 +190,15 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
   const int T = 5, N = 6;
 
   std::vector<std::vector<int>> targets = {
-      {2, 1, 5, 1, 3}, {4, 3, 5}, {3, 2, 2, 1},
+      {2, 1, 5, 1, 3},
+      {4, 3, 5},
+      {3, 2, 2, 1},
   };
 
   std::vector<float> expected_loss = {
-      7.7417464256287, 6.4200420379639, 8.2780694961548,
+      7.7417464256287,
+      6.4200420379639,
+      8.2780694961548,
   };
 
   std::vector<std::vector<float>> emissions_vecs = {
@@ -281,9 +285,9 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
 
     bool allClose = true;
     for (int t = 0; t < T; t++) {
-      auto node = emissions.node(t);
+      auto node = emissions.grad().node(t);
       for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->grad();
+        auto g = node->out()[n]->weight();
         allClose &= (std::abs(emissions_grad[t * N + n] - g) < 1e-4);
       }
     }
@@ -300,9 +304,9 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
   };
 
   for (int i = 0; i < N; i++) {
-    auto node = transitions.node(i + 1);
+    auto node = transitions.grad().node(i + 1);
     for (int j = 0; j < N; j++) {
-      auto g = node->out()[j]->grad();
+      auto g = node->out()[j]->weight();
       allClose &= (std::abs(trans_grad[i + j * N] - g) < 1e-4);
     }
   }

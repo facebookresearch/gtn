@@ -2,7 +2,11 @@
 
 namespace gtn {
 
-Graph createLinearGraph(float* input, int T, int C, bool calcGrad /* = true */) {
+Graph createLinearGraph(
+    float* input,
+    int T,
+    int C,
+    bool calcGrad /* = true */) {
   Graph g(calcGrad);
   g.addNode(true);
   for (int t = 1; t <= T; ++t) {
@@ -16,9 +20,9 @@ Graph createLinearGraph(float* input, int T, int C, bool calcGrad /* = true */) 
 }
 
 void extractLinearGrad(Graph g, float scale, float* grad) {
-  const auto& arcs = g.arcs();
+  const auto& arcs = g.grad().arcs();
   for (int i = 0; i < arcs.size(); ++i) {
-    grad[i] = scale * arcs[i].grad();
+    grad[i] = scale * arcs[i].weight();
   }
 }
-}
+} // namespace gtn
