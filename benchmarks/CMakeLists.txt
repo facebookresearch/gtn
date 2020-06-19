@@ -20,5 +20,7 @@ endfunction(build_benchmark)
 
 if (GTN_BUILD_BENCHMARKS)
   build_benchmark(${PROJECT_SOURCE_DIR}/benchmarks/ctc.cpp)
+  build_benchmark(${PROJECT_SOURCE_DIR}/benchmarks/graph.cpp)
+  build_benchmark(${PROJECT_SOURCE_DIR}/benchmarks/functions.cpp)
 endif ()
 

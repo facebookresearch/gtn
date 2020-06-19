@@ -1,15 +1,7 @@
-#include <chrono>
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
-
+#include "benchmarks/time_utils.h"
 #include "gtn/gtn.h"
 
 using namespace gtn;
-
-#define milliseconds(x) \
-  std::chrono::duration_cast<std::chrono::milliseconds>(x).count()
-#define timeNow() std::chrono::high_resolution_clock::now()
 
 float rand_score() {
   auto uni = static_cast<float>(std::rand());
@@ -69,15 +61,12 @@ int main() {
   Graph ctc = ctc_graph(U, N);
   Graph emissions = emission_graph(T, N);
 
-  // Loss
-  int nIts = 20;
-  auto start = timeNow();
-  for (int i = 0; i < nIts; i++) {
+  auto ctc_loss = [&ctc, &emissions]() {
+    // Loss
     auto loss = subtract(forward(emissions), forward(compose(ctc, emissions)));
     // Gradients
     backward(loss);
-  }
-  auto end = timeNow();
-  auto timePerIt = milliseconds(end - start) / nIts;
-  std::cout << "Time per iteration (ms): " << timePerIt << std::endl;
+  };
+
+  TIME(ctc_loss);
 }
