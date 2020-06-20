@@ -29,8 +29,8 @@ PYBIND11_MODULE(_graph, m) {
           "add_arc",
           py::overload_cast<int, int, int, int, float>(&Graph::addArc),
           py::return_value_policy::reference)
-      .def("arcs", &Graph::arcs)
-      .def("nodes", &Graph::nodes)
+      .def("arcs", py::overload_cast<>(&Graph::arcs, py::const_))
+      .def("nodes", py::overload_cast<>(&Graph::nodes, py::const_))
       .def("num_arcs", &Graph::numArcs)
       .def("num_nodes", &Graph::numNodes)
       .def("num_start", &Graph::numStart)
