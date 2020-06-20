@@ -19,6 +19,7 @@ endfunction(build_test)
 
 if (GTN_BUILD_TESTS)
   build_test(${PROJECT_SOURCE_DIR}/test/autograd_test.cpp)
+  build_test(${PROJECT_SOURCE_DIR}/test/conversions_test.cpp)
   build_test(${PROJECT_SOURCE_DIR}/test/criterion_test.cpp)
   build_test(${PROJECT_SOURCE_DIR}/test/functions_test.cpp)
   build_test(${PROJECT_SOURCE_DIR}/test/graph_test.cpp)
