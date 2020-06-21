@@ -29,29 +29,28 @@ PYBIND11_MODULE(_utils, m) {
          const SymbolMap& osymbols = SymbolMap()) {
         draw(graph, filename, isymbols, osymbols);
       });
-   
+
    m.def(
-      "create_linear_graph",
-      [](py::bytes input,
-         int T,
-         int C,
+      "array_to_linear_graph",
+      [](py::bytes src,
+         int M,
+         int N,
          bool calcGrad) {
-        return createLinearGraph(
-            castBytes<float*>(input),
-            T,
-            C,
+        return arrayToLinearGraph(
+            castBytes<float*>(src),
+            M,
+            N,
             calcGrad);
       });
-    
+
      m.def(
-      "extract_linear_grad",
+      "linear_graph_to_array",
       [](Graph g,
          float scale,
-         py::bytes grad) {
-         extractLinearGrad(
+         py::bytes dst) {
+         linearGraphToArray(
           g,
-          scale,
-          castBytes<float*>(grad)
+          castBytes<float*>(dst)
           );
       });
 }
