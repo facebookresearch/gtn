@@ -248,17 +248,14 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
   };
 
   Graph transitions;
-  transitions.addNode(true);
-  for (int i = 1; i <= N; i++) {
-    transitions.addNode(false, true);
-    transitions.addArc(0, i, i - 1); // p(i | <s>)
+  for (int i = 0; i < N; i++) {
+    transitions.addNode(true, true);
   }
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
-      transitions.addArc(i + 1, j + 1, j); // p(j | i)
+      transitions.addArc(i, j, j); // p(j | i)
     }
   }
-
   for (size_t b = 0; b < targets.size(); b++) {
     auto target = targets[b];
     auto emissions_vec = emissions_vecs[b];
@@ -296,18 +293,19 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
 
   bool allClose = true;
   std::array<float, N* N> trans_grad = {
-      0.3990,  0.3396,  0.3486, 0.3922,  0.3504,  0.3155,  0.3666,  0.0116,
-      -1.6678, 0.3737,  0.3361, -0.7152, 0.3468,  0.3163,  -1.1583, -0.6803,
-      0.3216,  0.2722,  0.3694, -0.6688, 0.3047,  -0.8531, -0.6571, 0.2870,
-      0.3866,  0.3321,  0.3447, 0.3664,  -0.2163, 0.3039,  0.3640,  -0.6943,
-      0.2988,  -0.6722, 0.3215, -0.1860,
+      0.4871,  0.4369,  0.2711,  0.3106,  0.2931,  0.4336,
+      0.4277,  0.0819,  0.2405, -0.7276,  0.2386, -0.6247,
+      0.4366, -1.5975, -1.2340,  0.2459,  0.2513,  0.3684,
+      0.4802,  0.4439, -0.7560, -0.9118,  0.2729, -0.6026,
+      0.4385,  0.4064,  0.2459, -0.7159, -0.3097,  0.3911,
+      0.4036, -0.6449,  0.1965,  0.2282,  0.2105, -0.1164
   };
 
   for (int i = 0; i < N; i++) {
-    auto node = transitions.grad().node(i + 1);
+    auto node = transitions.grad().node(i);
     for (int j = 0; j < N; j++) {
       auto g = node->out()[j]->weight();
-      allClose &= (std::abs(trans_grad[i + j * N] - g) < 1e-4);
+      allClose &= (std::abs(trans_grad[i * N + j] - g) < 1e-3);
     }
   }
   CHECK(allClose);
