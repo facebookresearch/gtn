@@ -9,12 +9,12 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
     return Graph{};
   }
 
-  std::vector<Arc*> arcs;
+  std::vector<int> arcs;
   auto node = graph.start()[rand() % graph.numStart()];
   size_t acceptLength = 0;
   for (size_t length = 0; length < maxLength + 1; length++) {
-    auto mod = node->numOut() + node->accept();
-    acceptLength = node->accept() ? (length + 1) : acceptLength;
+    auto mod = graph.numOut(node) + graph.accept(node);
+    acceptLength = graph.accept(node) ? (length + 1) : acceptLength;
 
     // Dead end
     if (!mod) {
@@ -26,12 +26,12 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
     auto i = rand() % mod;
 
     // Successful and complete
-    if (i == node->numOut()) {
+    if (i == graph.numOut(node)) {
       break;
     }
 
-    auto arc = node->out()[i];
-    node = arc->downNode();
+    auto arc = graph.out(node, i);
+    node = graph.downNode(arc);
     arcs.push_back(arc);
   }
 
@@ -43,15 +43,14 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
   arcs.resize(acceptLength - 1);
   auto gradFunc = [arcs = arcs](std::vector<Graph>& inputs, Graph deltas) {
     if (inputs[0].calcGrad()) {
-      // The arcs in deltas should be in the same order as in arcs
       auto grad = Graph::deepCopy(inputs[0]);
-      for (auto& arc : grad.arcs()) {
-        arc.setWeight(0);
+      for (int i = 0; i < grad.numArcs(); i++) {
+        grad.setWeight(i, 0);
       }
       for (int i = 0; i < deltas.numArcs(); i++) {
-        auto arcGrad = deltas.arcs()[i].weight();
-        auto& arc = grad.arcs()[arcs[i]->index()];
-        arc.setWeight(arc.weight() + arcGrad);
+        // The arcs in deltas should are the same order as in arcs
+        auto arc = arcs[i];
+        grad.setWeight(arc, grad.weight(arc) + deltas.weight(i));
       }
       inputs[0].addGrad(std::move(grad));
     }
@@ -65,9 +64,9 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
     path.addArc(
         i - 1,
         i,
-        arcs[i - 1]->ilabel(),
-        arcs[i - 1]->olabel(),
-        arcs[i - 1]->weight());
+        graph.ilabel(arcs[i - 1]),
+        graph.olabel(arcs[i - 1]),
+        graph.weight(arcs[i - 1]));
   }
   return path;
 }

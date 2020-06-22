@@ -39,14 +39,8 @@ TEST_CASE("Test Graph", "[graph]") {
   g.addArc(1, 1, 1);
   g.addArc(2, 3, 2);
   CHECK(g.numArcs() == 5);
-  CHECK(g.node(0)->numOut() == 2);
-  CHECK(g.node(1)->numIn() == 2);
-
-  CHECK_THROWS(g.addArc(0, 5, 0));
-  CHECK_THROWS(g.addArc(-1, 3, 0));
-  CHECK_THROWS(g.addArc(5, 0, 0));
-
-  CHECK_THROWS(g.node(5));
+  CHECK(g.numOut(0) == 2);
+  CHECK(g.numIn(1) == 2);
 
   // If we copy the graph it should have the same structure.
   Graph g_copy = g;
@@ -54,8 +48,8 @@ TEST_CASE("Test Graph", "[graph]") {
   CHECK(g_copy.numStart() == 1);
   CHECK(g_copy.numAccept() == 1);
   CHECK(g_copy.numArcs() == 5);
-  CHECK(g_copy.node(0)->numOut() == 2);
-  CHECK(g_copy.node(1)->numIn() == 2);
+  CHECK(g_copy.numOut(0) == 2);
+  CHECK(g_copy.numIn(1) == 2);
 
   // Check that we can copy a graph and the destination still
   // works when the source graph is out of scope
@@ -68,9 +62,9 @@ TEST_CASE("Test Graph", "[graph]") {
     g2 = g1;
   }
   CHECK(g2.numNodes() == 2);
-  CHECK(g2.arcs()[0].label() == 0);
-  CHECK(g2.arcs()[0].downNode()->index() == 1);
-  CHECK(g2.arcs()[0].upNode()->index() == 0);
+  CHECK(g2.label(0) == 0);
+  CHECK(g2.downNode(0) == 1);
+  CHECK(g2.upNode(0) == 0);
 
   {
     // We can get a scalar out of a single arc graph.
@@ -98,26 +92,16 @@ TEST_CASE("Test Graph", "[graph]") {
   CHECK(allocations == deallocations);
 
   {
-    // Check adding arcs using pointers.
-    Graph g;
-    auto n1 = g.addNode(true);
-    auto n2 = g.addNode();
-    g.addArc(n1, n2, 1, 1, 3.0);
-    CHECK(g.arcs()[0].label() == 1);
-    CHECK(g.item() == 3.0f);
-  }
-
-  {
     // Check adding transducing arcs
     Graph g;
     g.addNode(true);
     g.addNode(false, true);
-    auto a1 = g.addArc(0, 1, 1, 2);
-    CHECK(g.arcs()[0].ilabel() == 1);
-    CHECK(g.arcs()[0].olabel() == 2);
-    auto a2 = g.addArc(0, 1, 1, 0, 2);
-    CHECK(g.arcs()[1].ilabel() == 1);
-    CHECK(g.arcs()[1].olabel() == 0);
+    g.addArc(0, 1, 1, 2);
+    CHECK(g.ilabel(0) == 1);
+    CHECK(g.olabel(0) == 2);
+    g.addArc(0, 1, 1, 0, 2);
+    CHECK(g.ilabel(1) == 1);
+    CHECK(g.olabel(1) == 0);
   }
 
   {
@@ -153,6 +137,7 @@ TEST_CASE("Test copy", "[Graph::deepCopy]") {
   // Test copy
   Graph copied = Graph::deepCopy(graph);
   CHECK(equals(copied, graph));
+  CHECK(copied.acceptor() == graph.acceptor());
   CHECK(copied.calcGrad() == graph.calcGrad());
   CHECK(copied.id() != graph.id());
 
@@ -233,10 +218,8 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
 
     // this should not make a copy of grad
     g.zeroGrad();
+    auto id = grad.id();
     g.addGrad(std::move(grad));
-
-    // Probably accessing grad should be undefined at this point..
-    g.grad().addArc(0, 0, 1);
-    CHECK(equals(g.grad(), grad));
+    CHECK(id == g.grad().id());
   }
 }

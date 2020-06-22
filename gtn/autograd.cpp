@@ -30,8 +30,8 @@ void backward(Graph graph) {
   // Seed the initial deltas
   auto deltas = Graph::deepCopy(graph);
   deltas.setCalcGrad(false);
-  for (auto& a : deltas.arcs()) {
-    a.setWeight(1.0);
+  for (int i = 0; i < deltas.numArcs(); i++) {
+    deltas.setWeight(i, 1.0);
   }
   graph.addGrad(deltas);
 

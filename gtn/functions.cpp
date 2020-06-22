@@ -50,16 +50,16 @@ Graph clone(Graph other, Projection projection /* = Projection::NONE */) {
     inputs[0].addGrad(deltas);
   };
   Graph out(gradFunc, {other});
-  for (const auto& node : other.nodes()) {
-    out.addNode(node.start(), node.accept());
+  for (auto n = 0; n < other.numNodes(); ++n) {
+    out.addNode(other.start(n), other.accept(n));
   }
-  for (const auto& arc : other.arcs()) {
+  for (auto a = 0; a < other.numArcs(); ++a) {
     out.addArc(
-        arc.upNode()->index(),
-        arc.downNode()->index(),
-        projection == Projection::OUTPUT ? arc.olabel() : arc.ilabel(),
-        projection == Projection::INPUT ? arc.ilabel() : arc.olabel(),
-        arc.weight());
+        other.upNode(a),
+        other.downNode(a),
+        projection == Projection::OUTPUT ? other.olabel(a) : other.ilabel(a),
+        projection == Projection::INPUT ? other.ilabel(a) : other.olabel(a),
+        other.weight(a));
   }
   return out;
 }
@@ -78,8 +78,8 @@ Graph closure(Graph graph) {
       auto grad = Graph::deepCopy(inputs[0]);
       // *NB* this assumes arcs in the new graph are the same order
       // as in the old graph.
-      for (int i = 0; i < grad.numArcs(); i++) {
-        grad.arcs()[i].setWeight(deltas.arcs()[i].weight());
+      for (auto i = 0; i < grad.numArcs(); ++i) {
+        grad.setWeight(i, deltas.weight(i));
       }
       inputs[0].addGrad(std::move(grad));
     }
@@ -87,24 +87,24 @@ Graph closure(Graph graph) {
 
   Graph closed(gradFunc, {graph});
   closed.addNode(true, true);
-  for (auto& n : graph.nodes()) {
-    closed.addNode(false, n.accept());
+  for (auto n = 0; n < graph.numNodes(); ++n) {
+    closed.addNode(false, graph.accept(n));
   }
-  for (auto& arc : graph.arcs()) {
+  for (auto a = 0; a < graph.numArcs(); ++a) {
     closed.addArc(
-        arc.upNode()->index() + 1,
-        arc.downNode()->index() + 1,
-        arc.ilabel(),
-        arc.olabel(),
-        arc.weight());
+        graph.upNode(a) + 1,
+        graph.downNode(a) + 1,
+        graph.ilabel(a),
+        graph.olabel(a),
+        graph.weight(a));
   }
   // Add new arcs
   for (auto s : graph.start()) {
     // Epsilon from new start to all old starts
-    closed.addArc(0, s->index() + 1, Graph::epsilon);
+    closed.addArc(0, s + 1, Graph::epsilon);
     for (auto a : graph.accept()) {
       // Epsilon from all accept to all old starts
-      closed.addArc(a->index() + 1, s->index() + 1, Graph::epsilon);
+      closed.addArc(a + 1, s + 1, Graph::epsilon);
     }
   }
   return closed;
@@ -116,12 +116,12 @@ Graph sum(std::vector<Graph> graphs) {
     for (auto& graph : inputs) {
       if (graph.calcGrad()) {
         auto grad = Graph::deepCopy(graph);
-        for (int i = 0; i < graph.numNodes(); i++) {
+        for (auto n = 0; n < graph.numNodes(); ++n) {
           // The out arcs of the node will be in the same order
-          auto deltan = deltas.node(i + gidx);
-          auto n = grad.node(i);
-          for (int j = 0; j < n->numOut(); j++) {
-            n->out()[j]->setWeight(deltan->out()[j]->weight());
+          for (auto a = 0; a < grad.numOut(n); ++a) {
+            auto x = grad.out(n, a);
+            auto y = deltas.out(n + gidx, a);
+            grad.setWeight(x, deltas.weight(y));
           }
         }
         graph.addGrad(std::move(grad));
@@ -135,16 +135,16 @@ Graph sum(std::vector<Graph> graphs) {
   // Add all the nodes in a predictable order
   int gidx = 0;
   for (auto& graph : graphs) {
-    for (auto& n : graph.nodes()) {
-      summed.addNode(n.start(), n.accept());
+    for (auto n = 0; n < graph.numNodes(); ++n) {
+      summed.addNode(graph.start(n), graph.accept(n));
     }
-    for (auto& arc : graph.arcs()) {
+    for (auto a = 0; a < graph.numArcs(); ++a) {
       summed.addArc(
-          gidx + arc.upNode()->index(),
-          gidx + arc.downNode()->index(),
-          arc.ilabel(),
-          arc.olabel(),
-          arc.weight());
+          gidx + graph.upNode(a),
+          gidx + graph.downNode(a),
+          graph.ilabel(a),
+          graph.olabel(a),
+          graph.weight(a));
     }
     gidx += graph.numNodes();
   }
@@ -170,45 +170,44 @@ Graph remove(Graph other, int ilabel, int olabel) {
    * scores?
    * c) gradient computation may be more complex
    */
-  auto label_match = [ilabel, olabel](auto a) {
-    return a->ilabel() == ilabel && a->olabel() == olabel;
+  auto label_match = [&other, ilabel, olabel](auto a) {
+    return other.ilabel(a) == ilabel && other.olabel(a) == olabel;
   };
 
-  std::vector<Node*> nodes(other.numNodes(), nullptr);
+  std::vector<int> nodes(other.numNodes(), -1);
   Graph graph;
-  for (auto& n : other.nodes()) {
-    if (n.start() || !std::all_of(n.in().begin(), n.in().end(), label_match)) {
-      nodes[n.index()] = graph.addNode(n.start());
+  for (auto n = 0; n < other.numNodes(); ++n) {
+    if (other.start(n) ||
+        !std::all_of(other.in(n).begin(), other.in(n).end(), label_match)) {
+      nodes[n] =
+          graph.addNode(other.start(n)); // TODO couldn't n also be accepting?
     }
   }
 
-  std::queue<Node*> toExplore; // Keep track of where we need to go
-  std::set<Node*> reachable; // Keep track of where we've been
-  for (auto& n : other.nodes()) {
-    auto curr = nodes[n.index()];
-    if (curr) {
-      toExplore.push(&n);
-      reachable.insert(&n);
+  std::queue<int> toExplore; // Keep track of where we need to go
+  std::set<int> reachable; // Keep track of where we've been
+  for (auto n = 0; n < other.numNodes(); ++n) {
+    auto curr = nodes[n];
+    if (curr >= 0) {
+      toExplore.push(n);
+      reachable.insert(n);
     }
     while (!toExplore.empty()) {
       auto next = toExplore.front();
       toExplore.pop();
-      if (next->accept()) {
+      if (other.accept(next)) {
         graph.makeAccept(curr);
       }
-      for (auto arc : next->out()) {
-        if (label_match(arc)) {
-          if (!reachable.count(arc->downNode())) {
-            toExplore.push(arc->downNode());
-            reachable.insert(arc->downNode());
+      for (auto a : other.out(next)) {
+        auto dn = other.downNode(a);
+        if (label_match(a)) {
+          if (!reachable.count(dn)) {
+            toExplore.push(dn);
+            reachable.insert(dn);
           }
         } else {
           // Add the arc
-          graph.addArc(
-              curr,
-              nodes[arc->downNode()->index()],
-              arc->ilabel(),
-              arc->olabel());
+          graph.addArc(n, nodes[dn], other.ilabel(a), other.olabel(a));
         }
       }
     }
@@ -217,15 +216,15 @@ Graph remove(Graph other, int ilabel, int olabel) {
   return graph;
 }
 
-inline size_t toIndex(Node* n1, Node* n2, const Graph& g) {
-  return n1->index() + g.numNodes() * n2->index();
+inline size_t toIndex(int n1, int n2, const Graph& g) {
+  return n1 + g.numNodes() * n2;
 }
 
 /* Find any state in the new composed graph which can reach
  * an accepting state. */
 auto findReachable(Graph first, Graph second) {
   std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
-  std::queue<std::pair<Node*, Node*>> toExplore;
+  std::queue<std::pair<int, int>> toExplore;
   for (auto f : first.accept()) {
     for (auto s : second.accept()) {
       toExplore.emplace(f, s);
@@ -238,14 +237,14 @@ auto findReachable(Graph first, Graph second) {
     toExplore.pop();
 
     bool epsilon_matched = false;
-    for (auto a1 : curr.first->in()) {
-      for (auto a2 : curr.second->in()) {
-        if (a1->olabel() != a2->ilabel()) {
+    for (auto i : first.in(curr.first)) {
+      for (auto j : second.in(curr.second)) {
+        if (first.olabel(i) != second.ilabel(j)) {
           continue;
         }
-        epsilon_matched |= a1->olabel() == Graph::epsilon;
-        auto un1 = a1->upNode();
-        auto un2 = a2->upNode();
+        epsilon_matched |= first.olabel(i) == Graph::epsilon;
+        auto un1 = first.upNode(i);
+        auto un2 = second.upNode(j);
         auto idx = toIndex(un1, un2, first);
         if (!reachable[idx]) {
           // If we haven't seen this state before, explore it.
@@ -255,11 +254,11 @@ auto findReachable(Graph first, Graph second) {
       }
     }
     if (!epsilon_matched) {
-      for (auto a1 : curr.first->in()) {
-        if (a1->olabel() != Graph::epsilon) {
+      for (auto i : first.in(curr.first)) {
+        if (first.olabel(i) != Graph::epsilon) {
           continue;
         }
-        auto un1 = a1->upNode();
+        auto un1 = first.upNode(i);
         auto idx = toIndex(un1, curr.second, first);
         if (!reachable[idx]) {
           // If we haven't seen this state before, explore it.
@@ -269,11 +268,11 @@ auto findReachable(Graph first, Graph second) {
       }
     }
     if (!epsilon_matched) {
-      for (auto a2 : curr.second->in()) {
-        if (a2->ilabel() != Graph::epsilon) {
+      for (auto j : second.in(curr.second)) {
+        if (second.ilabel(j) != Graph::epsilon) {
           continue;
         }
-        auto un2 = a2->upNode();
+        auto un2 = second.upNode(j);
         auto idx = toIndex(curr.first, un2, first);
         if (!reachable[idx]) {
           // If we haven't seen this state before, explore it.
@@ -293,93 +292,96 @@ Graph compose(Graph first, Graph second) {
 
   // Compose the graphs
   Graph ngraph;
-  std::vector<Node*> newNodes(first.numNodes() * second.numNodes(), nullptr);
-  std::queue<std::pair<Node*, Node*>> toExplore;
+  std::vector<int> newNodes(first.numNodes() * second.numNodes(), -1);
+  std::queue<std::pair<int, int>> toExplore;
   for (auto s1 : first.start()) {
     for (auto s2 : second.start()) {
       auto idx = toIndex(s1, s2, first);
       if (reachable[idx]) {
-        newNodes[idx] = ngraph.addNode(true, s1->accept() && s2->accept());
+        newNodes[idx] =
+            ngraph.addNode(true, first.accept(s1) && second.accept(s2));
         toExplore.emplace(s1, s2);
       }
     }
   }
-
-  std::vector<std::tuple<Arc*, Arc*, Arc*>> gradInfo;
+  std::vector<std::pair<int, int>> gradInfo;
   while (!toExplore.empty()) {
     auto curr = toExplore.front();
     toExplore.pop();
     auto currNode = newNodes[toIndex(curr.first, curr.second, first)];
 
-    for (auto a1 : curr.first->out()) {
-      for (auto a2 : curr.second->out()) {
-        if (a1->olabel() != a2->ilabel()) {
+    for (auto i : first.out(curr.first)) {
+      for (auto j : second.out(curr.second)) {
+        if (first.olabel(i) != second.ilabel(j)) {
           continue;
         }
-        auto dn1 = a1->downNode();
-        auto dn2 = a2->downNode();
+        auto dn1 = first.downNode(i);
+        auto dn2 = second.downNode(j);
         // Ignore if we can't get to an accept state.
         auto idx = toIndex(dn1, dn2, first);
         if (!reachable[idx]) {
           continue;
         }
         // Build the node
-        if (newNodes[idx] == nullptr) {
+        if (newNodes[idx] < 0) {
           newNodes[idx] = ngraph.addNode(
-              dn1->start() && dn2->start(), dn1->accept() && dn2->accept());
+              first.start(dn1) && second.start(dn2),
+              first.accept(dn1) && second.accept(dn2));
           toExplore.emplace(dn1, dn2);
         }
-        auto weight = a1->weight() + a2->weight();
+        auto weight = first.weight(i) + second.weight(j);
         auto newarc = ngraph.addArc(
-            currNode, newNodes[idx], a1->ilabel(), a2->olabel(), weight);
+            currNode, newNodes[idx], first.ilabel(i), second.olabel(j), weight);
         // Arcs remember where they came from for
         // easy gradient computation.
-        gradInfo.emplace_back(a1, a2, newarc);
+        gradInfo.emplace_back(i, j);
       }
     }
     // Check for output epsilons in the first graph
-    for (auto a1 : curr.first->out()) {
-      if (a1->olabel() != Graph::epsilon) {
+    for (auto i : first.out(curr.first)) {
+      if (first.olabel(i) != Graph::epsilon) {
         continue;
       }
       // We only advance along the first arc.
-      auto dn1 = a1->downNode();
+      auto dn1 = first.downNode(i);
       auto dn2 = curr.second;
       auto idx = toIndex(dn1, dn2, first);
       if (!reachable[idx]) {
         continue;
       }
-      if (newNodes[idx] == nullptr) {
+      if (newNodes[idx] < 0) {
         newNodes[idx] = ngraph.addNode(
-            dn1->start() && dn2->start(), dn1->accept() && dn2->accept());
+            first.start(dn1) && second.start(dn2),
+            first.accept(dn1) && second.accept(dn2));
         toExplore.emplace(dn1, dn2);
       }
-      auto weight = a1->weight();
+      auto weight = first.weight(i);
       auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], a1->ilabel(), Graph::epsilon, weight);
-      gradInfo.emplace_back(a1, nullptr, newarc);
+          currNode, newNodes[idx], first.ilabel(i), Graph::epsilon, weight);
+      gradInfo.emplace_back(i, -1);
     }
     // Check out input epsilons in the second graph
-    for (auto a2 : curr.second->out()) {
-      if (a2->ilabel() != Graph::epsilon) {
+    for (auto j : second.out(curr.second)) {
+      if (second.ilabel(j) != Graph::epsilon) {
         continue;
       }
       // We only advance along the second arc.
       auto dn1 = curr.first;
-      auto dn2 = a2->downNode();
+      auto dn2 = second.downNode(j);
       auto idx = toIndex(dn1, dn2, first);
       if (!reachable[idx]) {
         continue;
       }
-      if (newNodes[idx] == nullptr) {
+      if (newNodes[idx] < 0) {
         newNodes[idx] = ngraph.addNode(
-            dn1->start() && dn2->start(), dn1->accept() && dn2->accept());
+            first.start(dn1) && second.start(dn2),
+            first.accept(dn1) && second.accept(dn2));
         toExplore.emplace(dn1, dn2);
       }
-      auto weight = a2->weight();
+      auto weight = second.weight(j);
       auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], Graph::epsilon, a2->olabel(), weight);
-      gradInfo.emplace_back(nullptr, a2, newarc);
+          currNode, newNodes[idx], Graph::epsilon, second.olabel(j), weight);
+      gradInfo.emplace_back(-1, j);
     }
   }
 
@@ -397,22 +399,22 @@ Graph compose(Graph first, Graph second) {
     Graph grad1 = calcGrad1 ? Graph::deepCopy(inputs[0]) : Graph{};
     Graph grad2 = calcGrad2 ? Graph::deepCopy(inputs[1]) : Graph{};
     // TODO fill function needed
-    for (auto& a : grad1.arcs()) {
-      a.setWeight(0);
+    for (auto a = 0; a < grad1.numArcs(); ++a) {
+      grad1.setWeight(a, 0);
     }
-    for (auto& a : grad2.arcs()) {
-      a.setWeight(0);
+    for (auto a = 0; a < grad2.numArcs(); ++a) {
+      grad2.setWeight(a, 0);
     }
-    for (auto& arcs : gradInfo) {
-      auto idx = std::get<2>(arcs)->index();
-      auto arcGrad = deltas.arcs()[idx].weight();
-      if (calcGrad1 && std::get<0>(arcs)) {
-        auto i = std::get<0>(arcs)->index();
-        grad1.arcs()[i].setWeight(grad1.arcs()[i].weight() + arcGrad);
+    for (int i = 0; i < gradInfo.size(); i++) {
+      auto arcGrad = deltas.weight(i);
+      auto& arcs = gradInfo[i];
+      if (calcGrad1 && arcs.first >= 0) {
+        auto j = arcs.first;
+        grad1.setWeight(j, grad1.weight(j) + arcGrad);
       }
-      if (calcGrad2 && std::get<1>(arcs)) {
-        auto i = std::get<1>(arcs)->index();
-        grad2.arcs()[i].setWeight(grad2.arcs()[i].weight() + arcGrad);
+      if (calcGrad2 && arcs.second >= 0) {
+        auto j = arcs.second;
+        grad2.setWeight(j, grad2.weight(j) + arcGrad);
       }
     }
     inputs[0].addGrad(std::move(grad1));
@@ -442,33 +444,29 @@ void forwardGrad(
   std::vector<int> degrees;
   degrees.reserve(input.numNodes());
   std::vector<float> grads(input.numNodes(), 0.0);
-  for (int i = 0; i < input.numNodes(); i++) {
-    auto n = input.node(i);
-    degrees[i] = n->numOut();
-    if (n->accept()) {
-      grads[i] = deltas.item() * std::exp(scores[i] - output);
-      if (n->numOut() == 0) {
-        computed.push(i);
-      }
+  for (auto n = 0; n < input.numNodes(); ++n) {
+    degrees[n] = input.numOut(n);
+  }
+  for (auto n : input.accept()) {
+    grads[n] = deltas.item() * std::exp(scores[n] - output);
+    if (input.numOut(n) == 0) {
+      computed.push(n);
     }
   }
 
   auto grad = Graph::deepCopy(input);
   while (!computed.empty()) {
-    auto i = computed.front();
+    auto n = computed.front();
     computed.pop();
-    auto score = scores[i];
-    auto gradn = grads[i];
-    for (int j = 0; j < input.node(i)->numIn(); j++) {
-      auto arc = input.node(i)->in()[j];
-      auto un = arc->upNode();
-      auto arcGrad =
-          gradn * std::exp(arc->weight() + scores[un->index()] - score);
-      auto garc = grad.node(i)->in()[j];
-      garc->setWeight(arcGrad);
-      grads[un->index()] += arcGrad;
-      if ((--degrees[un->index()]) == 0) {
-        computed.push(un->index());
+    auto score = scores[n];
+    auto gradn = grads[n];
+    for (auto a : input.in(n)) {
+      auto un = input.upNode(a);
+      auto arcGrad = gradn * std::exp(input.weight(a) + scores[un] - score);
+      grad.setWeight(a, arcGrad);
+      grads[un] += arcGrad;
+      if ((--degrees[un]) == 0) {
+        computed.push(un);
       }
     }
   }
@@ -476,29 +474,29 @@ void forwardGrad(
 }
 
 Graph forward(Graph graph) {
-  std::queue<Node*> computed;
+  std::queue<int> computed;
   // List of scores and list of in degrees for each node
   std::vector<float> scores(graph.numNodes(), neginf);
   std::vector<int> degrees;
   degrees.reserve(graph.numNodes());
-  for (auto& n : graph.nodes()) {
-    degrees[n.index()] = n.numIn();
-    if (n.start()) {
-      scores[n.index()] = 0.0;
-      if (n.numIn() == 0) {
-        computed.push(&n);
-      }
+  for (auto n = 0; n < graph.numNodes(); ++n) {
+    degrees[n] = graph.numIn(n);
+  }
+  for (auto n : graph.start()) {
+    scores[n] = 0.0;
+    if (graph.numIn(n) == 0) {
+      computed.push(n);
     }
   }
 
   while (!computed.empty()) {
-    auto node = computed.front();
+    auto n = computed.front();
     computed.pop();
-    auto score = scores[node->index()];
-    for (auto arc : node->out()) {
-      auto dn = arc->downNode();
-      scores[dn->index()] = logadd(score + arc->weight(), scores[dn->index()]);
-      if ((--degrees[dn->index()]) == 0) {
+    auto score = scores[n];
+    for (auto a : graph.out(n)) {
+      auto dn = graph.downNode(a);
+      scores[dn] = logadd(score + graph.weight(a), scores[dn]);
+      if ((--degrees[dn]) == 0) {
         computed.push(dn);
       }
     }
@@ -507,11 +505,11 @@ Graph forward(Graph graph) {
   // Accumulate scores at all the accept nodes.
   float score = neginf;
   for (auto a : graph.accept()) {
-    if (degrees[a->index()] > 0) {
+    if (degrees[a] > 0) {
       throw std::invalid_argument(
           "Graph has a cycle, self-loop or is disconnected!");
     }
-    score = logadd(score, scores[a->index()]);
+    score = logadd(score, scores[a]);
   }
 
   auto gradFunc = [scores = std::move(scores), output = score](

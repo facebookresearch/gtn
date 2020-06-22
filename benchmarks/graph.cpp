@@ -22,17 +22,17 @@ void timeTraversal() {
   // A simple iterative function to visit every node in a graph.
   auto traverseForward = [&graph]() {
     std::vector<bool> visited(graph.numNodes(), false);
-    std::queue<Node*> toExplore;
+    std::queue<int> toExplore;
     for (auto s : graph.start()) {
       toExplore.push(s);
     }
     while (!toExplore.empty()) {
       auto curr = toExplore.front();
       toExplore.pop();
-      for (auto arc : curr->out()) {
-        auto dn = arc->downNode();
-        if (!visited[dn->index()]) {
-          visited[dn->index()] = true;
+      for (auto a : graph.out(curr)) {
+        auto dn = graph.downNode(a);
+        if (!visited[dn]) {
+          visited[dn] = true;
           toExplore.push(dn);
         }
       }
@@ -42,17 +42,17 @@ void timeTraversal() {
 
   auto traverseBackward = [&graph]() {
     std::vector<bool> visited(graph.numNodes(), false);
-    std::queue<Node*> toExplore;
+    std::queue<int> toExplore;
     for (auto a : graph.accept()) {
       toExplore.push(a);
     }
     while (!toExplore.empty()) {
       auto curr = toExplore.front();
       toExplore.pop();
-      for (auto arc : curr->in()) {
-        auto un = arc->upNode();
-        if (!visited[un->index()]) {
-          visited[un->index()] = true;
+      for (auto a : graph.in(curr)) {
+        auto un = graph.upNode(a);
+        if (!visited[un]) {
+          visited[un] = true;
           toExplore.push(un);
         }
       }

@@ -33,7 +33,7 @@ TEST_CASE("Test Scalar Ops", "[functions.scalars]") {
   CHECK(result.item() == 1.0);
 }
 
-TEST_CASE("Test Project/clone", "[fuctions.clone]") {
+TEST_CASE("Test Project/clone", "[functions.clone]") {
   Graph graph =
       load(std::stringstream("0 1\n"
                              "3 4\n"

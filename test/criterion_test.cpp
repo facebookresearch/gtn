@@ -123,12 +123,10 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
         -0.541765, 0.396634,  0.123377,  0.00648837, 0.00903441, 0.00623107};
 
     bool allClose = true;
-    for (int t = 0; t < T; t++) {
-      auto node = emissions.grad().node(t);
-      for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->weight();
-        allClose &= (std::abs(expected_grad[t * N + n] - g) < 1e-5);
-      }
+    auto grad = emissions.grad();
+    for (int i = 0; i < T * N; i++) {
+      auto g = grad.weight(i);
+      allClose &= (std::abs(expected_grad[i] - g) < 1e-5);
     }
     CHECK(allClose);
   }
@@ -174,12 +172,10 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
     };
 
     bool allClose = true;
-    for (int t = 0; t < T; t++) {
-      auto node = emissions.grad().node(t);
-      for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->weight();
-        allClose &= (std::abs(expected_grad[t * N + n] - g) < 1e-5);
-      }
+    auto grad = emissions.grad();
+    for (int i = 0; i < T * N; i++) {
+      auto g = grad.weight(i);
+      allClose &= (std::abs(expected_grad[i] - g) < 1e-5);
     }
     CHECK(allClose);
   }
@@ -281,12 +277,10 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
     backward(loss);
 
     bool allClose = true;
-    for (int t = 0; t < T; t++) {
-      auto node = emissions.grad().node(t);
-      for (int n = 0; n < N; n++) {
-        auto g = node->out()[n]->weight();
-        allClose &= (std::abs(emissions_grad[t * N + n] - g) < 1e-4);
-      }
+    auto grad = emissions.grad();
+    for (int i = 0; i < T * N; i++) {
+      auto g = grad.weight(i);
+      allClose &= (std::abs(emissions_grad[i] - g) < 1e-4);
     }
     CHECK(allClose);
   }
@@ -301,12 +295,10 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
       0.4036, -0.6449,  0.1965,  0.2282,  0.2105, -0.1164
   };
 
-  for (int i = 0; i < N; i++) {
-    auto node = transitions.grad().node(i);
-    for (int j = 0; j < N; j++) {
-      auto g = node->out()[j]->weight();
-      allClose &= (std::abs(trans_grad[i * N + j] - g) < 1e-3);
-    }
+  auto grad = transitions.grad();
+  for (int i = 0; i < N * N; i++) {
+    auto g = grad.weight(i);
+    allClose &= (std::abs(trans_grad[i] - g) < 1e-4);
   }
   CHECK(allClose);
 }

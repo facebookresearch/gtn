@@ -2,11 +2,7 @@
 
 namespace gtn {
 
-Graph arrayToLinearGraph(
-    float* src,
-    int M,
-    int N,
-    bool calcGrad /* = true */) {
+Graph arrayToLinearGraph(float* src, int M, int N, bool calcGrad /* = true */) {
   Graph g(calcGrad);
   g.addNode(true);
   for (int m = 1; m <= M; ++m) {
@@ -21,7 +17,7 @@ Graph arrayToLinearGraph(
 
 void linearGraphToArray(Graph g, float* dst) {
   for (int i = 0; i < g.numArcs(); ++i) {
-    dst[i] = g.arcs()[i].weight();
+    dst[i] = g.weight(i);
   }
 }
 } // namespace gtn

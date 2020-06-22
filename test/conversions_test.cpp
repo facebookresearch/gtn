@@ -2,20 +2,20 @@
 
 #include "catch.hpp"
 
-#include "gtn/graph.h"
 #include "gtn/conversions.h"
+#include "gtn/graph.h"
 
 using namespace gtn;
 
 TEST_CASE("Test Linear Conversion", "[conversions.linear]") {
   auto rand_float = []() {
-    return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+    return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
   };
 
   int M = 5;
   int N = 10;
   std::vector<float> arr;
-  for (int i = 0; i < M*N; i++) {
+  for (int i = 0; i < M * N; i++) {
     arr.push_back(rand_float());
   }
   auto g = arrayToLinearGraph(arr.data(), M, N);
@@ -24,9 +24,8 @@ TEST_CASE("Test Linear Conversion", "[conversions.linear]") {
   for (int i = 0; i < M; i++) {
     for (int j = 0; j < N; j++) {
       auto idx = i * N + j;
-      auto& arc = g.arcs()[idx];
-      CHECK(arc.label() == j);
-      CHECK(arc.weight() == arr[idx]);
+      CHECK(g.label(idx) == j);
+      CHECK(g.weight(idx) == arr[idx]);
     }
   }
 
@@ -34,5 +33,3 @@ TEST_CASE("Test Linear Conversion", "[conversions.linear]") {
   linearGraphToArray(g, arr_dst.data());
   CHECK(arr == arr_dst);
 }
-
-

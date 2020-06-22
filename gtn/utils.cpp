@@ -12,7 +12,7 @@ struct hashIntPair {
   }
 };
 
-using NodeMap = std::unordered_map<std::pair<int, int>, Node*, hashIntPair>;
+using NodeMap = std::unordered_map<std::pair<int, int>, int, hashIntPair>;
 static const std::string epsilonSymbol = "ε";
 } // namespace
 
@@ -38,25 +38,21 @@ bool equals(Graph a, Graph b) {
   }
 
   for (size_t n = 0; n < a.numNodes(); n++) {
-    auto aNode = a.node(n);
-    auto bNode = b.node(n);
-    if (aNode->numIn() != bNode->numIn() ||
-        aNode->numOut() != bNode->numOut() ||
-        aNode->start() != bNode->start() ||
-        aNode->accept() != bNode->accept()) {
+    if (a.numIn(n) != b.numIn(n) || a.numOut(n) != b.numOut(n) ||
+        a.start(n) != b.start(n) || a.accept(n) != b.accept(n)) {
       return false;
     }
 
-    std::list<Arc*> bOut(bNode->out().begin(), bNode->out().end());
-    for (auto arcA : aNode->out()) {
+    std::list<int> bOut(b.out(n).begin(), b.out(n).end());
+    for (auto arcA : a.out(n)) {
       auto it = bOut.begin();
       for (; it != bOut.end(); it++) {
         auto arcB = *it;
-        if (arcA->downNode()->index() == arcB->downNode()->index() &&
-            arcA->upNode()->index() == arcB->upNode()->index() &&
-            arcA->ilabel() == arcB->ilabel() &&
-            arcA->olabel() == arcB->olabel() &&
-            arcA->weight() == arcB->weight()) {
+        if (a.downNode(arcA) == b.downNode(arcB) &&
+            a.upNode(arcA) == b.upNode(arcB) &&
+            a.ilabel(arcA) == b.ilabel(arcB) &&
+            a.olabel(arcA) == b.olabel(arcB) &&
+            a.weight(arcA) == b.weight(arcB)) {
           break;
         }
       }
@@ -69,37 +65,37 @@ bool equals(Graph a, Graph b) {
   return true;
 }
 
-bool isomorphic(Node* a, Node* b, NodeMap& visited) {
-  auto state = std::make_pair(a->index(), b->index());
+bool isomorphic(Graph& a, Graph& b, int aNode, int bNode, NodeMap& visited) {
+  auto state = std::make_pair(aNode, bNode);
   // We assume a state is good unless found to be otherwise
-  auto item = visited.insert({state, a});
+  auto item = visited.insert({state, aNode});
   if (!item.second) {
-    return item.first->second != nullptr;
+    return item.first->second >= 0;
   }
 
-  if (a->numIn() != b->numIn() || a->numOut() != b->numOut() ||
-      a->start() != b->start() || a->accept() != b->accept()) {
-    item.first->second = nullptr;
+  if (a.numIn(aNode) != b.numIn(bNode) || a.numOut(aNode) != b.numOut(bNode) ||
+      a.start(aNode) != b.start(bNode) || a.accept(aNode) != b.accept(bNode)) {
+    item.first->second = -1;
     return false;
   }
 
   // Each arc in a has to match with an arc in b
-  std::list<Arc*> bOut(b->out().begin(), b->out().end());
-  for (auto outa : a->out()) {
+  std::list<int> bOut(b.out(bNode).begin(), b.out(bNode).end());
+  for (auto aArc : a.out(aNode)) {
     auto it = bOut.begin();
     for (; it != bOut.end(); it++) {
-      auto outb = *it;
-      if (outa->ilabel() != outb->ilabel() ||
-          outa->olabel() != outb->olabel() ||
-          outa->weight() != outb->weight()) {
+      auto bArc = *it;
+      if (a.ilabel(aArc) != b.ilabel(bArc) ||
+          a.olabel(aArc) != b.olabel(bArc) ||
+          a.weight(aArc) != b.weight(bArc)) {
         continue;
       }
-      if (isomorphic(outa->downNode(), outb->downNode(), visited)) {
+      if (isomorphic(a, b, a.downNode(aArc), b.downNode(bArc), visited)) {
         break;
       }
     }
     if (it == bOut.end()) {
-      item.first->second = nullptr;
+      item.first->second = -1;
       return false;
     }
     bOut.erase(it);
@@ -119,7 +115,7 @@ bool isomorphic(Graph a, Graph b) {
   NodeMap visited;
   for (auto s1 : a.start()) {
     for (auto s2 : b.start()) {
-      isIsomorphic |= isomorphic(s1, s2, visited);
+      isIsomorphic |= isomorphic(a, b, s1, s2, visited);
     }
   }
   return isIsomorphic;
@@ -221,29 +217,29 @@ void print(Graph graph) {
 
 void print(Graph graph, std::ostream& out) {
   // Print start nodes
-  auto startNodes = graph.start();
+  auto& startNodes = graph.start();
   if (startNodes.size() > 0) {
-    out << startNodes[0]->index();
+    out << startNodes[0];
     for (size_t i = 1; i < startNodes.size(); i++) {
-      out << " " << startNodes[i]->index();
+      out << " " << startNodes[i];
     }
     out << std::endl;
   }
 
   // Print accept nodes
-  auto acceptNodes = graph.accept();
+  auto& acceptNodes = graph.accept();
   if (acceptNodes.size() > 0) {
-    out << acceptNodes[0]->index();
+    out << acceptNodes[0];
     for (size_t i = 1; i < acceptNodes.size(); i++) {
-      out << " " << acceptNodes[i]->index();
+      out << " " << acceptNodes[i];
     }
     out << std::endl;
   }
 
   // Print arcs
-  for (auto& a : graph.arcs()) {
-    out << a.upNode()->index() << " " << a.downNode()->index() << " "
-        << a.ilabel() << " " << a.olabel() << " " << a.weight() << std::endl;
+  for (int i = 0; i < graph.numArcs(); i++) {
+    out << graph.upNode(i) << " " << graph.downNode(i) << " " << graph.ilabel(i)
+        << " " << graph.olabel(i) << " " << graph.weight(i) << std::endl;
   }
 }
 
@@ -265,44 +261,40 @@ void draw(
     return symbols.at(label);
   };
 
-  auto drawNode = [acceptor = graph.acceptor(),
-                   &out,
-                   &isymbols,
-                   &osymbols,
-                   &label_to_string](auto node) {
-    std::string style = node->start() || node->accept() ? "bold" : "solid";
-    std::string shape = node->accept() ? "doublecircle" : "circle";
-    out << "  " << node->index() << " [label = \"" << node->index()
-        << "\", shape = " << shape << ", style = " << style
-        << ", fontsize = 14];\n";
-    for (auto arc : node->out()) {
-      auto ilabel = label_to_string(isymbols, arc->ilabel());
-      out << "  " << arc->upNode()->index() << " -> "
-          << arc->downNode()->index() << " [label = \"" << ilabel;
-      if (!acceptor || !osymbols.empty()) {
-        auto olabel = label_to_string(osymbols, arc->olabel());
+  auto drawNode = [&graph, &out, &isymbols, &osymbols, &label_to_string](
+                      auto n) {
+    std::string style = graph.start(n) || graph.accept(n) ? "bold" : "solid";
+    std::string shape = graph.accept(n) ? "doublecircle" : "circle";
+    out << "  " << n << " [label = \"" << n << "\", shape = " << shape
+        << ", style = " << style << ", fontsize = 14];\n";
+    for (auto a : graph.out(n)) {
+      auto ilabel = label_to_string(isymbols, graph.ilabel(a));
+      out << "  " << graph.upNode(a) << " -> " << graph.downNode(a)
+          << " [label = \"" << ilabel;
+      if (!graph.acceptor() || !osymbols.empty()) {
+        auto olabel = label_to_string(osymbols, graph.olabel(a));
         out << ":" << olabel;
       }
-      out << "/" << arc->weight() << "\", fontsize = 14];\n";
+      out << "/" << graph.weight(a) << "\", fontsize = 14];\n";
     }
   };
 
   // Draw start nodes first and accept nodes last to help with layout.
-  for (auto node : graph.start()) {
-    drawNode(node);
+  for (auto i : graph.start()) {
+    drawNode(i);
   }
 
-  for (auto& node : graph.nodes()) {
-    if (!node.start() && !node.accept()) {
-      drawNode(&node);
+  for (int i = 0; i < graph.numNodes(); i++) {
+    if (!graph.start(i) && !graph.accept(i)) {
+      drawNode(i);
     }
   }
 
-  for (auto node : graph.accept()) {
-    if (node->start()) {
+  for (auto i : graph.accept()) {
+    if (graph.start(i)) {
       continue;
     }
-    drawNode(node);
+    drawNode(i);
   }
 
   out << "}";

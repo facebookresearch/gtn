@@ -274,12 +274,12 @@ void differentiableAcceptors() {
   Graph grad = g1.grad();
   // The gradient with respect to the input graph arcs are the weights on the
   // arcs of the gradient graph.
-  for (auto& arc : grad.arcs()) {
-    arc.weight();
+  for (auto a = 0; a < grad.numArcs(); ++a) {
+    grad.weight(a);
   }
   // The intermediate graphs a and b also have gradients.
-  a.grad().arcs()[0].weight();
-  b.grad().arcs()[0].weight();
+  a.grad().weight(0);
+  b.grad().weight(0);
 
   // If gradient computation is disabled, accessing
   // the gradient throws.

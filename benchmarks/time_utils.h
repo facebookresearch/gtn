@@ -2,8 +2,8 @@
 
 #include <chrono>
 #include <cstdlib>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 #include "gtn/gtn.h"
 

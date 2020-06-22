@@ -27,17 +27,15 @@ bool numericalGradCheck(
     float relTol) {
   // Numerical gradient check.
   bool gradPass = true;
-  for (int i = 0; i < input.numArcs(); i++) {
-    auto& inArc = input.arcs()[i];
-    auto weight = inArc.weight();
-    inArc.setWeight(weight + epsilon);
+  for (auto a = 0; a < input.numArcs(); ++a) {
+    auto weight = input.weight(a);
+    input.setWeight(a, weight + epsilon);
     auto high = func(input).item();
-    inArc.setWeight(weight - epsilon);
+    input.setWeight(a, weight - epsilon);
     auto low = func(input).item();
     auto numgrad = (high - low) / (2 * epsilon);
-    auto& gradArc = input.grad().arcs()[i];
-    gradPass &= isclose(gradArc.weight(), numgrad, relTol);
-    inArc.setWeight(weight);
+    gradPass &= isclose(input.grad().weight(a), numgrad, relTol);
+    input.setWeight(a, weight);
   }
   return gradPass;
 }
@@ -153,10 +151,10 @@ TEST_CASE("Test Compose Grad", "[functions.compose (grad)]") {
   std::vector<float> gradsFirst = {1, 0, 0, 1, 1, 0, 1, 2, 0, 0, 2, 0};
   std::vector<float> gradsSecond = {1, 2, 3, 2};
   for (int i = 0; i < gradsFirst.size(); i++) {
-    CHECK(gradsFirst[i] == first.grad().arcs()[i].weight());
+    CHECK(gradsFirst[i] == first.grad().weight(i));
   }
   for (int i = 0; i < gradsSecond.size(); i++) {
-    CHECK(gradsSecond[i] == second.grad().arcs()[i].weight());
+    CHECK(gradsSecond[i] == second.grad().weight(i));
   }
 }
 
@@ -207,10 +205,10 @@ TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
     CHECK(numericalGradCheck(forward, g, 1e-3, 1e-3));
 
     double denom = 1 / (std::exp(-3) + std::exp(1) + std::exp(2));
-    auto grads = g.grad().arcs();
-    CHECK(grads[0].weight() == Approx(denom * std::exp(-3)));
-    CHECK(grads[1].weight() == Approx(denom * std::exp(1)));
-    CHECK(grads[2].weight() == Approx(denom * (std::exp(-3) + std::exp(2))));
+    auto grad = g.grad();
+    CHECK(grad.weight(0) == Approx(denom * std::exp(-3)));
+    CHECK(grad.weight(1) == Approx(denom * std::exp(1)));
+    CHECK(grad.weight(2) == Approx(denom * (std::exp(-3) + std::exp(2))));
   }
 
   {
@@ -226,10 +224,10 @@ TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
     CHECK(numericalGradCheck(forward, g, 1e-3, 1e-3));
 
     double denom = 1 / (2 * std::exp(2) + std::exp(4));
-    auto& grads = g.grad().arcs();
-    CHECK(grads[0].weight() == Approx(denom * (std::exp(2) + std::exp(4))));
-    CHECK(grads[1].weight() == Approx(denom * std::exp(2)));
-    CHECK(grads[2].weight() == Approx(denom * std::exp(4)));
+    auto& grad = g.grad();
+    CHECK(grad.weight(0) == Approx(denom * (std::exp(2) + std::exp(4))));
+    CHECK(grad.weight(1) == Approx(denom * std::exp(2)));
+    CHECK(grad.weight(2) == Approx(denom * std::exp(4)));
   }
 
   {
