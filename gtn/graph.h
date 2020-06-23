@@ -176,7 +176,7 @@ class Graph {
   const Node* node(int i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numNodes());
-    return (nodes_ + i);
+    return &sharedData_->nodes[i];
   }
   Node* node(int i) {
     return const_cast<Node*>(static_cast<const Graph&>(*this).node(i));
@@ -184,7 +184,7 @@ class Graph {
   const Arc* arc(int i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numArcs());
-    return (arcs_ + i);
+    return &sharedData_->arcs[i];
   }
   Arc* arc(int i) {
     return const_cast<Arc*>(static_cast<const Graph&>(*this).arc(i));
@@ -206,8 +206,6 @@ class Graph {
   };
 
   std::shared_ptr<SharedData> sharedData_{std::make_shared<SharedData>()};
-  Arc *arcs_ = nullptr;
-  Node *nodes_ = nullptr;
 };
 
 } // namespace gtn

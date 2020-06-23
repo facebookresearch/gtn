@@ -35,14 +35,14 @@ TEST_CASE("Test Graph", "[graph]") {
   g.addArc(0, 1, 0);
   g.addArc(0, 2, 1);
   g.addArc(1, 2, 0);
-
-  g.addArc(1, 1, 1);
+  g.addArc(1, 1, 1, 1, 2.1);
   g.addArc(2, 3, 2);
+
   CHECK(g.numArcs() == 5);
   CHECK(g.numOut(0) == 2);
   CHECK(g.numIn(1) == 2);
 
-  // If we copy the graph it should have the same structure.
+  // If we (shallow) copy the graph it should have the same structure.
   Graph g_copy = g;
   CHECK(g_copy.numNodes() == 5);
   CHECK(g_copy.numStart() == 1);
@@ -50,6 +50,26 @@ TEST_CASE("Test Graph", "[graph]") {
   CHECK(g_copy.numArcs() == 5);
   CHECK(g_copy.numOut(0) == 2);
   CHECK(g_copy.numIn(1) == 2);
+  CHECK(g_copy.weight(3) == 2.1f);
+
+  // If we construct a graph from another graph it should also have the same
+  // structure.
+  Graph g_copy2 = Graph(g, nullptr, {});
+  CHECK(equals(g_copy2, g));
+
+  // Modifying g should modify g_copy and g_copy2
+  g.addNode();
+  g.addNode();
+  g.addNode();
+  g.addNode();
+  for (int i = 0; i < 8; i++) {
+    g.addArc(i, i, i);
+    g.addArc(i, i, i + 1);
+    g.addArc(i, i + 1, i);
+    g.addArc(i, i + 1, i + 1);
+  }
+  CHECK(equals(g, g_copy));
+  CHECK(equals(g, g_copy2));
 
   // Check that we can copy a graph and the destination still
   // works when the source graph is out of scope

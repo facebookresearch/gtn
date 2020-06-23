@@ -16,9 +16,7 @@ Graph::Graph(GradFunc gradFunc, std::vector<Graph> inputs) {
 }
 
 Graph::Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs)
-    : sharedData_(data.sharedData_),
-      arcs_(data.arcs_),
-      nodes_(data.nodes_) {
+    : sharedData_(data.sharedData_) {
   sharedData_->calcGrad = false;
   // If any inputs require a gradient, then this should
   // also compute a gradient.
@@ -47,7 +45,6 @@ int Graph::addNode(bool start /* = false */, bool accept /* = false */) {
   if (accept) {
     sharedData_->accept.push_back(idx);
   }
-  nodes_ = sharedData_->nodes.data();
   return idx;
 }
 
@@ -64,9 +61,8 @@ int Graph::addArc(
   sharedData_->acceptor &= (ilabel == olabel);
   auto idx = numArcs();
   sharedData_->arcs.emplace_back(upNode, downNode, ilabel, olabel, weight);
-  arcs_ = sharedData_->arcs.data();
-  (nodes_ + upNode)->out.push_back(idx);
-  (nodes_ + downNode)->in.push_back(idx);
+  node(upNode)->out.push_back(idx);
+  node(downNode)->in.push_back(idx);
   return idx;
 }
 
@@ -136,8 +132,6 @@ Graph Graph::deepCopy(const Graph& src) {
   out.sharedData_->start = src.sharedData_->start;
   out.sharedData_->accept = src.sharedData_->accept;
   out.sharedData_->acceptor = src.sharedData_->acceptor;
-  out.arcs_ = out.sharedData_->arcs.data();
-  out.nodes_ = out.sharedData_->nodes.data();
   return out;
 }
 
