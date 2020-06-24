@@ -248,7 +248,7 @@ TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
     CHECK(numericalGradCheck(forward, g, 1e-3, 1e-3));
   }
 }
-/*
+
 TEST_CASE("Test Sample Grad", "[rand.sample (grad)]") {
   Graph g;
   g.addNode(true);
@@ -264,15 +264,15 @@ TEST_CASE("Test Sample Grad", "[rand.sample (grad)]") {
     auto path = sample(g);
     // One for each arc in the original graph
     std::vector<float> grads = {0.0, 0.0, 0.0, 0.0};
-    for (auto& arc : path.arcs()) {
-      grads[arc.label()]++;
+    for (auto a = 0; a < path.numArcs(); ++a) {
+      grads[path.label(a)]++;
     }
     backward(path);
     for (int i = 0; i < grads.size(); i++) {
-      CHECK(grads[i] == g.arcs()[i].grad());
+      CHECK(grads[i] == g.grad().weight(i));
     }
   }
-}*/
+}
 
 TEST_CASE("Test Sum Grad", "[functions.sum (grad)]") {
   Graph g1;

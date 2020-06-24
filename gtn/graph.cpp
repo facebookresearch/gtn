@@ -1,31 +1,33 @@
+#include <stdexcept>
+
 #include "graph.h"
 
 namespace gtn {
 
 Graph::Graph(GradFunc gradFunc, std::vector<Graph> inputs) {
-  sharedData_->calcGrad = false;
+  sharedGrad_->calcGrad = false;
   // If any inputs require a gradient, then this should
   // also compute a gradient.
   for (auto& g : inputs) {
-    sharedData_->calcGrad |= g.calcGrad();
+    sharedGrad_->calcGrad |= g.calcGrad();
   }
   if (calcGrad()) {
-    sharedData_->gradFunc = std::move(gradFunc);
-    sharedData_->inputs = std::move(inputs);
+    sharedGrad_->gradFunc = std::move(gradFunc);
+    sharedGrad_->inputs = std::move(inputs);
   }
 }
 
 Graph::Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs)
-    : sharedData_(data.sharedData_) {
-  sharedData_->calcGrad = false;
+    : sharedGraph_(data.sharedGraph_), sharedWeights_(data.sharedWeights_) {
+  sharedGrad_->calcGrad = false;
   // If any inputs require a gradient, then this should
   // also compute a gradient.
   for (auto& g : inputs) {
-    sharedData_->calcGrad |= g.calcGrad();
+    sharedGrad_->calcGrad |= g.calcGrad();
   }
   if (calcGrad()) {
-    sharedData_->gradFunc = std::move(gradFunc);
-    sharedData_->inputs = std::move(inputs);
+    sharedGrad_->gradFunc = std::move(gradFunc);
+    sharedGrad_->inputs = std::move(inputs);
   } else {
     // clears the gradient data in case it was set in `data`
     setCalcGrad(false);
@@ -33,17 +35,17 @@ Graph::Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs)
 }
 
 Graph::Graph(bool calcGrad /* = true */) {
-  sharedData_->calcGrad = calcGrad;
+  sharedGrad_->calcGrad = calcGrad;
 }
 
 int Graph::addNode(bool start /* = false */, bool accept /* = false */) {
   int idx = numNodes();
-  sharedData_->nodes.emplace_back(start, accept);
+  sharedGraph_->nodes.emplace_back(start, accept);
   if (start) {
-    sharedData_->start.push_back(idx);
+    sharedGraph_->start.push_back(idx);
   }
   if (accept) {
-    sharedData_->accept.push_back(idx);
+    sharedGraph_->accept.push_back(idx);
   }
   return idx;
 }
@@ -58,9 +60,10 @@ int Graph::addArc(
     int ilabel,
     int olabel,
     float weight /* = 0 */) {
-  sharedData_->acceptor &= (ilabel == olabel);
+  sharedGraph_->acceptor &= (ilabel == olabel);
   auto idx = numArcs();
-  sharedData_->arcs.emplace_back(upNode, downNode, ilabel, olabel, weight);
+  sharedGraph_->arcs.emplace_back(upNode, downNode, ilabel, olabel);
+  sharedWeights_->push_back(weight);
   node(upNode)->out.push_back(idx);
   node(downNode)->in.push_back(idx);
   return idx;
@@ -78,60 +81,74 @@ Graph& Graph::grad() {
   if (!calcGrad()) {
     throw std::logic_error("[Graph::grad] Gradient calculation disabled.");
   }
-  if (!sharedData_->grad) {
+  if (!sharedGrad_->grad) {
     throw std::logic_error("[Graph::grad] Gradient not calculated yet.");
   }
-  return *sharedData_->grad;
+  return *sharedGrad_->grad;
 }
 
-void Graph::addGrad(Graph&& other) {
+void Graph::addGrad(std::vector<float>&& other) {
+  if (other.size() != numArcs()) {
+    throw std::logic_error("[Graph::addGrad] Invalid grad size.");
+  }
   if (calcGrad()) {
     if (isGradAvailable()) {
       for (int i = 0; i < numArcs(); i++) {
-        grad().setWeight(i, grad().weight(i) + other.weight(i));
+        grad().setWeight(i, grad().weight(i) + other[i]);
       }
     } else {
-      sharedData_->grad = std::make_unique<Graph>(other);
+      sharedGrad_->grad = std::make_unique<Graph>(false);
+      sharedGrad_->grad->sharedGraph_ = sharedGraph_;
+      *(sharedGrad_->grad->sharedWeights_) = std::move(other);
+    }
+  }
+}
+
+void Graph::addGrad(const std::vector<float>& other) {
+  if (other.size() != numArcs()) {
+    throw std::logic_error("[Graph::addGrad] Invalid grad size.");
+  }
+  if (calcGrad()) {
+    if (isGradAvailable()) {
+      for (int i = 0; i < numArcs(); i++) {
+        grad().setWeight(i, grad().weight(i) + other[i]);
+      }
+    } else {
+      // make a copy
+      addGrad(std::vector<float>(other));
     }
   }
 }
 
 void Graph::addGrad(const Graph& other) {
-  if (calcGrad()) {
-    if (sharedData_->grad) {
-      // NB: this is safe because we don't keep a reference
-      // to other if the grad exists
-      addGrad(std::move(const_cast<Graph&>(other)));
-    } else {
-      addGrad(deepCopy(other));
-    }
-  }
+  addGrad(*other.sharedWeights_);
 }
 
 void Graph::setCalcGrad(bool calcGrad) {
-  sharedData_->calcGrad = calcGrad;
+  sharedGrad_->calcGrad = calcGrad;
   if (!calcGrad) {
-    sharedData_->gradFunc = nullptr;
-    sharedData_->inputs.clear();
-    sharedData_->grad.reset();
+    sharedGrad_->gradFunc = nullptr;
+    sharedGrad_->inputs.clear();
+    sharedGrad_->grad.reset();
   }
 }
 
 void Graph::zeroGrad() {
-  sharedData_->grad.reset();
+  sharedGrad_->grad.reset();
 }
 
 std::uintptr_t Graph::id() {
-  return reinterpret_cast<std::uintptr_t>(sharedData_.get());
+  return reinterpret_cast<std::uintptr_t>(sharedGrad_.get());
 }
 
 Graph Graph::deepCopy(const Graph& src) {
   Graph out(src.calcGrad());
-  out.sharedData_->arcs = src.sharedData_->arcs;
-  out.sharedData_->nodes = src.sharedData_->nodes;
-  out.sharedData_->start = src.sharedData_->start;
-  out.sharedData_->accept = src.sharedData_->accept;
-  out.sharedData_->acceptor = src.sharedData_->acceptor;
+  out.sharedGraph_->arcs = src.sharedGraph_->arcs;
+  out.sharedGraph_->nodes = src.sharedGraph_->nodes;
+  out.sharedGraph_->start = src.sharedGraph_->start;
+  out.sharedGraph_->accept = src.sharedGraph_->accept;
+  out.sharedGraph_->acceptor = src.sharedGraph_->acceptor;
+  *out.sharedWeights_ = *src.sharedWeights_;
   return out;
 }
 

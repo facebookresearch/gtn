@@ -43,14 +43,10 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
   arcs.resize(acceptLength - 1);
   auto gradFunc = [arcs = arcs](std::vector<Graph>& inputs, Graph deltas) {
     if (inputs[0].calcGrad()) {
-      auto grad = Graph::deepCopy(inputs[0]);
-      for (int i = 0; i < grad.numArcs(); i++) {
-        grad.setWeight(i, 0);
-      }
-      for (int i = 0; i < deltas.numArcs(); i++) {
+      auto grad = std::vector<float>(inputs[0].numArcs(), 0.0);
+      for (auto a = 0; a < deltas.numArcs(); ++a) {
         // The arcs in deltas should are the same order as in arcs
-        auto arc = arcs[i];
-        grad.setWeight(arc, grad.weight(arc) + deltas.weight(i));
+        grad[arcs[a]] += deltas.weight(a);
       }
       inputs[0].addGrad(std::move(grad));
     }

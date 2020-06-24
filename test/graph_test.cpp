@@ -207,6 +207,11 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
     expected.addNode();
     expected.addArc(0, 1, 0, 0, 2.0);
     CHECK(equals(g.grad(), expected));
+
+    // Wrong sized grad throws
+    grad.addArc(0, 1, 0, 0, 2.0);
+    CHECK_THROWS(g.addGrad(grad));
+    CHECK_THROWS(g.addGrad({0.0, 1.0}));
   }
 
   {
@@ -222,24 +227,24 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
   }
 
   {
+    // Check copy vs move
     Graph g;
     g.addNode();
     g.addNode();
     g.addArc(0, 1, 0);
 
     auto grad = Graph::deepCopy(g);
+    grad.setWeight(0, 2.0);
 
-    // this should make a copy of grad
+    // this should make a copy of grads weights
     g.addGrad(grad);
+    grad.setWeight(0, 4.0);
+    CHECK(g.grad().weight(0) == 2.0f);
 
-    g.grad().addArc(0, 0, 1);
-    CHECK(equals(grad, g));
-    CHECK(!equals(grad, g.grad()));
-
-    // this should not make a copy of grad
-    g.zeroGrad();
-    auto id = grad.id();
-    g.addGrad(std::move(grad));
-    CHECK(id == g.grad().id());
+    // this should make a copy
+    std::vector<float> gradsV = {1.0};
+    g.addGrad(gradsV);
+    g.grad().setWeight(0, 2.0);
+    CHECK(gradsV[0] == 1.0);
   }
 }

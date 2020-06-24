@@ -10,6 +10,11 @@
 namespace gtn {
 
 class Graph {
+/* Graph operations are in the log or tropical semirings. The default score
+ * for an arc is 0 (e.g. the multiplicative identity) and the additive
+ * identity is -infinity. Path scores are accumulated with the logadd or
+ * max operations and the score for a path is accumulated with addition. */
+
  private:
   struct Node {
     Node(bool start, bool accept) : start(start), accept(accept){};
@@ -20,21 +25,15 @@ class Graph {
   };
 
   struct Arc {
-    /* Graph operations are in the log or tropical semirings. The default score
-     * for an arc is 0 (e.g. the multiplicative identity) and the additive
-     * identity is -infinity. Path scores are accumulated with the logadd or
-     * max operations and the score for a path is accumulated with addition. */
-    Arc(int upNode, int downNode, int ilabel, int olabel, float weight)
+    Arc(int upNode, int downNode, int ilabel, int olabel)
         : upNode(upNode),
           downNode(downNode),
           ilabel(ilabel),
-          olabel(olabel),
-          weight(weight){};
+          olabel(olabel) {};
     int upNode;
     int downNode;
     int ilabel;
     int olabel;
-    float weight;
   };
 
  public:
@@ -61,32 +60,33 @@ class Graph {
   int addArc(int upNode, int downNode, int label, double) = delete;
 
   int numArcs() const {
-    return sharedData_->arcs.size();
+    return sharedGraph_->arcs.size();
   };
   int numNodes() const {
-    return sharedData_->nodes.size();
+    return sharedGraph_->nodes.size();
   };
   int numStart() const {
-    return sharedData_->start.size();
+    return sharedGraph_->start.size();
   };
   int numAccept() const {
-    return sharedData_->accept.size();
+    return sharedGraph_->accept.size();
   };
   bool acceptor() const {
-    return sharedData_->acceptor;
+    return sharedGraph_->acceptor;
   }
 
   /* Get the score on a single arc graph. */
   float item() const;
 
+  void addGrad(std::vector<float>&& other);
+  void addGrad(const std::vector<float>& other);
   void addGrad(const Graph& other);
-  void addGrad(Graph&& other);
 
   bool calcGrad() const {
-    return sharedData_->calcGrad;
+    return sharedGrad_->calcGrad;
   };
   bool isGradAvailable() const {
-    return sharedData_->grad != nullptr;
+    return sharedGrad_->grad != nullptr;
   }
 
   Graph& grad();
@@ -95,10 +95,10 @@ class Graph {
   void zeroGrad();
   std::uintptr_t id();
   GradFunc gradFunc() {
-    return sharedData_->gradFunc;
+    return sharedGrad_->gradFunc;
   };
   std::vector<Graph>& inputs() {
-    return sharedData_->inputs;
+    return sharedGrad_->inputs;
   };
 
   /* A deep copy of a graph `other` which is not recorded in the
@@ -111,10 +111,10 @@ class Graph {
   // Accessing and modifying nodes.
 
   const std::vector<int>& start() const {
-    return sharedData_->start;
+    return sharedGraph_->start;
   };
   const std::vector<int>& accept() const {
-    return sharedData_->accept;
+    return sharedGraph_->accept;
   };
   bool start(int i) const {
     return node(i)->start;
@@ -125,7 +125,7 @@ class Graph {
   void makeAccept(int i) {
     auto n = node(i);
     if (!n->accept) {
-      sharedData_->accept.push_back(i);
+      sharedGraph_->accept.push_back(i);
       n->accept = true;
     }
   };
@@ -166,17 +166,17 @@ class Graph {
     return arc(i)->olabel;
   }
   float weight(int i) const {
-    return arc(i)->weight;
+    return (*sharedWeights_)[i];
   }
   void setWeight(int i, float weight) {
-    arc(i)->weight = weight;
+    (*sharedWeights_)[i] = weight;
   }
 
  private:
   const Node* node(int i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numNodes());
-    return &sharedData_->nodes[i];
+    return &sharedGraph_->nodes[i];
   }
   Node* node(int i) {
     return const_cast<Node*>(static_cast<const Graph&>(*this).node(i));
@@ -184,28 +184,34 @@ class Graph {
   const Arc* arc(int i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numArcs());
-    return &sharedData_->arcs[i];
+    return &sharedGraph_->arcs[i];
   }
   Arc* arc(int i) {
     return const_cast<Arc*>(static_cast<const Graph&>(*this).arc(i));
   }
 
-  struct SharedData {
+  struct SharedGraph {
     /// Underlying graph data
-    // arcs is the sole owner of Arcs in the graph.
     std::vector<Arc> arcs;
-    // nodes is the sole owner of Nodes in the graph
     std::vector<Node> nodes;
     std::vector<int> start;
     std::vector<int> accept;
+    bool acceptor{true};
+  };
+
+  struct SharedGrad {
+    /// Underlying grad data
     GradFunc gradFunc{nullptr};
     std::vector<Graph> inputs;
-    bool acceptor{true};
     std::unique_ptr<Graph> grad{nullptr};
+    // TODO what are the implications here
     bool calcGrad;
   };
 
-  std::shared_ptr<SharedData> sharedData_{std::make_shared<SharedData>()};
+
+  std::shared_ptr<SharedGraph> sharedGraph_{std::make_shared<SharedGraph>()};
+  std::shared_ptr<std::vector<float>> sharedWeights_{std::make_shared<std::vector<float>>()};
+  std::shared_ptr<SharedGrad> sharedGrad_{std::make_shared<SharedGrad>()};
 };
 
 } // namespace gtn
