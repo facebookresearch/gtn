@@ -64,9 +64,14 @@ int main() {
   auto ctc_loss = [&ctc, &emissions]() {
     // Loss
     auto loss = subtract(forward(emissions), forward(compose(ctc, emissions)));
-    // Gradients
+    return loss;
+  };
+  TIME(ctc_loss);
+
+  auto ctc_grad = [loss = ctc_loss(), &emissions, &ctc]() {
+    emissions.zeroGrad();
+    ctc.zeroGrad();
     backward(loss);
   };
-
-  TIME(ctc_loss);
+  TIME(ctc_grad);
 }
