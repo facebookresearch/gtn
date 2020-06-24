@@ -173,6 +173,14 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
 
     g.addGrad(Graph{});
     CHECK_THROWS(g.grad());
+
+    g.addNode();
+    g.addArc(0, 0, 0);
+    g.addArc(0, 0, 1);
+
+    // this should be a no-op
+    g.addGrad({0, 0, 0});
+    CHECK_THROWS(g.grad());
   }
 
   {

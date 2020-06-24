@@ -88,10 +88,10 @@ Graph& Graph::grad() {
 }
 
 void Graph::addGrad(std::vector<float>&& other) {
-  if (other.size() != numArcs()) {
-    throw std::logic_error("[Graph::addGrad] Invalid grad size.");
-  }
   if (calcGrad()) {
+    if (other.size() != numArcs()) {
+      throw std::logic_error("[Graph::addGrad] Invalid grad size.");
+    }
     if (isGradAvailable()) {
       for (int i = 0; i < numArcs(); i++) {
         grad().setWeight(i, grad().weight(i) + other[i]);
@@ -105,10 +105,10 @@ void Graph::addGrad(std::vector<float>&& other) {
 }
 
 void Graph::addGrad(const std::vector<float>& other) {
-  if (other.size() != numArcs()) {
-    throw std::logic_error("[Graph::addGrad] Invalid grad size.");
-  }
   if (calcGrad()) {
+    if (other.size() != numArcs()) {
+      throw std::logic_error("[Graph::addGrad] Invalid grad size.");
+    }
     if (isGradAvailable()) {
       for (int i = 0; i < numArcs(); i++) {
         grad().setWeight(i, grad().weight(i) + other[i]);
