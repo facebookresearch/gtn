@@ -28,12 +28,8 @@ void backward(Graph graph) {
   recurse(graph);
 
   // Seed the initial deltas
-  auto deltas = Graph::deepCopy(graph);
-  deltas.setCalcGrad(false);
-  for (int i = 0; i < deltas.numArcs(); i++) {
-    deltas.setWeight(i, 1.0);
-  }
-  graph.addGrad(deltas);
+  auto deltas = std::vector<float>(graph.numArcs(), 1.0);
+  graph.addGrad(std::move(deltas));
 
   // Compute gradients
   for (auto iter = tape.rbegin(); iter != tape.rend(); iter++) {
