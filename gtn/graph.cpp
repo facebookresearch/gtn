@@ -64,8 +64,8 @@ int Graph::addArc(
   auto idx = numArcs();
   sharedGraph_->arcs.emplace_back(upNode, downNode, ilabel, olabel);
   sharedWeights_->push_back(weight);
-  node(upNode)->out.push_back(idx);
-  node(downNode)->in.push_back(idx);
+  node(upNode).out.push_back(idx);
+  node(downNode).in.push_back(idx);
   return idx;
 }
 
@@ -78,6 +78,10 @@ float Graph::item() const {
 }
 
 Graph& Graph::grad() {
+  return const_cast<Graph&>(static_cast<const Graph&>(*this).grad());
+}
+
+const Graph& Graph::grad() const {
   if (!calcGrad()) {
     throw std::logic_error("[Graph::grad] Gradient calculation disabled.");
   }

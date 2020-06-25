@@ -9,12 +9,12 @@
 
 namespace gtn {
 
-class Graph {
 /* Graph operations are in the log or tropical semirings. The default score
  * for an arc is 0 (e.g. the multiplicative identity) and the additive
  * identity is -infinity. Path scores are accumulated with the logadd or
  * max operations and the score for a path is accumulated with addition. */
 
+class Graph {
  private:
   struct Node {
     Node(bool start, bool accept) : start(start), accept(accept){};
@@ -26,10 +26,7 @@ class Graph {
 
   struct Arc {
     Arc(int upNode, int downNode, int ilabel, int olabel)
-        : upNode(upNode),
-          downNode(downNode),
-          ilabel(ilabel),
-          olabel(olabel) {};
+        : upNode(upNode), downNode(downNode), ilabel(ilabel), olabel(olabel){};
     int upNode;
     int downNode;
     int ilabel;
@@ -90,6 +87,7 @@ class Graph {
   }
 
   Graph& grad();
+  const Graph& grad() const;
 
   void setCalcGrad(bool calcGrad);
   void zeroGrad();
@@ -117,53 +115,53 @@ class Graph {
     return sharedGraph_->accept;
   };
   bool start(int i) const {
-    return node(i)->start;
+    return node(i).start;
   };
   bool accept(int i) const {
-    return node(i)->accept;
+    return node(i).accept;
   };
   void makeAccept(int i) {
-    auto n = node(i);
-    if (!n->accept) {
+    auto& n = node(i);
+    if (!n.accept) {
       sharedGraph_->accept.push_back(i);
-      n->accept = true;
+      n.accept = true;
     }
   };
   int numOut(int i) const {
-    return node(i)->out.size();
+    return node(i).out.size();
   }
   const std::vector<int>& out(int i) const {
-    return node(i)->out;
+    return node(i).out;
   }
   int out(int i, int j) const {
-    return node(i)->out[j];
+    return node(i).out[j];
   }
   int numIn(int i) const {
-    return node(i)->in.size();
+    return node(i).in.size();
   }
   const std::vector<int>& in(int i) const {
-    return node(i)->in;
+    return node(i).in;
   }
   int in(int i, int j) const {
-    return node(i)->in[j];
+    return node(i).in[j];
   }
 
   // Accessing and modifying arcs.
 
   int upNode(int i) const {
-    return arc(i)->upNode;
+    return arc(i).upNode;
   }
   int downNode(int i) const {
-    return arc(i)->downNode;
+    return arc(i).downNode;
   }
   int label(int i) const {
-    return arc(i)->ilabel;
+    return arc(i).ilabel;
   }
   int ilabel(int i) const {
-    return arc(i)->ilabel;
+    return arc(i).ilabel;
   }
   int olabel(int i) const {
-    return arc(i)->olabel;
+    return arc(i).olabel;
   }
   float weight(int i) const {
     return (*sharedWeights_)[i];
@@ -173,21 +171,21 @@ class Graph {
   }
 
  private:
-  const Node* node(int i) const {
+  const Node& node(int i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numNodes());
-    return &sharedGraph_->nodes[i];
+    return sharedGraph_->nodes[i];
   }
-  Node* node(int i) {
-    return const_cast<Node*>(static_cast<const Graph&>(*this).node(i));
+  Node& node(int i) {
+    return const_cast<Node&>(static_cast<const Graph&>(*this).node(i));
   }
-  const Arc* arc(int i) const {
+  const Arc& arc(int i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numArcs());
-    return &sharedGraph_->arcs[i];
+    return sharedGraph_->arcs[i];
   }
-  Arc* arc(int i) {
-    return const_cast<Arc*>(static_cast<const Graph&>(*this).arc(i));
+  Arc& arc(int i) {
+    return const_cast<Arc&>(static_cast<const Graph&>(*this).arc(i));
   }
 
   struct SharedGraph {
@@ -208,9 +206,9 @@ class Graph {
     bool calcGrad;
   };
 
-
   std::shared_ptr<SharedGraph> sharedGraph_{std::make_shared<SharedGraph>()};
-  std::shared_ptr<std::vector<float>> sharedWeights_{std::make_shared<std::vector<float>>()};
+  std::shared_ptr<std::vector<float>> sharedWeights_{
+      std::make_shared<std::vector<float>>()};
   std::shared_ptr<SharedGrad> sharedGrad_{std::make_shared<SharedGrad>()};
 };
 
