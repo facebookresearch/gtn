@@ -5,7 +5,7 @@
 
 namespace gtn {
 
-void backward(Graph graph) {
+void backward(Graph graph, bool retainGraph /* = false */) {
   // Build the tape
   std::unordered_set<std::uintptr_t> cache;
   std::vector<Graph> tape;
@@ -35,6 +35,10 @@ void backward(Graph graph) {
   for (auto iter = tape.rbegin(); iter != tape.rend(); iter++) {
     if (iter->gradFunc()) {
       iter->gradFunc()(iter->inputs(), iter->grad());
+      if (!retainGraph) {
+        iter->inputs().clear();
+        *iter = Graph{};
+      }
     }
   }
 }

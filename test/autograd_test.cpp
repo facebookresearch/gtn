@@ -40,6 +40,28 @@ bool numericalGradCheck(
   return gradPass;
 }
 
+TEST_CASE("Test Autograd", "[autograd]") {
+  // The graph is not retained by default
+  Graph g1;
+  g1.addNode(true);
+  g1.addNode(false, true);
+  g1.addArc(0, 1, 0, 0, 3.0);
+
+  Graph g2;
+  g2.addNode(true);
+  g2.addNode(false, true);
+  g2.addArc(0, 1, 0, 0, 3.0);
+
+  auto result = add(g1, g2);
+  backward(result);
+  CHECK(result.inputs().empty());
+
+  // Check the graph is retained
+  result = add(g1, g2);
+  backward(result, true);
+  CHECK(result.inputs().size() == 2);
+}
+
 TEST_CASE("Test Scalar Ops Grad", "[functions.scalar (grad)]") {
   Graph g1;
   g1.addNode(true);
