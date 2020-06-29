@@ -330,6 +330,40 @@ TEST_CASE("Test Sum Grad", "[functions.sum (grad)]") {
   CHECK_THROWS(g2.grad());
 }
 
+TEST_CASE("Test Concat Grad", "[functions.concat (grad)]") {
+  Graph g1;
+  g1.addNode(true);
+  g1.addNode();
+  g1.addNode(false, true);
+  g1.addArc(0, 1, 0);
+  g1.addArc(1, 2, 1);
+
+  // Works with a no gradient graph
+  Graph g2(false);
+  g2.addNode(true);
+  g2.addNode();
+  g2.addNode(false, true);
+  g2.addArc(0, 1, 0);
+  g2.addArc(1, 2, 1);
+
+  Graph g3;
+  g3.addNode(true);
+  g3.addNode();
+  g3.addNode(false, true);
+  g3.addArc(0, 1, 0);
+  g3.addArc(1, 2, 1);
+
+  backward(forward(concat({g1, g2, g3})));
+
+  auto forwardFn1 = [g2, g3](Graph g) { return forward(concat({g, g2, g3})); };
+  CHECK(numericalGradCheck(forwardFn1, g1, 1e-4, 1e-3));
+
+  auto forwardFn2 = [g1, g2](Graph g) { return forward(concat({g1, g2, g})); };
+  CHECK(numericalGradCheck(forwardFn2, g3, 1e-4, 1e-3));
+
+  CHECK_THROWS(g2.grad());
+}
+
 TEST_CASE("Test Closure Grad", "[functions.closure (grad)]") {
   Graph g1;
   g1.addNode(true);

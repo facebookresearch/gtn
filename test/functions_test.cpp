@@ -418,6 +418,84 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
   }
 }
 
+TEST_CASE("Test Concat", "[functions.concat]") {
+  {
+    // Empty string language
+    Graph g;
+    g.addNode(true, true);
+
+    CHECK(equals(concat({}), g));
+    CHECK(randEquivalent(concat(g, g), g));
+    CHECK(randEquivalent(concat({g, g, g}), g));
+  }
+  {
+    // Singleton
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 1);
+    CHECK(equals(concat({g}), g));
+  }
+
+  {
+    // Empty language
+    Graph g;
+    g.addNode();
+    CHECK(randEquivalent(concat(g, g), Graph{}));
+    CHECK(randEquivalent(concat({g, g, g}), Graph{}));
+  }
+
+  {
+    // Concat {0} and {1} to get {01}
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 1);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 0);
+    expected.addArc(1, 2, 1);
+
+    CHECK(randEquivalent(concat(g1, g2), expected));
+  }
+
+  {
+    // Concat {0, 1} and {2, 3} to get {02, 03, 12, 13}
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0);
+    g1.addArc(0, 2, 1);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 2, 2);
+    g2.addArc(1, 2, 3);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 0);
+    expected.addArc(0, 1, 1);
+    expected.addArc(1, 2, 2);
+    expected.addArc(1, 2, 3);
+
+    CHECK(randEquivalent(concat(g1, g2), expected));
+  }
+}
+
 TEST_CASE("Test Closure", "[functions.closure]") {
   {
     // Empty graph

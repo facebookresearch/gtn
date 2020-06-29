@@ -15,6 +15,7 @@ void timeSimpleOps() {
   };
   TIME(cloneBackward);
 
+
   // time closure
   auto closureForward = [&graph]() { auto closed = closure(graph); };
   TIME(closureForward);
@@ -41,6 +42,18 @@ void timeSimpleOps() {
     backward(out);
   };
   TIME(sumBackward);
+
+  // time concatenate
+  auto concatForward = [&graphs]() { auto closed = concat(graphs); };
+  TIME(concatForward);
+
+  auto concatBackward = [&graphs, out = concat(graphs)]() {
+    for (auto& g : graphs) {
+      g.zeroGrad();
+    }
+    backward(out);
+  };
+  TIME(concatBackward);
 }
 
 void timeForward() {

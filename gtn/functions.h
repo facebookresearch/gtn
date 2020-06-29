@@ -33,6 +33,32 @@ Graph projectInput(Graph other);
  * autograd tape. This function makes a copy of the input graph. */
 Graph projectOutput(Graph other);
 
+/* Create the concatenation of two graphs. This operation is recorded in the
+ * autograd tape.
+ *
+ * Equivalent to `concat({lhs, rhs})`, see:
+ *   `Graph concat(std::vector<Graph> * graphs)`.
+ **/
+Graph concat(Graph lhs, Graph rhs);
+
+/* Create the concatenation of a vector of graphs. This operation is recorded
+ * in the autograd tape.
+ *
+ * If `x_i` is a sequence accepted (or `x_i:y_i` is transduced) by `graphs[i]`
+ * then the concatenated graph accepts the sequence `x_1x_2...x_n` if `graphs`
+ * contains `n` graphs. The score of the path `x_1...x_n` is the sum of the
+ * scores of the individual `x_i` in `graphs[i]`. The concatenated graph is
+ * constructuted by connected every accepting state of `graphs[i-1]` to every
+ * starting state of `graphs[i]` with an epsilon transition. The starting state
+ * of the concatenated graphs are starting states of `graphs[0]` and the
+ * accepting states are accepting states of `graphs.back()`.
+ *
+ * Note the concatenation of 0 graphs `concat({})` is the graph which accepts
+ * the empty string (epsilon). The concatentation of a single graph is
+ * equivalent to a clone.
+ */
+Graph concat(std::vector<Graph> graphs);
+
 /* Create the (Kleene) closure of the graph. */
 Graph closure(Graph graph);
 

@@ -159,6 +159,31 @@ void simpleOps() {
     draw(graph, "sum_graph.dot", symbols);
   }
 
+  // The concatenation of two graphs accepts any sequence xy such that x is
+  // accepted by the first graph and y is accepted by the second.
+  {
+    // Recognizes "ba"
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode();
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 1);
+    g1.addArc(1, 2, 0);
+
+    // Recognizes "ac"
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode();
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 0);
+    g2.addArc(1, 2, 2);
+
+    draw(g1, "concat_g1.dot", symbols);
+    draw(g2, "concat_g2.dot", symbols);
+    auto graph = concat(g1, g2);
+    draw(graph, "concat_graph.dot", symbols);
+  }
+
   // The closure of a graph accepts any sequence accepted by the original graph
   // repeated 0 or more times (0 repeats is the empty sequence
   // "Graph::epsilon").
