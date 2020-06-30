@@ -63,7 +63,7 @@ int main() {
 
   auto ctc_loss = [&ctc, &emissions]() {
     // Loss
-    auto loss = subtract(forward(emissions), forward(compose(ctc, emissions)));
+    auto loss = subtract(forwardScore(emissions), forwardScore(compose(ctc, emissions)));
     return loss;
   };
   TIME(ctc_loss);

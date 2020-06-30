@@ -13,6 +13,8 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/gtn.h
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/rand.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/rand.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/shortest.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/shortest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/utils.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/utils.h
 )

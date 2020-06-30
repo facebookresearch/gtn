@@ -60,8 +60,8 @@ int main() {
   // NB: compose is associative, so we could also do:
   // auto composed_fal = compose(compose(emissions, fal_graph), transitions);
   auto composed_fcc = compose(emissions, transitions);
-  auto fal = forward(composed_fal);
-  auto fcc = forward(composed_fcc);
+  auto fal = forwardScore(composed_fal);
+  auto fcc = forwardScore(composed_fcc);
   auto asg = subtract(fcc, fal);
   std::cout << "Composed FAL Graph Nodes: " << composed_fal.numNodes()
             << " Arcs: " << composed_fal.numArcs() << " should be "

@@ -75,7 +75,30 @@ Graph remove(Graph other, int ilabel, int olabel);
 // Compose two graphs.
 Graph compose(Graph first, Graph second);
 
-// Compute the forward score of a graph. This may only be
-// computed on acyclic graphs without self-loops
-Graph forward(Graph graph);
+/*
+ * Compute the forward score of a graph. Returns the score in a scalar graph
+ * which can be accessed with `Graph::item()`. This is equivalent to the
+ * shortest distance from the start nodes to the accept nodes in the log
+ * semiring.
+ * NB: This assumes the input graph is acyclic.
+ */
+Graph forwardScore(Graph graph);
+
+/*
+ * Compute the Viterbi score of a graph. Returns the score in a scalar graph
+ * which can be accessed with `Graph::item()`. This is equivalent to the
+ * shortest distance from the start nodes to the accept nodes in the tropical
+ * semiring.
+ * NB: This assumes the input graph is acyclic.
+ */
+Graph viterbiScore(Graph graph);
+
+/*
+ * Compue the Viterbi shortest path of a graph and returns it in a single
+ * chain graph with the labels and weights of the shortest path. This is
+ * equivalent to the shortest path from the start nodes to the accepting nodes
+ * in the tropical semiring.
+ * NB: This assumes the input graph is acyclic.
+ */
+Graph viterbiPath(Graph graph);
 } // namespace gtn

@@ -51,9 +51,9 @@ int main() {
     }
   }
 
-  auto denom = forward(emissions);
+  auto denom = forwardScore(emissions);
   auto composed_ctc = compose(ctc, emissions);
-  auto num = forward(composed_ctc);
+  auto num = forwardScore(composed_ctc);
   auto loss = subtract(denom, num);
   std::cout << "Composed CTC Graph Nodes: " << composed_ctc.numNodes()
             << " Arcs: " << composed_ctc.numArcs() << std::endl;
@@ -73,8 +73,8 @@ int main() {
   }
 
   auto composed_bigram_ctc = compose(compose(ctc, emissions), transitions);
-  num = forward(composed_bigram_ctc);
-  denom = forward(compose(emissions, transitions));
+  num = forwardScore(composed_bigram_ctc);
+  denom = forwardScore(compose(emissions, transitions));
   loss = subtract(denom, num);
   std::cout << "Composed bi-gram CTC Graph Nodes: "
             << composed_bigram_ctc.numNodes()

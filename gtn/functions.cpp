@@ -1,10 +1,9 @@
 #include <algorithm>
-#include <cmath>
-#include <limits>
 #include <queue>
 #include <set>
 
 #include "functions.h"
+#include "shortest.h"
 
 namespace gtn {
 
@@ -36,7 +35,9 @@ Graph subtract(Graph lhs, Graph rhs) {
   float weight = lhs.item() - rhs.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
-    inputs[1].addGrad(negate(deltas));
+    if (inputs[1].calcGrad()) {
+      inputs[1].addGrad(negate(deltas));
+    }
   };
   Graph result(gradFunc, {lhs, rhs});
   result.addNode(true);
@@ -134,15 +135,13 @@ Graph concat(std::vector<Graph> graphs) {
 
 Graph closure(Graph graph) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
-    if (inputs[0].calcGrad()) {
-      auto grad = std::vector<float>(inputs[0].numArcs());
-      // *NB* this assumes arcs in the new graph are the same order
-      // as in the old graph.
-      for (auto i = 0; i < grad.size(); ++i) {
-        grad[i] = deltas.weight(i);
-      }
-      inputs[0].addGrad(std::move(grad));
+    auto grad = std::vector<float>(inputs[0].numArcs());
+    // *NB* this assumes arcs in the new graph are the same order
+    // as in the old graph.
+    for (auto i = 0; i < grad.size(); ++i) {
+      grad[i] = deltas.weight(i);
     }
+    inputs[0].addGrad(std::move(grad));
   };
 
   Graph closed(gradFunc, {graph});
@@ -474,105 +473,16 @@ Graph compose(Graph first, Graph second) {
   return Graph(ngraph, gradFunc, {first, second});
 }
 
-static const float neginf = -std::numeric_limits<float>::infinity();
-
-inline float logadd(float a, float b) {
-  if (a == neginf) {
-    return b;
-  }
-  if (b == neginf) {
-    return a;
-  }
-  return std::max(a, b) + std::log1p(std::exp(-std::abs(a - b)));
+Graph forwardScore(Graph graph) {
+  return detail::shortestDistance(graph);
 }
 
-void forwardGrad(
-    Graph input,
-    float output,
-    const Graph& deltas,
-    std::vector<float>& scores) {
-  std::queue<int> computed;
-  std::vector<int> degrees;
-  degrees.reserve(input.numNodes());
-  std::vector<float> nodeGrads(input.numNodes(), 0.0);
-  std::vector<float> arcGrads(input.numArcs());
-  for (auto n = 0; n < input.numNodes(); ++n) {
-    degrees[n] = input.numOut(n);
-  }
-  for (auto n : input.accept()) {
-    nodeGrads[n] = deltas.item() * std::exp(scores[n] - output);
-    if (input.numOut(n) == 0) {
-      computed.push(n);
-    }
-  }
-
-  while (!computed.empty()) {
-    auto n = computed.front();
-    computed.pop();
-    auto score = scores[n];
-    auto gradn = nodeGrads[n];
-    for (auto a : input.in(n)) {
-      auto un = input.upNode(a);
-      auto arcGrad = gradn * std::exp(input.weight(a) + scores[un] - score);
-      arcGrads[a] = arcGrad;
-      nodeGrads[un] += arcGrad;
-      if ((--degrees[un]) == 0) {
-        computed.push(un);
-      }
-    }
-  }
-  input.addGrad(std::move(arcGrads));
+Graph viterbiScore(Graph graph) {
+  return detail::shortestDistance(graph, true);
 }
 
-Graph forward(Graph graph) {
-  std::queue<int> computed;
-  // List of scores and list of in degrees for each node
-  std::vector<float> scores(graph.numNodes(), neginf);
-  std::vector<int> degrees;
-  degrees.reserve(graph.numNodes());
-  for (auto n = 0; n < graph.numNodes(); ++n) {
-    degrees[n] = graph.numIn(n);
-  }
-  for (auto n : graph.start()) {
-    scores[n] = 0.0;
-    if (graph.numIn(n) == 0) {
-      computed.push(n);
-    }
-  }
-
-  while (!computed.empty()) {
-    auto n = computed.front();
-    computed.pop();
-    auto score = scores[n];
-    for (auto a : graph.out(n)) {
-      auto dn = graph.downNode(a);
-      scores[dn] = logadd(score + graph.weight(a), scores[dn]);
-      if ((--degrees[dn]) == 0) {
-        computed.push(dn);
-      }
-    }
-  }
-
-  // Accumulate scores at all the accept nodes.
-  float score = neginf;
-  for (auto a : graph.accept()) {
-    if (degrees[a] > 0) {
-      throw std::invalid_argument(
-          "Graph has a cycle, self-loop or is disconnected!");
-    }
-    score = logadd(score, scores[a]);
-  }
-
-  auto gradFunc = [scores = std::move(scores), output = score](
-                      std::vector<Graph>& inputs, Graph deltas) mutable {
-    forwardGrad(inputs[0], output, deltas, scores);
-  };
-
-  Graph result(gradFunc, {graph});
-  result.addNode(true);
-  result.addNode(false, true);
-  result.addArc(0, 1, 0, 0, score);
-  return result;
+Graph viterbiPath(Graph graph) {
+  return detail::shortestPath(graph);
 }
 
 } // namespace gtn

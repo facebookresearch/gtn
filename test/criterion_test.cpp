@@ -64,11 +64,11 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     Graph emissions = emissions_graph({1.0, 0.0, 0.0, 1.0, 1.0, 0.0}, 3, 2);
 
-    auto loss = forward(compose(ctc, emissions));
+    auto loss = forwardScore(compose(ctc, emissions));
     CHECK(loss.item() == 0.0);
 
     // Should be 0 since scores are normalized
-    auto z = forward(emissions);
+    auto z = forwardScore(emissions);
     CHECK(z.item() == 0.0);
   }
 
@@ -80,7 +80,7 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     auto expected_loss = -std::log(0.25 * 0.25 * 0.25 * 5);
 
-    auto loss = subtract(forward(compose(ctc, emissions)), forward(emissions));
+    auto loss = subtract(forwardScore(compose(ctc, emissions)), forwardScore(emissions));
     CHECK(-loss.item() == Approx(expected_loss));
   }
 
@@ -105,10 +105,10 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     // The log probabilities are already normalized,
     // so this should be close to 0
-    auto z = forward(emissions);
+    auto z = forwardScore(emissions);
     CHECK(std::abs(z.item()) < 1e-5);
 
-    auto loss = subtract(z, forward(compose(ctc, emissions)));
+    auto loss = subtract(z, forwardScore(compose(ctc, emissions)));
     float expected_loss = 3.34211;
     CHECK(loss.item() == Approx(expected_loss));
 
@@ -153,10 +153,10 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     // The log probabilities are already normalized,
     // so this should be close to 0
-    auto z = forward(emissions);
+    auto z = forwardScore(emissions);
     CHECK(std::abs(z.item()) < 1e-5);
 
-    auto loss = subtract(z, forward(compose(ctc, emissions)));
+    auto loss = subtract(z, forwardScore(compose(ctc, emissions)));
     float expected_loss = 5.42262;
     CHECK(loss.item() == Approx(expected_loss));
 
@@ -268,8 +268,8 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
     Graph emissions = emissions_graph(emissions_vec, T, N, true);
 
     auto loss = subtract(
-        forward(compose(emissions, transitions)),
-        forward(compose(compose(fal, transitions), emissions)));
+        forwardScore(compose(emissions, transitions)),
+        forwardScore(compose(compose(fal, transitions), emissions)));
 
     CHECK(std::abs(loss.item() - expected_loss[b]) < 1e-3);
 

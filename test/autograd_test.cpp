@@ -193,12 +193,12 @@ TEST_CASE("Test Grad Available", "[functions.isGradAvailable (grad)]") {
     g.addArc(1, 2, 1, 1, 2);
     g.addArc(1, 2, 2, 2, 3);
     CHECK(!g.isGradAvailable());
-    backward(forward(g));
+    backward(forwardScore(g));
     CHECK(g.isGradAvailable());
   }
 }
 
-TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
+TEST_CASE("Test forwardScore Grad", "[functions.forwardScore (grad)]") {
   {
     Graph g;
     g.addNode(true);
@@ -210,8 +210,8 @@ TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
     g.addArc(1, 2, 0, 0, 1);
     g.addArc(1, 2, 1, 1, 2);
     g.addArc(1, 2, 2, 2, 3);
-    backward(forward(g));
-    CHECK(numericalGradCheck(forward, g, 1e-3, 1e-3));
+    backward(forwardScore(g));
+    CHECK(numericalGradCheck(forwardScore, g, 1e-3, 1e-3));
   }
 
   {
@@ -223,8 +223,8 @@ TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
     g.addArc(0, 1, 0, 0, -5);
     g.addArc(0, 2, 0, 0, 1);
     g.addArc(1, 2, 0, 0, 2);
-    backward(forward(g));
-    CHECK(numericalGradCheck(forward, g, 1e-3, 1e-3));
+    backward(forwardScore(g));
+    CHECK(numericalGradCheck(forwardScore, g, 1e-3, 1e-3));
 
     double denom = 1 / (std::exp(-3) + std::exp(1) + std::exp(2));
     auto grad = g.grad();
@@ -242,8 +242,8 @@ TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
     g.addArc(0, 1, 0, 0, 2);
     g.addArc(0, 2, 0, 0, 2);
     g.addArc(1, 2, 0, 0, 2);
-    backward(forward(g));
-    CHECK(numericalGradCheck(forward, g, 1e-3, 1e-3));
+    backward(forwardScore(g));
+    CHECK(numericalGradCheck(forwardScore, g, 1e-3, 1e-3));
 
     double denom = 1 / (2 * std::exp(2) + std::exp(4));
     auto& grad = g.grad();
@@ -266,8 +266,120 @@ TEST_CASE("Test Forward Grad", "[functions.forward (grad)]") {
         "2 4 1 1 3\n"
         "3 4 0 0 2\n");
     Graph g = load(in);
-    backward(forward(g));
-    CHECK(numericalGradCheck(forward, g, 1e-3, 1e-3));
+    backward(forwardScore(g));
+    CHECK(numericalGradCheck(forwardScore, g, 1e-3, 1e-3));
+  }
+}
+
+TEST_CASE("Test viterbiScore Grad", "[functions.viterbiScore (grad)]") {
+  auto gradsToVec = [](Graph g) {
+    std::vector<float> grads;
+    for (auto a = 0; a < g.numArcs(); ++a) {
+      grads.push_back(g.grad().weight(a));
+    }
+    return grads;
+  };
+
+  {
+    Graph g;
+    g.addNode(true);
+    g.addNode();
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 1);
+    g.addArc(0, 1, 1, 1, 2);
+    g.addArc(0, 1, 2, 2, 3);
+    g.addArc(1, 2, 0, 0, 1);
+    g.addArc(1, 2, 1, 1, 2);
+    g.addArc(1, 2, 2, 2, 3);
+    backward(viterbiScore(g));
+    std::vector<float> expected= {0.0, 0.0, 1.0, 0.0, 0.0, 1.0};
+    CHECK(gradsToVec(g) == expected);
+  }
+
+  {
+    // Handle two start nodes
+    Graph g;
+    g.addNode(true);
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, -5);
+    g.addArc(0, 2, 0, 0, 1);
+    g.addArc(1, 2, 0, 0, 2);
+    backward(viterbiScore(g));
+    std::vector<float> expected = {0.0, 0.0, 1.0};
+    CHECK(gradsToVec(g) == expected);
+  }
+
+  {
+    // Handle two accept nodes
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 2);
+    g.addArc(0, 2, 0, 0, 2);
+    g.addArc(1, 2, 0, 0, 2);
+    backward(viterbiScore(g));
+    std::vector<float> expected = {1.0, 0.0, 1.0};
+    CHECK(gradsToVec(g) == expected);
+  }
+
+  {
+    // A more complex test case
+    std::stringstream in(
+        "0 1\n"
+        "3 4\n"
+        "0 1 0 0 2\n"
+        "0 2 1 1 1\n"
+        "1 2 0 0 2\n"
+        "2 3 0 0 1\n"
+        "2 3 1 1 1\n"
+        "1 4 0 0 2\n"
+        "2 4 1 1 3\n"
+        "3 4 0 0 2\n");
+    Graph g = load(in);
+    backward(viterbiScore(g));
+    std::vector<float> expected =
+      {1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0};
+    CHECK(gradsToVec(g) == expected);
+  }
+}
+
+TEST_CASE("Test viterbiPath Grad", "[functions.viterbiPath (grad)]") {
+  auto gradsToVec = [](Graph g) {
+    std::vector<float> grads;
+    for (auto a = 0; a < g.numArcs(); ++a) {
+      grads.push_back(g.grad().weight(a));
+    }
+    return grads;
+  };
+
+  {
+    std::stringstream in(
+        "0 1\n"
+        "3 4\n"
+        "0 1 0 0 2\n"
+        "0 2 1 1 1\n"
+        "1 2 0 0 2\n"
+        "2 3 0 0 1\n"
+        "2 3 1 1 3\n"
+        "1 4 0 0 2\n"
+        "2 4 1 1 3\n"
+        "3 4 0 0 2\n");
+    Graph g = load(in);
+    backward(viterbiPath(g));
+    std::vector<float> expected =
+      {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0};
+    CHECK(gradsToVec(g) == expected);
+    g.zeroGrad();
+
+    auto forwardFn = [](Graph g) {
+      auto paths = {viterbiPath(g), viterbiPath(g), viterbiPath(g)};
+      return forwardScore(sum(paths));
+    };
+    backward(forwardFn(g));
+
+    CHECK(numericalGradCheck(forwardFn, g, 1e-2, 1e-5));
   }
 }
 
@@ -319,12 +431,12 @@ TEST_CASE("Test Sum Grad", "[functions.sum (grad)]") {
   g3.addArc(0, 1, 0);
   g3.addArc(1, 2, 1);
 
-  backward(forward(sum({g1, g2, g3})));
+  backward(forwardScore(sum({g1, g2, g3})));
 
-  auto forwardFn1 = [g2, g3](Graph g) { return forward(sum({g, g2, g3})); };
+  auto forwardFn1 = [g2, g3](Graph g) { return forwardScore(sum({g, g2, g3})); };
   CHECK(numericalGradCheck(forwardFn1, g1, 1e-4, 1e-3));
 
-  auto forwardFn2 = [g1, g2](Graph g) { return forward(sum({g1, g2, g})); };
+  auto forwardFn2 = [g1, g2](Graph g) { return forwardScore(sum({g1, g2, g})); };
   CHECK(numericalGradCheck(forwardFn2, g3, 1e-4, 1e-3));
 
   CHECK_THROWS(g2.grad());
@@ -386,8 +498,8 @@ TEST_CASE("Test Closure Grad", "[functions.closure (grad)]") {
   g2.addArc(3, 4, 0);
   g2.addArc(3, 4, 1);
 
-  backward(forward(compose(closure(g1), g2)));
+  backward(forwardScore(compose(closure(g1), g2)));
 
-  auto forwardFn = [g2](Graph g) { return forward(compose(closure(g), g2)); };
+  auto forwardFn = [g2](Graph g) { return forwardScore(compose(closure(g), g2)); };
   CHECK(numericalGradCheck(forwardFn, g1, 1e-3, 1e-3));
 }

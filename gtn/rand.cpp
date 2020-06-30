@@ -103,8 +103,8 @@ bool randEquivalent(
       continue;
     }
 
-    auto scoreA = forward(composedA).item();
-    auto scoreB = forward(composedB).item();
+    auto scoreA = forwardScore(composedA).item();
+    auto scoreB = forwardScore(composedB).item();
 
     // Check within tolerance
     if (abs(scoreA - scoreB) > tol) {

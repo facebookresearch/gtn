@@ -193,13 +193,13 @@ TEST_CASE("Test Composition", "[functions.compose]") {
   }
 }
 
-TEST_CASE("Test Forward", "[functions.forward]") {
+TEST_CASE("Test Forward", "[functions.forwardScore]") {
   {
     // Throws on self-loops
     Graph g;
     g.addNode(true, true);
     g.addArc(0, 0, 1);
-    CHECK_THROWS(forward(g));
+    CHECK_THROWS(forwardScore(g));
   }
 
   {
@@ -211,7 +211,7 @@ TEST_CASE("Test Forward", "[functions.forward]") {
     g.addArc(0, 1, 0);
     g.addArc(1, 2, 0);
     g.addArc(1, 1, 0);
-    CHECK_THROWS(forward(g));
+    CHECK_THROWS(forwardScore(g));
   }
 
   {
@@ -223,7 +223,7 @@ TEST_CASE("Test Forward", "[functions.forward]") {
     g.addArc(0, 1, 0);
     g.addArc(1, 2, 0);
     g.addArc(2, 2, 0);
-    CHECK_THROWS(forward(g));
+    CHECK_THROWS(forwardScore(g));
   }
 
   {
@@ -235,7 +235,7 @@ TEST_CASE("Test Forward", "[functions.forward]") {
     g.addArc(0, 1, 0);
     g.addArc(1, 2, 0);
     g.addArc(2, 0, 0);
-    CHECK_THROWS(forward(g));
+    CHECK_THROWS(forwardScore(g));
   }
 
   {
@@ -246,7 +246,7 @@ TEST_CASE("Test Forward", "[functions.forward]") {
     g.addNode(false, true);
     g.addArc(0, 2, 0);
     g.addArc(1, 2, 0);
-    CHECK_THROWS(forward(g));
+    CHECK_THROWS(forwardScore(g));
   }
 
   {
@@ -261,7 +261,7 @@ TEST_CASE("Test Forward", "[functions.forward]") {
     g.addArc(1, 2, 0, 0, 1);
     g.addArc(1, 2, 1, 1, 2);
     g.addArc(1, 2, 2, 2, 3);
-    CHECK(forward(g).item() == Approx(6.8152));
+    CHECK(forwardScore(g).item() == Approx(6.8152));
   }
 
   {
@@ -274,7 +274,7 @@ TEST_CASE("Test Forward", "[functions.forward]") {
     g.addArc(0, 2, 0, 0, 1);
     g.addArc(1, 2, 0, 0, 2);
     float expected = std::log(std::exp(1) + std::exp(-5 + 2) + std::exp(2));
-    CHECK(forward(g).item() == Approx(expected));
+    CHECK(forwardScore(g).item() == Approx(expected));
   }
 
   {
@@ -287,7 +287,7 @@ TEST_CASE("Test Forward", "[functions.forward]") {
     g.addArc(0, 2, 0, 0, 2);
     g.addArc(1, 2, 0, 0, 2);
     float expected = std::log(2 * std::exp(2) + std::exp(4));
-    CHECK(forward(g).item() == Approx(expected));
+    CHECK(forwardScore(g).item() == Approx(expected));
   }
 
   {
@@ -304,7 +304,202 @@ TEST_CASE("Test Forward", "[functions.forward]") {
         "2 4 1 1 3\n"
         "3 4 0 0 2\n");
     Graph g = load(in);
-    CHECK(forward(g).item() == Approx(8.36931));
+    CHECK(forwardScore(g).item() == Approx(8.36931));
+  }
+}
+
+TEST_CASE("Test Viterbi Score", "[functions.viterbiScore]") {
+  {
+    // A simple test case
+    Graph g;
+    g.addNode(true);
+    g.addNode();
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 1);
+    g.addArc(0, 1, 1, 1, 2);
+    g.addArc(0, 1, 2, 2, 3);
+    g.addArc(1, 2, 0, 0, 1);
+    g.addArc(1, 2, 1, 1, 2);
+    g.addArc(1, 2, 2, 2, 3);
+    CHECK(viterbiScore(g).item() == 6.0f);
+  }
+
+  {
+    // Handle two start nodes
+    Graph g;
+    g.addNode(true);
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, -5);
+    g.addArc(0, 2, 0, 0, 1);
+    g.addArc(1, 2, 0, 0, 2);
+    CHECK(viterbiScore(g).item() == 2.0f);
+  }
+
+  {
+    // Handle two accept nodes
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 2);
+    g.addArc(0, 2, 0, 0, 2);
+    g.addArc(1, 2, 0, 0, 2);
+    CHECK(viterbiScore(g).item() == 4.0f);
+  }
+
+  {
+    // A more complex test case
+    std::stringstream in(
+        "0 1\n"
+        "3 4\n"
+        "0 1 0 0 2\n"
+        "0 2 1 1 1\n"
+        "1 2 0 0 2\n"
+        "2 3 0 0 1\n"
+        "2 3 1 1 1\n"
+        "1 4 0 0 2\n"
+        "2 4 1 1 3\n"
+        "3 4 0 0 2\n");
+    Graph g = load(in);
+    CHECK(viterbiScore(g).item() == 7.0f);
+  }
+}
+
+TEST_CASE("Test Viterbi Path", "[functions.viterbiPath]") {
+  {
+    // A simple test case
+    Graph g;
+    g.addNode(true);
+    g.addNode();
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 1);
+    g.addArc(0, 1, 1, 1, 2);
+    g.addArc(0, 1, 2, 2, 3);
+    g.addArc(1, 2, 0, 0, 1);
+    g.addArc(1, 2, 1, 1, 2);
+    g.addArc(1, 2, 2, 2, 3);
+
+    Graph best;
+    best.addNode(true);
+    best.addNode();
+    best.addNode(false, true);
+    best.addArc(0, 1, 2, 2, 3);
+    best.addArc(1, 2, 2, 2, 3);
+
+    auto path = viterbiPath(g);
+    CHECK(randEquivalent(path, best));
+    CHECK(viterbiScore(path).item() == viterbiScore(g).item());
+  }
+
+  {
+    // Handle a single node.
+    Graph g;
+    g.addNode(true, true);
+
+    Graph best;
+    best.addNode(true, true);
+    auto path = viterbiPath(g);
+    CHECK(randEquivalent(path, best));
+    CHECK(viterbiScore(path).item() == viterbiScore(g).item());
+  }
+
+  {
+    // Handle two start nodes
+    Graph g;
+    g.addNode(true);
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, -5);
+    g.addArc(0, 2, 0, 0, 1);
+    g.addArc(1, 2, 0, 0, 2);
+
+    Graph best;
+    best.addNode(true);
+    best.addNode(false, true);
+    best.addArc(0, 1, 0, 0, 2);
+
+    auto path = viterbiPath(g);
+    CHECK(randEquivalent(path, best));
+    CHECK(viterbiScore(path).item() == viterbiScore(g).item());
+  }
+
+  {
+    // Handle two accept nodes
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 3);
+    g.addArc(0, 2, 0, 0, 2);
+    g.addArc(1, 2, 0, 0, 2);
+
+    Graph best;
+    best.addNode(true);
+    best.addNode();
+    best.addNode(false, true);
+    best.addArc(0, 1, 0, 0, 3);
+    best.addArc(1, 2, 0, 0, 2);
+
+    auto path = viterbiPath(g);
+    CHECK(randEquivalent(path, best));
+    CHECK(viterbiScore(path).item() == viterbiScore(g).item());
+  }
+
+  {
+    // A more complex test case
+    std::stringstream in(
+        "0 1\n"
+        "3 4\n"
+        "0 1 0 0 2\n"
+        "0 2 1 1 1\n"
+        "1 2 0 0 2\n"
+        "2 3 0 0 1\n"
+        "2 3 1 1 1\n"
+        "1 4 0 0 2\n"
+        "2 4 1 1 3\n"
+        "3 4 0 0 2\n");
+    Graph g = load(in);
+
+    // There are three options for the best path, the
+    // viterbiPath may return any of them.
+    Graph best1;
+    best1.addNode(true);
+    best1.addNode();
+    best1.addNode();
+    best1.addNode();
+    best1.addNode(false, true);
+    best1.addArc(0, 1, 0, 0, 2);
+    best1.addArc(1, 2, 0, 0, 2);
+    best1.addArc(2, 3, 0, 0, 1);
+    best1.addArc(3, 4, 0, 0, 2);
+
+    Graph best2;
+    best2.addNode(true);
+    best2.addNode();
+    best2.addNode();
+    best2.addNode();
+    best2.addNode(false, true);
+    best2.addArc(0, 1, 0, 0, 2);
+    best2.addArc(1, 2, 0, 0, 2);
+    best2.addArc(2, 3, 1, 1, 1);
+    best2.addArc(3, 4, 0, 0, 2);
+
+    Graph best3;
+    best3.addNode(true);
+    best3.addNode();
+    best3.addNode();
+    best3.addNode(false, true);
+    best3.addArc(0, 1, 0, 0, 2);
+    best3.addArc(1, 2, 0, 0, 2);
+    best3.addArc(2, 3, 1, 1, 3);
+
+    auto path = viterbiPath(g);
+    CHECK((randEquivalent(path, best1)
+      || randEquivalent(path, best2)
+      || randEquivalent(path, best3)));
+
+    CHECK(viterbiScore(path).item() == viterbiScore(g).item());
   }
 }
 

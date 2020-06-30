@@ -58,24 +58,24 @@ void timeSimpleOps() {
 
 void timeForward() {
   auto graph = makeLinear(1000, 100);
-  auto forwardForwardLinear = [&graph]() { auto out = forward(graph); };
-  TIME(forwardForwardLinear);
+  auto forwardScoreLinearForward = [&graph]() { auto out = forwardScore(graph); };
+  TIME(forwardScoreLinearForward);
 
-  auto forwardBackwardLinear = [&graph, out = forward(graph)] {
+  auto forwardScoreLinearBackward = [&graph, out = forwardScore(graph)] {
     graph.zeroGrad();
     backward(out);
   };
-  TIME(forwardBackwardLinear);
+  TIME(forwardScoreLinearBackward);
 
   graph = makeRandomDAG(2000, 20000);
-  auto forwardForwardRandDAG = [&graph]() { auto out = forward(graph); };
-  TIME(forwardForwardRandDAG);
+  auto forwardScoreRandDAGForward = [&graph]() { auto out = forwardScore(graph); };
+  TIME(forwardScoreRandDAGForward);
 
-  auto forwardBackwardRandDAG = [&graph, out = forward(graph)] {
+  auto forwardScoreRandDAGBackward = [&graph, out = forwardScore(graph)] {
     graph.zeroGrad();
     backward(out);
   };
-  TIME(forwardBackwardRandDAG);
+  TIME(forwardScoreRandDAGBackward);
 }
 
 void timeCompose() {

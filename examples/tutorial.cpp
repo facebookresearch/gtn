@@ -260,7 +260,7 @@ void forwardingAcceptors() {
   // 1 0 (nodes 0 -> 2 0 -> 3 and score = 3.2 + 2.1)
   // 2 0 (nodes 1 -> 2 -> 3 and score = 1.4 + 2.1)
   // The final score is the logadd of the individual path scores.
-  auto forwarded = forward(graph);
+  auto forwarded = forwardScore(graph);
 
   // Use Graph::item() to get the score out of a scalar graph:
   float score = forwarded.item();
@@ -288,8 +288,8 @@ void differentiableAcceptors() {
   g2.addArc(0, 0, 0);
   g2.addArc(0, 1, 1);
 
-  auto a = forward(compose(g1, g2));
-  auto b = forward(g1);
+  auto a = forwardScore(compose(g1, g2));
+  auto b = forwardScore(g1);
   auto loss = subtract(b, a);
 
   // Differentiate through the computation.
@@ -366,10 +366,10 @@ void autoSegCriterion() {
 
   // Compute the asg loss which is the negative log likelihood:
   //                asg = -(fal - fcc)
-  // where fal (forward(composed)) is the constrained score and
-  // fcc (forward(emissions) is the unconstrained score (i.e.
+  // where fal (forwardScore(composed)) is the constrained score and
+  // fcc (forwardScore(emissions) is the unconstrained score (i.e.
   // the partition function).
-  auto loss = subtract(forward(emissions), forward(composed));
+  auto loss = subtract(forwardScore(emissions), forwardScore(composed));
 
   // To get gradients:
   backward(loss);
@@ -394,7 +394,7 @@ void autoSegCriterion() {
   // as composing with the transition graph:
   auto num_graph = compose(compose(fal, transitions), emissions);
   auto denom_graph = compose(emissions, transitions);
-  loss = subtract(forward(denom_graph), forward(num_graph));
+  loss = subtract(forwardScore(denom_graph), forwardScore(num_graph));
 
   // The order of composition won't affect the results as it is an
   // associative operation. However, just like multiplying matrices,
@@ -459,10 +459,10 @@ void ctcCriterion() {
   draw(composed, "ctc_composed.dot", symbols);
 
   // Compute the ctc loss
-  auto loss = subtract(forward(emissions), forward(composed));
+  auto loss = subtract(forwardScore(emissions), forwardScore(composed));
   // In practice, without transitions, we can
   // normalize per frame scores and only compute
-  //     loss = negate(forward(composed));
+  //     loss = negate(forwardScore(composed));
 
   // We can also add transitions to CTC just like in ASG!
   Graph transitions;
@@ -483,7 +483,7 @@ void ctcCriterion() {
   // the only difference is the alignment graph (ctc instead of asg).
   auto num_graph = compose(compose(ctc, transitions), emissions);
   auto denom_graph = compose(emissions, transitions);
-  loss = subtract(forward(denom_graph), forward(num_graph));
+  loss = subtract(forwardScore(denom_graph), forwardScore(num_graph));
 }
 
 void simpleTransducers() {
@@ -572,7 +572,7 @@ void epsilonTransitions() {
 
   // We can forward graphs with epsilons (as long as they don't have any
   // cycles).
-  forward(g1);
+  forwardScore(g1);
 
   g1.addArc(0, 0, 0, Graph::epsilon, 0.5);
 
