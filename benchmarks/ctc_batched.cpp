@@ -93,8 +93,8 @@ int main() {
       auto ctc = std::move(ctc_graph(U, N, targets[b]));
       auto emissions = std::move(emission_graph(T, N, emissionsScores[b]));
 
-      vec[b] = std::move(
-          subtract(forward(emissions), forward(compose(ctc, emissions))));
+      vec[b] = std::move(subtract(
+          forwardScore(emissions), forwardScore(compose(ctc, emissions))));
     }
 
 #pragma omp parallel for num_threads(B)
