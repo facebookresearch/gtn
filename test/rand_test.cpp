@@ -12,7 +12,7 @@
 
 using namespace gtn;
 
- TEST_CASE("Test sample", "[rand.sample]") {
+TEST_CASE("Test sample", "[rand.sample]") {
   {
     // Sampling empty paths
     Graph empty;
@@ -72,7 +72,7 @@ using namespace gtn;
   }
 }
 
- TEST_CASE("Test randEquivalent", "[rand.randEquivalent]") {
+TEST_CASE("Test randEquivalent", "[rand.randEquivalent]") {
   {
     // No accepting paths in the graphs
     Graph g1;

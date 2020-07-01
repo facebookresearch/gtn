@@ -80,7 +80,8 @@ TEST_CASE("Test CTC", "[criterion.ctc]") {
 
     auto expected_loss = -std::log(0.25 * 0.25 * 0.25 * 5);
 
-    auto loss = subtract(forwardScore(compose(ctc, emissions)), forwardScore(emissions));
+    auto loss = subtract(
+        forwardScore(compose(ctc, emissions)), forwardScore(emissions));
     CHECK(-loss.item() == Approx(expected_loss));
   }
 
