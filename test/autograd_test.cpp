@@ -292,7 +292,7 @@ TEST_CASE("Test viterbiScore Grad", "[functions.viterbiScore (grad)]") {
     g.addArc(1, 2, 1, 1, 2);
     g.addArc(1, 2, 2, 2, 3);
     backward(viterbiScore(g));
-    std::vector<float> expected= {0.0, 0.0, 1.0, 0.0, 0.0, 1.0};
+    std::vector<float> expected = {0.0, 0.0, 1.0, 0.0, 0.0, 1.0};
     CHECK(gradsToVec(g) == expected);
   }
 
@@ -339,8 +339,7 @@ TEST_CASE("Test viterbiScore Grad", "[functions.viterbiScore (grad)]") {
         "3 4 0 0 2\n");
     Graph g = load(in);
     backward(viterbiScore(g));
-    std::vector<float> expected =
-      {1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0};
+    std::vector<float> expected = {1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0};
     CHECK(gradsToVec(g) == expected);
   }
 }
@@ -368,8 +367,7 @@ TEST_CASE("Test viterbiPath Grad", "[functions.viterbiPath (grad)]") {
         "3 4 0 0 2\n");
     Graph g = load(in);
     backward(viterbiPath(g));
-    std::vector<float> expected =
-      {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0};
+    std::vector<float> expected = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0};
     CHECK(gradsToVec(g) == expected);
     g.zeroGrad();
 
@@ -433,10 +431,14 @@ TEST_CASE("Test Sum Grad", "[functions.sum (grad)]") {
 
   backward(forwardScore(sum({g1, g2, g3})));
 
-  auto forwardFn1 = [g2, g3](Graph g) { return forwardScore(sum({g, g2, g3})); };
+  auto forwardFn1 = [g2, g3](Graph g) {
+    return forwardScore(sum({g, g2, g3}));
+  };
   CHECK(numericalGradCheck(forwardFn1, g1, 1e-4, 1e-3));
 
-  auto forwardFn2 = [g1, g2](Graph g) { return forwardScore(sum({g1, g2, g})); };
+  auto forwardFn2 = [g1, g2](Graph g) {
+    return forwardScore(sum({g1, g2, g}));
+  };
   CHECK(numericalGradCheck(forwardFn2, g3, 1e-4, 1e-3));
 
   CHECK_THROWS(g2.grad());
@@ -465,12 +467,16 @@ TEST_CASE("Test Concat Grad", "[functions.concat (grad)]") {
   g3.addArc(0, 1, 0);
   g3.addArc(1, 2, 1);
 
-  backward(forward(concat({g1, g2, g3})));
+  backward(forwardScore(concat({g1, g2, g3})));
 
-  auto forwardFn1 = [g2, g3](Graph g) { return forward(concat({g, g2, g3})); };
+  auto forwardFn1 = [g2, g3](Graph g) {
+    return forwardScore(concat({g, g2, g3}));
+  };
   CHECK(numericalGradCheck(forwardFn1, g1, 1e-4, 1e-3));
 
-  auto forwardFn2 = [g1, g2](Graph g) { return forward(concat({g1, g2, g})); };
+  auto forwardFn2 = [g1, g2](Graph g) {
+    return forwardScore(concat({g1, g2, g}));
+  };
   CHECK(numericalGradCheck(forwardFn2, g3, 1e-4, 1e-3));
 
   CHECK_THROWS(g2.grad());
@@ -500,6 +506,8 @@ TEST_CASE("Test Closure Grad", "[functions.closure (grad)]") {
 
   backward(forwardScore(compose(closure(g1), g2)));
 
-  auto forwardFn = [g2](Graph g) { return forwardScore(compose(closure(g), g2)); };
+  auto forwardFn = [g2](Graph g) {
+    return forwardScore(compose(closure(g), g2));
+  };
   CHECK(numericalGradCheck(forwardFn, g1, 1e-3, 1e-3));
 }
