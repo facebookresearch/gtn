@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10.2)
 
 project(gtn)
 
@@ -14,6 +14,9 @@ option(GTN_BUILD_BENCHMARKS "Build benchmarks for gtn" ON)
 option(GTN_BUILD_EXAMPLES "Build examples for gtn" ON)
 option(GTN_BUILD_PYTHON_BINDINGS "Build python bindings for gtn" OFF)
 
+# ----------------------------- Dependencies -----------------------------
+find_package(OpenMP REQUIRED)
+
 # ----------------------------- Lib -----------------------------
 # Core lib sources -- maybe make me a submodule eventually
 include(${CMAKE_SOURCE_DIR}/gtn/CMakeLists.txt)
@@ -24,6 +27,8 @@ add_library(
   ${GTN_SOURCES}
 )
 add_subdirectory(${PROJECT_SOURCE_DIR}/gtn)
+
+target_link_libraries(gtn PUBLIC OpenMP::OpenMP_CXX)
 
 target_include_directories(
   gtn

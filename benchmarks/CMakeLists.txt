@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10.2)
 
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10.2)
 
 function(build_benchmark SRCFILE)
   get_filename_component(src_name ${SRCFILE} NAME_WE)
@@ -20,6 +20,7 @@ endfunction(build_benchmark)
 
 if (GTN_BUILD_BENCHMARKS)
   build_benchmark(${PROJECT_SOURCE_DIR}/benchmarks/ctc.cpp)
+  build_benchmark(${PROJECT_SOURCE_DIR}/benchmarks/ctc_batched.cpp)
   build_benchmark(${PROJECT_SOURCE_DIR}/benchmarks/graph.cpp)
   build_benchmark(${PROJECT_SOURCE_DIR}/benchmarks/functions.cpp)
 endif ()
