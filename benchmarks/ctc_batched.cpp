@@ -80,8 +80,8 @@ int main() {
   std::vector<std::vector<int>> targets;
   std::vector<std::vector<float>> emissionsScores;
   for (int64_t b = 0; b < B; ++b) {
-    targets.push_back(std::move(rand_target(U, N)));
-    emissionsScores.push_back(std::move(emissions(T * N)));
+    targets.push_back(rand_target(U, N));
+    emissionsScores.push_back(emissions(T * N));
   }
 
   auto ctc_batched = [T, U, N, B, &targets, &emissionsScores]() {
@@ -90,16 +90,16 @@ int main() {
 
 #pragma omp parallel for num_threads(B)
     for (int64_t b = 0; b < B; ++b) {
-      auto ctc = std::move(ctc_graph(U, N, targets[b]));
-      auto emissions = std::move(emission_graph(T, N, emissionsScores[b]));
+      auto ctc = ctc_graph(U, N, targets[b]);
+      auto emissions = emission_graph(T, N, emissionsScores[b]);
 
-      vec[b] = std::move(subtract(
-          forwardScore(emissions), forwardScore(compose(ctc, emissions))));
+      vec[b] = subtract(
+          forwardScore(emissions), forwardScore(compose(ctc, emissions)));
     }
 
 #pragma omp parallel for num_threads(B)
     for (int64_t b = 0; b < B; ++b) {
-      backward(std::move(vec[b]));
+      backward(vec[b]);
       vec[b] = Graph{}; // parallelize destruction
     }
   };
