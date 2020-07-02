@@ -5,9 +5,16 @@
 
 using namespace gtn;
 
-void timeConstruction() {
-  auto linearConstruction = []() { auto graph = makeLinear(1000, 1000); };
+void timeConstructDestruct() {
+  // Hold the reference to the graphs so we don't time destruction.
+  std::vector<Graph> graphs;
+  auto linearConstruction = [&graphs]() {
+    graphs.push_back(makeLinear(1000, 1000));
+  };
   TIME(linearConstruction);
+
+  auto linearDestruction = [&graphs]() { graphs.pop_back(); };
+  TIME(linearDestruction);
 }
 
 void timeCopy() {
@@ -63,7 +70,7 @@ void timeTraversal() {
 
 int main() {
   /* Various function benchmarks. */
-  timeConstruction();
+  timeConstructDestruct();
   timeCopy();
   timeTraversal();
 }
