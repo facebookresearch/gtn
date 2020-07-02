@@ -6,10 +6,7 @@
 
 #include "catch.hpp"
 
-#include "gtn/autograd.h"
-#include "gtn/functions.h"
-#include "gtn/graph.h"
-#include "gtn/utils.h"
+#include "gtn/gtn.h"
 
 using namespace gtn;
 
@@ -25,16 +22,7 @@ Graph emissions_graph(
         emissions_vec.begin(),
         [](float p) -> float { return std::log(p); });
   }
-
-  Graph emissions;
-  emissions.addNode(true);
-  for (int t = 1; t <= T; t++) {
-    emissions.addNode(false, t == T);
-    for (int n = 0; n < N; n++) {
-      emissions.addArc(t - 1, t, n, n, emissions_vec[(t - 1) * N + n]);
-    }
-  }
-  return emissions;
+  return arrayToLinearGraph(emissions_vec.data(), T, N);
 }
 
 Graph ctc_graph(std::vector<int> target, int blank) {
@@ -287,6 +275,7 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
   }
 
   bool allClose = true;
+  // clang-format off
   std::array<float, N* N> trans_grad = {
       0.4871,  0.4369,  0.2711,  0.3106,  0.2931,  0.4336,
       0.4277,  0.0819,  0.2405, -0.7276,  0.2386, -0.6247,
@@ -295,6 +284,7 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
       0.4385,  0.4064,  0.2459, -0.7159, -0.3097,  0.3911,
       0.4036, -0.6449,  0.1965,  0.2282,  0.2105, -0.1164
   };
+  // clang-format on
 
   auto grad = transitions.grad();
   for (int i = 0; i < N * N; i++) {
@@ -302,4 +292,42 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
     allClose &= (std::abs(trans_grad[i] - g) < 1e-4);
   }
   CHECK(allClose);
+}
+
+TEST_CASE("Test ASG Viterbi Path", "[criterion.asg.viterbiPath]") {
+  // Test adapted from wav2letter https://tinyurl.com/yc6nxex9
+  constexpr int T = 4, N = 3;
+
+  // clang-format off
+  std::vector<float> input = {
+    0, 0, 7,
+    5, 4, 3,
+    5, 8, 5,
+    5, 4, 3,
+  };
+  std::vector<float> trans = {
+    0, 2, 0,
+    0, 0, 2,
+    2, 0, 0,
+  };
+
+  std::vector<int> expectedPath = {2, 1, 1, 0};
+  // clang-format on
+
+  Graph transitions;
+  for (int i = 0; i < N; i++) {
+    transitions.addNode(true, true);
+  }
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      transitions.addArc(i, j, j, j, trans[j * N + i]); // p(j | i)
+    }
+  }
+
+  Graph emissions = emissions_graph(input, T, N, true);
+
+  auto path = viterbiPath(compose(emissions, transitions));
+  for (auto a = 0; a < path.numArcs(); ++a) {
+    CHECK(path.ilabel(a) == expectedPath[a]);
+  }
 }
