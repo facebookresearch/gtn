@@ -10,7 +10,7 @@ namespace gtn {
  * weights of all the outgoing edges for a node are assumed to be consecutive.
  * The labels of the edges between each node are the integers [0, ..., N-1].
  */
-Graph arrayToLinearGraph(float* src, int M, int N, bool calcGrad = true);
+Graph arrayToLinearGraph(const float* src, int M, int N, bool calcGrad = true);
 
 /**
  * Extract an array from a linear chain graph. The array should have space for

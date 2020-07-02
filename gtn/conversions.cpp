@@ -2,7 +2,11 @@
 
 namespace gtn {
 
-Graph arrayToLinearGraph(float* src, int M, int N, bool calcGrad /* = true */) {
+Graph arrayToLinearGraph(
+    const float* src,
+    int M,
+    int N,
+    bool calcGrad /* = true */) {
   Graph g(calcGrad);
   g.addNode(true);
   for (int m = 1; m <= M; ++m) {
