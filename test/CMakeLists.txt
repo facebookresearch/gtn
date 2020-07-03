@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.5.1)
 
 function(build_test SRCFILE)
   get_filename_component(src_name ${SRCFILE} NAME_WE)

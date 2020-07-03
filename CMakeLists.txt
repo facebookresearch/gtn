@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.5.1)
 
 project(gtn)
 
@@ -16,7 +16,8 @@ option(GTN_BUILD_PYTHON_BINDINGS "Build python bindings for gtn" OFF)
 option(GTN_BUILD_PYTHON_BINDINGS_NO_GIL "Build python bindings with no GIL for gtn" OFF)
 
 # ----------------------------- Dependencies -----------------------------
-find_package(OpenMP REQUIRED)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 # ----------------------------- Lib -----------------------------
 # Core lib sources -- maybe make me a submodule eventually
@@ -29,7 +30,7 @@ add_library(
 )
 add_subdirectory(${PROJECT_SOURCE_DIR}/gtn)
 
-target_link_libraries(gtn PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(gtn PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
 target_include_directories(
   gtn
