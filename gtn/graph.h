@@ -85,7 +85,6 @@ class Graph {
   bool isGradAvailable() const {
     return sharedGrad_->grad != nullptr;
   }
-
   Graph& grad();
   const Graph& grad() const;
 
@@ -103,6 +102,13 @@ class Graph {
    * autograd tape. For a version which is recorded in the
    * autograd tape see `clone`. */
   static Graph deepCopy(const Graph& src);
+
+  /* Clear the weights on a graph if they are no longer needed. */
+  Graph withoutWeights() const {
+    Graph other = *this;
+    other.sharedWeights_ = nullptr;
+    return other;
+  }
 
   static constexpr int epsilon{-1};
 
@@ -164,9 +170,11 @@ class Graph {
     return arc(i).olabel;
   }
   float weight(int i) const {
+    assert(sharedWeights_ != nullptr);
     return (*sharedWeights_)[i];
   }
   void setWeight(int i, float weight) {
+    assert(sharedWeights_ != nullptr);
     (*sharedWeights_)[i] = weight;
   }
 

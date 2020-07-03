@@ -212,7 +212,7 @@ Graph shortestPath(Graph graph) {
     }
     inputs[0].addGrad(grad);
   };
-  return Graph(out, gradFunc, {graph});
+  return Graph(out, gradFunc, {graph.withoutWeights()});
 }
 
 } // namespace detail

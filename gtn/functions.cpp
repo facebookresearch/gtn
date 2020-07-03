@@ -50,7 +50,7 @@ Graph clone(Graph other, Projection projection /* = Projection::NONE */) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
   };
-  Graph out(gradFunc, {other});
+  Graph out(gradFunc, {other.withoutWeights()});
   for (auto n = 0; n < other.numNodes(); ++n) {
     out.addNode(other.start(n), other.accept(n));
   }
@@ -95,7 +95,13 @@ Graph concat(std::vector<Graph> graphs) {
       }
     }
   };
-  Graph out(gradFunc, graphs);
+
+  std::vector<Graph> inputs;
+  for (auto& g : graphs) {
+    inputs.push_back(g.withoutWeights());
+  }
+  Graph out(gradFunc, std::move(inputs));
+
   // By definition a^0 accepts the empty string (epsilon)
   if (graphs.size() == 0) {
     out.addNode(true, true);
@@ -144,7 +150,7 @@ Graph closure(Graph graph) {
     inputs[0].addGrad(std::move(grad));
   };
 
-  Graph closed(gradFunc, {graph});
+  Graph closed(gradFunc, {graph.withoutWeights()});
   closed.addNode(true, true);
   for (auto n = 0; n < graph.numNodes(); ++n) {
     closed.addNode(false, graph.accept(n));
@@ -184,7 +190,11 @@ Graph sum(std::vector<Graph> graphs) {
     }
   };
 
-  Graph summed(gradFunc, graphs);
+  std::vector<Graph> inputs;
+  for (auto& g : graphs) {
+    inputs.push_back(g.withoutWeights());
+  }
+  Graph summed(gradFunc, std::move(inputs));
 
   // Add all the nodes in a predictable order
   int nodeOffset = 0;
@@ -470,7 +480,8 @@ Graph compose(Graph first, Graph second) {
     inputs[0].addGrad(std::move(grad1));
     inputs[1].addGrad(std::move(grad2));
   };
-  return Graph(ngraph, gradFunc, {first, second});
+  return Graph(
+      ngraph, gradFunc, {first.withoutWeights(), second.withoutWeights()});
 }
 
 Graph forwardScore(Graph graph) {
