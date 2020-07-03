@@ -1,28 +1,37 @@
+#include <math.h>
+
 #include "benchmarks/time_utils.h"
 #include "gtn/gtn.h"
 
 using namespace gtn;
 
-float rand_score() {
+float randScore() {
   auto uni = static_cast<float>(std::rand());
   uni /= static_cast<float>(RAND_MAX);
   return uni * 10 - 5;
 }
 
-std::vector<int> rand_target(int U, int N) {
+std::vector<int> randTarget(int U, int M) {
   std::vector<int> target;
   for (int u = 0; u < U; u++) {
-    // Random integer between [1, N-1]
-    auto t = rand() % (N - 1) + 1;
+    // Random integer between [1, M-1]
+    auto t = rand() % (M - 1) + 1;
     target.push_back(t);
   }
   return target;
 }
 
-Graph ctc_graph(int U, int N) {
+std::vector<float> randVec(int num) {
+  std::vector<float> out(num);
+  for (int i = 0; i < num; ++i) {
+    out[i] = randScore();
+  }
+  return out;
+}
+
+Graph ctcGraph(const std::vector<int>& target) {
   int blank = 0;
-  std::vector<int> target = rand_target(U, N);
-  int L = 2 * U + 1;
+  int L = 2 * target.size() + 1;
   Graph ctc;
   for (int l = 0; l < L; l++) {
     int idx = (l - 1) / 2;
@@ -39,39 +48,134 @@ Graph ctc_graph(int U, int N) {
   return ctc;
 }
 
-Graph emission_graph(int T, int N) {
-  Graph emissions;
-  emissions.addNode(true);
-  for (int t = 1; t <= T; t++) {
-    emissions.addNode(false, t == T);
-    for (int i = 0; i < N; i++) {
-      emissions.addArc(t - 1, t, i, i, rand_score());
+/* Build a dense `N`-gram transition graph with an alphabet size `M`. The graph
+ * will have `M^{N-1}` nodes and `M^N` arcs. Each node represents the state
+ * `(x_{N-1}, ..., x_1)` and has `M` outgoing arcs which represent the `N`-gram
+ * score `s(x_N, ..., x_1)`. State `(x_{N-1}, ..., x_1)` transitions to state
+ * `(x_N, ..., x_2)` on label `x_N`.
+ */
+Graph transitionsGraph(int M, int N) {
+  auto numNodes = static_cast<int>(std::pow(M, N - 1));
+  Graph graph;
+  for (int i = 0; i < numNodes; i++) {
+    graph.addNode(true, true);
+  }
+  auto modVal = numNodes / M;
+  for (int i = 0; i < numNodes; ++i) {
+    for (int m = 0; m < M; ++m) {
+      graph.addArc(i, i % modVal, m, m);
     }
   }
-  return emissions;
+  return graph;
 }
 
-int main() {
-  /* Various CTC benchmarks. */
+void timeCtc() {
+  const int T = 1000; // input frames
+  const int U = 100; // output tokens
+  const int M = 28; // size of alphabet
 
-  int T = 1000; // input frames
-  int U = 100; // output tokens
-  int N = 28; // size of alphabet
+  Graph ctc = ctcGraph(randTarget(U, M));
+  Graph emissions = arrayToLinearGraph(randVec(T * M).data(), T, M);
 
-  Graph ctc = ctc_graph(U, N);
-  Graph emissions = emission_graph(T, N);
-
-  auto ctc_loss = [&ctc, &emissions]() {
-    // Loss
-    auto loss = subtract(forwardScore(emissions), forwardScore(compose(ctc, emissions)));
+  auto ctcLoss = [&ctc, &emissions]() {
+    auto loss = subtract(
+      forwardScore(emissions), forwardScore(compose(ctc, emissions)));
     return loss;
   };
-  TIME(ctc_loss);
+  TIME(ctcLoss);
 
-  auto ctc_grad = [loss = ctc_loss(), &emissions, &ctc]() {
+  auto ctcGrad = [loss = ctcLoss(), &emissions, &ctc]() {
     emissions.zeroGrad();
     ctc.zeroGrad();
-    backward(loss);
+    backward(loss, true);
   };
-  TIME(ctc_grad);
+  TIME(ctcGrad);
+}
+
+void timeNgramCtc() {
+  const int T = 200; // input frames
+  const int U = 10; // output tokens
+  const int M = 30; // size of alphabet
+  const int N = 2; // N-gram size
+
+  Graph ctc = ctcGraph(randTarget(U, M));
+  Graph emissions = arrayToLinearGraph(randVec(T * M).data(), T, M);
+  Graph transitions = transitionsGraph(M, N);
+
+  auto ngramCtcLoss = [&ctc, &emissions, &transitions]() {
+    auto num = forwardScore(compose(compose(ctc, transitions), emissions));
+    auto denom = forwardScore(compose(emissions, transitions));
+    auto loss = subtract(denom, num);
+    return loss;
+  };
+  TIME(ngramCtcLoss);
+
+  auto ngramCtcGrad = [loss = ngramCtcLoss(), &emissions, &ctc, &transitions]() {
+    emissions.zeroGrad();
+    ctc.zeroGrad();
+    transitions.zeroGrad();
+    backward(loss, true);
+  };
+  TIME(ngramCtcGrad);
+}
+
+void timeBatchedCtc(const int B) {
+  const int T = 1000; // input frames
+  const int U = 100; // output tokens
+  const int M = 28; // size of alphabet
+
+  // Pre-compute rand targets to avoid contention with std::rand.
+  // Pre-compute emissions scores
+  std::vector<std::vector<int>> targets;
+  std::vector<std::vector<float>> emissionsScores;
+  for (int64_t b = 0; b < B; ++b) {
+    targets.push_back(randTarget(U, M));
+    emissionsScores.push_back(randVec(T * M));
+  }
+
+  auto fwd = [T, U, M, &targets, &emissionsScores](
+                 int b, std::vector<Graph>& vec) {
+    auto ctc = ctcGraph(targets[b]);
+    auto emissions = arrayToLinearGraph(emissionsScores[b].data(), T, M);
+    vec[b] = subtract(
+        forwardScore(emissions), forwardScore(compose(ctc, emissions)));
+  };
+
+  auto bwd = [](int b, std::vector<Graph>& vec) {
+    backward(vec[b]);
+  };
+
+  auto ctcBatched = [T, U, M, B, &targets, &emissionsScores, fwd, bwd]() {
+    // Loss graphs
+    std::vector<Graph> vec(B);
+    {
+      ThreadPool threadPool(B);
+      for (int64_t b = 0; b < B; ++b) {
+        threadPool.enqueue(fwd, b, vec);
+      }
+    }
+
+    {
+      ThreadPool threadPool(B);
+      for (int64_t b = 0; b < B; ++b) {
+        threadPool.enqueue(bwd, b, vec);
+      }
+    }
+  };
+  TIME(ctcBatched);
+}
+
+int main(int argc, char** argv) {
+  /* Various CTC benchmarks.
+   * Usage:
+   *   `./benchmark_ctc <batch_size (default 8)>`
+   */
+  timeCtc();
+  timeNgramCtc();
+
+  int B = 8; // batch size
+  if (argc > 1) {
+    B = std::stoi(argv[1]);
+  }
+  timeBatchedCtc(B);
 }
