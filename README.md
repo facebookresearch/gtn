@@ -1,6 +1,11 @@
 # gtn
 
-## Building
+## Getting Started
+### Requirements
+- A C++ compiler with good C++11 support (e.g. g++ >= 5)
+- `cmake` >= 3.5.1, and `make`
+
+### Building
 
 First, clone the project:
 ```
