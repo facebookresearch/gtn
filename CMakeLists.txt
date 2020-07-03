@@ -13,6 +13,7 @@ option(GTN_BUILD_TESTS "Build tests for gtn" ON)
 option(GTN_BUILD_BENCHMARKS "Build benchmarks for gtn" ON)
 option(GTN_BUILD_EXAMPLES "Build examples for gtn" ON)
 option(GTN_BUILD_PYTHON_BINDINGS "Build python bindings for gtn" OFF)
+option(GTN_BUILD_PYTHON_BINDINGS_NO_GIL "Build python bindings with no GIL for gtn" OFF)
 
 # ----------------------------- Dependencies -----------------------------
 find_package(OpenMP REQUIRED)
@@ -54,7 +55,9 @@ endif()
 
 # Python Bindings
 if (GTN_BUILD_PYTHON_BINDINGS)
-  add_subdirectory(${PROJECT_SOURCE_DIR}/pybind11)
+  message(STATUS "Building Python bindings.")
+  include(${CMAKE_MODULE_PATH}/Buildpybind11.cmake)
+  include(${CMAKE_MODULE_PATH}/pybind11Tools.cmake)
   add_subdirectory(${PROJECT_SOURCE_DIR}/bindings/python)
 endif()
 

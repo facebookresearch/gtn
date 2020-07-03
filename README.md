@@ -34,9 +34,16 @@ make test
 ```
 
 
-## Using python bindings:
+## Using Python bindings:
+### Build Bindings
 ```
-git submodule init && git submodule update
+cmake .. \
+      -DGTN_BUILD_PYTHON_BINDINGS=ON \
+      -DGTN_BUILD_PYTHON_BINDINGS_NO_GIL=ON # optional, for best performance
+```
+
+### Install Bindings
+```
 cd bindings/python
 pip install -e .
 
