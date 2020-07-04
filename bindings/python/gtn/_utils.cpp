@@ -30,27 +30,12 @@ PYBIND11_MODULE(_utils, m) {
         draw(graph, filename, isymbols, osymbols);
       });
 
-   m.def(
-      "array_to_linear_graph",
-      [](py::bytes src,
-         int M,
-         int N,
-         bool calcGrad) {
-        return arrayToLinearGraph(
-            castBytes<float*>(src),
-            M,
-            N,
-            calcGrad);
+  m.def(
+      "array_to_linear_graph", [](py::bytes src, int M, int N, bool calcGrad) {
+        return arrayToLinearGraph(castBytes<float*>(src), M, N, calcGrad);
       });
 
-     m.def(
-      "linear_graph_to_array",
-      [](Graph g,
-         float scale,
-         py::bytes dst) {
-         linearGraphToArray(
-          g,
-          castBytes<float*>(dst)
-          );
-      });
+  m.def("linear_graph_to_array", [](Graph g, py::bytes dst) {
+    linearGraphToArray(g, castBytes<float*>(dst));
+  });
 }

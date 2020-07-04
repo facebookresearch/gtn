@@ -18,12 +18,11 @@ PYBIND11_MODULE(_graph, m) {
           py::overload_cast<bool, bool>(&Graph::addNode),
           "start"_a = false,
           "accept"_a = false)
-      .def(
-          "add_arc",
-          py::overload_cast<int, int, int>(&Graph::addArc))
+      .def("add_arc", py::overload_cast<int, int, int>(&Graph::addArc))
       .def(
           "add_arc",
           py::overload_cast<int, int, int, int, float>(&Graph::addArc))
+      .def("grad", (Graph & (Graph::*)()) & Graph::grad)
       .def("num_arcs", &Graph::numArcs)
       .def("num_nodes", &Graph::numNodes)
       .def("num_start", &Graph::numStart)
