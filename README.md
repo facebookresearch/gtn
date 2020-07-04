@@ -43,7 +43,6 @@ make test
 ## Using python bindings:
 
 ```
-git submodule init && git submodule update
 conda create -n gtn_env -c nogil python=3.9
 conda activate gtn_env
 cd bindings/python
