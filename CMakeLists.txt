@@ -38,6 +38,14 @@ target_include_directories(
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
 )
 
+# Python Bindings
+if (GTN_BUILD_PYTHON_BINDINGS)
+  message(STATUS "Building Python bindings.")
+  include(${CMAKE_MODULE_PATH}/Buildpybind11.cmake)
+  include(${CMAKE_MODULE_PATH}/pybind11Tools.cmake)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/bindings/python)
+endif()
+
 # Tests
 if (GTN_BUILD_TESTS)
   enable_testing()
@@ -53,15 +61,6 @@ endif()
 if (GTN_BUILD_EXAMPLES)
   add_subdirectory(${PROJECT_SOURCE_DIR}/examples)
 endif()
-
-# Python Bindings
-if (GTN_BUILD_PYTHON_BINDINGS)
-  message(STATUS "Building Python bindings.")
-  include(${CMAKE_MODULE_PATH}/Buildpybind11.cmake)
-  include(${CMAKE_MODULE_PATH}/pybind11Tools.cmake)
-  add_subdirectory(${PROJECT_SOURCE_DIR}/bindings/python)
-endif()
-
 
 # ----------------------------- Installation -----------------------------
 # Installation directories

@@ -7,7 +7,21 @@ jobs:
     steps:
       - checkout
       - run:
-          name: RunTests
+          name: "Build"
           command: |
-            sudo apt-get update && sudo apt-get -y install cmake && \
-            mkdir build && cd build && cmake .. && make -j2 && make test
+            sudo apt -y update && \
+            sudo apt -y install build-essential python3-dev python3-pip cmake && \
+            mkdir build && cd build && \
+            cmake .. \
+                  -DGTN_BUILD_PYTHON_BINDINGS=ON \
+                  -DGTN_BUILD_PYTHON_BINDINGS_NO_GIL=ON && \
+            make -j2
+      - run:
+          name: "Install Python bindings"
+          command: |
+            pip3 install packaging && \
+            cd bindings/python && pip3 install -e .
+      - run:
+          name: "Run C++ and Python Binding Tests"
+          command: |
+            cd build && make test

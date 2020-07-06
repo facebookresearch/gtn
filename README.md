@@ -40,18 +40,27 @@ Run tests:
 make test
 ```
 
-## Using python bindings:
 
+## Python Bindings
+Setting up your environment:
 ```
 conda create -n gtn_env -c nogil python=3.9
 conda activate gtn_env
+```
+Install:
+```
 cd bindings/python
 pip install packaging
 pip install -e .
 ```
 
-#### Running examples
+#### Running Tests and Examples
+Python binding tests can be run with `make test`, or with
+```
+python -m unittest discover bindings/python/test
+```
 
+Run a simple example:
 ```
 python bindings/python/examples/simple_graph.py
 ```
