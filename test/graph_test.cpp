@@ -1,5 +1,8 @@
 #define CATCH_CONFIG_MAIN
 
+#include <algorithm>
+#include <cstdlib>
+
 #include "catch.hpp"
 
 #include "gtn/graph.h"
@@ -163,6 +166,42 @@ TEST_CASE("Test copy", "[Graph::deepCopy]") {
 
   copied.addArc(0, 3, 0);
   CHECK(!equals(copied, graph));
+}
+
+TEST_CASE("Test arc weight get/set", "[graph setWeight weightsToVector]") {
+  std::vector<float> l = {1.1, 2.2, 3.3, 4.4};
+
+  Graph g;
+  g.addNode(true, false);
+  g.addNode();
+  g.addNode();
+  g.addNode();
+  g.addNode(false, true);
+  g.addArc(0, 1, 0);
+  g.addArc(1, 2, 0);
+  g.addArc(2, 3, 0);
+  g.addArc(3, 4, 0);
+  g.setWeights(l.data());
+
+  CHECK(l == g.weightsToVector());
+}
+
+TEST_CASE("Test arc label getters", "[graph labelsToVector]") {
+  std::vector<int> l = {0, 1, 2, 3};
+
+  Graph g;
+  g.addNode(true, false);
+  g.addNode();
+  g.addNode();
+  g.addNode(false, true);
+  g.addArc(0, 1, l[0], l[3]);
+  g.addArc(0, 2, l[1], l[2]);
+  g.addArc(1, 2, l[2], l[1]);
+  g.addArc(1, 3, l[3], l[0]);
+
+  CHECK(l == g.labelsToVector(/*ilabel=*/true));
+  std::reverse(l.begin(), l.end());
+  CHECK(l == g.labelsToVector(/*ilabel=*/false));
 }
 
 TEST_CASE("Test gradient functionality", "[graph grad]") {

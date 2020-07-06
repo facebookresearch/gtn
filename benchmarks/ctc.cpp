@@ -75,11 +75,12 @@ void timeCtc() {
   const int M = 28; // size of alphabet
 
   Graph ctc = ctcGraph(randTarget(U, M));
-  Graph emissions = arrayToLinearGraph(randVec(T * M).data(), T, M);
+  Graph emissions = linearGraph(T, M);
+  emissions.setWeights(randVec(T * M).data());
 
   auto ctcLoss = [&ctc, &emissions]() {
     auto loss = subtract(
-      forwardScore(emissions), forwardScore(compose(ctc, emissions)));
+        forwardScore(emissions), forwardScore(compose(ctc, emissions)));
     return loss;
   };
   TIME(ctcLoss);
@@ -99,7 +100,8 @@ void timeNgramCtc() {
   const int N = 2; // N-gram size
 
   Graph ctc = ctcGraph(randTarget(U, M));
-  Graph emissions = arrayToLinearGraph(randVec(T * M).data(), T, M);
+  Graph emissions = linearGraph(T, M);
+  emissions.setWeights(randVec(T * M).data());
   Graph transitions = transitionsGraph(M, N);
 
   auto ngramCtcLoss = [&ctc, &emissions, &transitions]() {
@@ -110,12 +112,13 @@ void timeNgramCtc() {
   };
   TIME(ngramCtcLoss);
 
-  auto ngramCtcGrad = [loss = ngramCtcLoss(), &emissions, &ctc, &transitions]() {
-    emissions.zeroGrad();
-    ctc.zeroGrad();
-    transitions.zeroGrad();
-    backward(loss, true);
-  };
+  auto ngramCtcGrad =
+      [loss = ngramCtcLoss(), &emissions, &ctc, &transitions]() {
+        emissions.zeroGrad();
+        ctc.zeroGrad();
+        transitions.zeroGrad();
+        backward(loss, true);
+      };
   TIME(ngramCtcGrad);
 }
 
@@ -136,14 +139,13 @@ void timeBatchedCtc(const int B) {
   auto fwd = [T, U, M, &targets, &emissionsScores](
                  int b, std::vector<Graph>& vec) {
     auto ctc = ctcGraph(targets[b]);
-    auto emissions = arrayToLinearGraph(emissionsScores[b].data(), T, M);
+    auto emissions = linearGraph(T, M);
+    emissions.setWeights(emissionsScores[b].data());
     vec[b] = subtract(
         forwardScore(emissions), forwardScore(compose(ctc, emissions)));
   };
 
-  auto bwd = [](int b, std::vector<Graph>& vec) {
-    backward(vec[b]);
-  };
+  auto bwd = [](int b, std::vector<Graph>& vec) { backward(vec[b]); };
 
   auto ctcBatched = [T, U, M, B, &targets, &emissionsScores, fwd, bwd]() {
     // Loss graphs

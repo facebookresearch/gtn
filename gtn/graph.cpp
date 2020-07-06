@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdexcept>
 
 #include "graph.h"
@@ -153,6 +154,32 @@ Graph Graph::deepCopy(const Graph& src) {
   out.sharedGraph_->accept = src.sharedGraph_->accept;
   out.sharedGraph_->acceptor = src.sharedGraph_->acceptor;
   *out.sharedWeights_ = *src.sharedWeights_;
+  return out;
+}
+
+void Graph::weightsToArray(float* out) {
+  std::copy(sharedWeights_->data(), sharedWeights_->data() + numArcs(), out);
+}
+
+std::vector<float> Graph::weightsToVector() {
+  std::vector<float> out(numArcs());
+  weightsToArray(out.data());
+  return out;
+}
+
+void Graph::setWeights(const float* weights) {
+  std::copy(weights, weights + numArcs(), sharedWeights_->data());
+}
+
+void Graph::labelsToArray(int* out, bool inLabel) {
+  for (int i = 0; i < numArcs(); ++i) {
+    out[i] = inLabel ? ilabel(i) : olabel(i);
+  }
+}
+
+std::vector<int> Graph::labelsToVector(bool inLabel) {
+  std::vector<int> out(numArcs());
+  labelsToArray(out.data(), inLabel);
   return out;
 }
 

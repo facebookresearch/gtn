@@ -178,6 +178,30 @@ class Graph {
     (*sharedWeights_)[i] = weight;
   }
 
+  /**
+   * Extract an array of weights from a graph. The array should have space for
+   * `g.numArcs()` elements.
+   *
+   * @param[out] out pointer to the buffer to populate with labels
+   */
+  void weightsToArray(float* out);
+  std::vector<float> weightsToVector();
+
+  /**
+   * Set weights on a graph. The array should contain `g.numArcs()` elements.
+   */
+  void setWeights(const float* weights);
+
+  /**
+   * Extract an array of labels from a graph. The array should have space for
+   * `g.numArcs()` elements.
+   *
+   * @param[out] out pointer to the buffer to populate with labels
+   * @param[in] inlabel gets ilabels if true, use olabels if false
+   */
+  void labelsToArray(int* out, bool inLabel = true);
+  std::vector<int> labelsToVector(bool inLabel = true);
+
  private:
   const Node& node(int i) const {
     // NB: assert gets stripped at in release mode

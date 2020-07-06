@@ -22,7 +22,9 @@ Graph emissions_graph(
         emissions_vec.begin(),
         [](float p) -> float { return std::log(p); });
   }
-  return arrayToLinearGraph(emissions_vec.data(), T, N);
+  auto g = linearGraph(T, N);
+  g.setWeights(emissions_vec.data());
+  return g;
 }
 
 Graph ctc_graph(std::vector<int> target, int blank) {
@@ -327,7 +329,6 @@ TEST_CASE("Test ASG Viterbi Path", "[criterion.asg.viterbiPath]") {
   Graph emissions = emissions_graph(input, T, N, true);
 
   auto path = viterbiPath(compose(emissions, transitions));
-  for (auto a = 0; a < path.numArcs(); ++a) {
-    CHECK(path.ilabel(a) == expectedPath[a]);
-  }
+
+  CHECK(path.labelsToVector() == expectedPath);
 }
