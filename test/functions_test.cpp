@@ -809,7 +809,7 @@ TEST_CASE("Test Remove", "[functions.remove]") {
   }
 
   {
-    // Removing a other labels works
+    // Removing other labels works
     Graph g;
     g.addNode(true);
     g.addNode();
@@ -902,6 +902,28 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     expected.addArc(1, 2, 0);
     expected.addArc(1, 2, 1);
     expected.addArc(1, 2, 2);
+    CHECK(equals(remove(g), expected));
+  }
+
+  // Multiple interior removals
+  {
+    Graph g;
+    g.addNode(true);
+    g.addNode();
+    g.addNode();
+    g.addNode();
+    g.addNode(false, true);
+    g.addArc(0, 1, Graph::epsilon);
+    g.addArc(1, 2, Graph::epsilon);
+    g.addArc(2, 3, 0);
+    g.addArc(3, 4, 0);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 0);
+    expected.addArc(1, 2, 0);
     CHECK(equals(remove(g), expected));
   }
 }

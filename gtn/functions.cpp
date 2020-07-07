@@ -153,7 +153,7 @@ Graph closure(Graph graph) {
   Graph closed(gradFunc, {graph.withoutWeights()});
   closed.addNode(true, true);
   for (auto n = 0; n < graph.numNodes(); ++n) {
-    closed.addNode(false, graph.accept(n));
+    closed.addNode();
   }
   for (auto a = 0; a < graph.numArcs(); ++a) {
     closed.addArc(
@@ -163,14 +163,14 @@ Graph closure(Graph graph) {
         graph.olabel(a),
         graph.weight(a));
   }
-  // Add new arcs
-  for (auto s : graph.start()) {
-    // Epsilon from new start to all old starts
-    closed.addArc(0, s + 1, Graph::epsilon);
-    for (auto a : graph.accept()) {
-      // Epsilon from all accept to all old starts
-      closed.addArc(a + 1, s + 1, Graph::epsilon);
-    }
+
+  // Epsilon from new start to old accepts
+  for (auto s: graph.start()) {
+    closed.addArc(0, s+1, Graph::epsilon);
+  }
+  // Epsilon from old accepts to new start
+  for (auto a : graph.accept()) {
+    closed.addArc(a + 1, 0, Graph::epsilon);
   }
   return closed;
 }
@@ -244,7 +244,7 @@ Graph remove(Graph other, int ilabel, int olabel) {
     if (other.start(n) ||
         !std::all_of(other.in(n).begin(), other.in(n).end(), label_match)) {
       nodes[n] =
-          graph.addNode(other.start(n)); // TODO couldn't n also be accepting?
+          graph.addNode(other.start(n));
     }
   }
 
@@ -271,7 +271,7 @@ Graph remove(Graph other, int ilabel, int olabel) {
           }
         } else {
           // Add the arc
-          graph.addArc(n, nodes[dn], other.ilabel(a), other.olabel(a));
+          graph.addArc(curr, nodes[dn], other.ilabel(a), other.olabel(a));
         }
       }
     }
