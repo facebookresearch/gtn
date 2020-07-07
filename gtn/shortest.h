@@ -5,8 +5,8 @@
 namespace gtn {
 namespace detail {
 
-Graph shortestDistance(Graph graph, bool tropical = false);
-Graph shortestPath(Graph graph);
+Graph shortestDistance(const Graph& graph, bool tropical = false);
+Graph shortestPath(const Graph& graph);
 
-}
-}
+} // namespace detail
+} // namespace gtn

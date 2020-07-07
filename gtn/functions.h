@@ -5,9 +5,9 @@
 namespace gtn {
 
 /* Scalar only functions */
-Graph negate(Graph other);
-Graph add(Graph lhs, Graph rhs);
-Graph subtract(Graph lhs, Graph rhs);
+Graph negate(const Graph& other);
+Graph add(const Graph& lhs, const Graph& rhs);
+Graph subtract(const Graph& lhs, const Graph& rhs);
 
 /* Graph-level operations */
 
@@ -23,15 +23,15 @@ enum class Projection {
 /* Performs a deep clone of a graph with an option to project to either the
  * input or output labels. The operation is recorded in the autograd tape. For a
  * version which is not recorded on the autograd tape, see `copy`. */
-Graph clone(Graph other, Projection projection = Projection::NONE);
+Graph clone(const Graph& other, Projection projection = Projection::NONE);
 
 /* Removes the output labels from the graph and records the operation in the
  * autograd tape. This function makes a copy of the input graph. */
-Graph projectInput(Graph other);
+Graph projectInput(const Graph& other);
 
 /* Removes the input labels from the graph and records the operation in the
  * autograd tape. This function makes a copy of the input graph. */
-Graph projectOutput(Graph other);
+Graph projectOutput(const Graph& other);
 
 /* Create the concatenation of two graphs. This operation is recorded in the
  * autograd tape.
@@ -39,7 +39,7 @@ Graph projectOutput(Graph other);
  * Equivalent to `concat({lhs, rhs})`, see:
  *   `Graph concat(std::vector<Graph> * graphs)`.
  **/
-Graph concat(Graph lhs, Graph rhs);
+Graph concat(const Graph& lhs, const Graph& rhs);
 
 /* Create the concatenation of a vector of graphs. This operation is recorded
  * in the autograd tape.
@@ -57,23 +57,23 @@ Graph concat(Graph lhs, Graph rhs);
  * the empty string (epsilon). The concatentation of a single graph is
  * equivalent to a clone.
  */
-Graph concat(std::vector<Graph> graphs);
+Graph concat(const std::vector<Graph>& graphs);
 
 /* Create the (Kleene) closure of the graph. */
-Graph closure(Graph graph);
+Graph closure(const Graph& graph);
 
 /* Create the sum (union) of a vector of graphs. */
-Graph sum(std::vector<Graph> graphs);
+Graph sum(const std::vector<Graph>& graphs);
 
 // Create the equivalent graph without epsilon transitions. If labels are
 // specified then instead of removing epsilon transitions, arcs with the
 // matching label are removed. The removed arc labels are treated as if they
 // were epsilon transitions. Note this is different than pruning the arc.
-Graph remove(Graph other, int label = Graph::epsilon);
-Graph remove(Graph other, int ilabel, int olabel);
+Graph remove(const Graph& other, int label = Graph::epsilon);
+Graph remove(const Graph& other, int ilabel, int olabel);
 
 // Compose two graphs.
-Graph compose(Graph first, Graph second);
+Graph compose(const Graph& first, const Graph& second);
 
 /*
  * Compute the forward score of a graph. Returns the score in a scalar graph
@@ -82,7 +82,7 @@ Graph compose(Graph first, Graph second);
  * semiring.
  * NB: This assumes the input graph is acyclic.
  */
-Graph forwardScore(Graph graph);
+Graph forwardScore(const Graph& graph);
 
 /*
  * Compute the Viterbi score of a graph. Returns the score in a scalar graph
@@ -91,7 +91,7 @@ Graph forwardScore(Graph graph);
  * semiring.
  * NB: This assumes the input graph is acyclic.
  */
-Graph viterbiScore(Graph graph);
+Graph viterbiScore(const Graph& graph);
 
 /*
  * Compue the Viterbi shortest path of a graph and returns it in a single
@@ -100,5 +100,5 @@ Graph viterbiScore(Graph graph);
  * in the tropical semiring.
  * NB: This assumes the input graph is acyclic.
  */
-Graph viterbiPath(Graph graph);
+Graph viterbiPath(const Graph& graph);
 } // namespace gtn

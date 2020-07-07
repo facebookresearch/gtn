@@ -7,7 +7,7 @@
 
 namespace gtn {
 
-Graph negate(Graph other) {
+Graph negate(const Graph& other) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(negate(deltas));
   };
@@ -18,7 +18,7 @@ Graph negate(Graph other) {
   return result;
 }
 
-Graph add(Graph lhs, Graph rhs) {
+Graph add(const Graph& lhs, const Graph& rhs) {
   float weight = lhs.item() + rhs.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
@@ -31,7 +31,7 @@ Graph add(Graph lhs, Graph rhs) {
   return result;
 }
 
-Graph subtract(Graph lhs, Graph rhs) {
+Graph subtract(const Graph& lhs, const Graph& rhs) {
   float weight = lhs.item() - rhs.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
@@ -46,7 +46,9 @@ Graph subtract(Graph lhs, Graph rhs) {
   return result;
 }
 
-Graph clone(Graph other, Projection projection /* = Projection::NONE */) {
+Graph clone(
+    const Graph& other,
+    Projection projection /* = Projection::NONE */) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
   };
@@ -65,19 +67,19 @@ Graph clone(Graph other, Projection projection /* = Projection::NONE */) {
   return out;
 }
 
-Graph projectInput(Graph other) {
+Graph projectInput(const Graph& other) {
   return clone(other, Projection::INPUT);
 }
 
-Graph projectOutput(Graph other) {
+Graph projectOutput(const Graph& other) {
   return clone(other, Projection::OUTPUT);
 }
 
-Graph concat(Graph lhs, Graph rhs) {
+Graph concat(const Graph& lhs, const Graph& rhs) {
   return concat({lhs, rhs});
 }
 
-Graph concat(std::vector<Graph> graphs) {
+Graph concat(const std::vector<Graph>& graphs) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     int arcOffset = 0;
     for (auto i = 0; i < inputs.size(); ++i) {
@@ -139,7 +141,7 @@ Graph concat(std::vector<Graph> graphs) {
   return out;
 }
 
-Graph closure(Graph graph) {
+Graph closure(const Graph& graph) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     auto grad = std::vector<float>(inputs[0].numArcs());
     // *NB* this assumes arcs in the new graph are the same order
@@ -175,7 +177,7 @@ Graph closure(Graph graph) {
   return closed;
 }
 
-Graph sum(std::vector<Graph> graphs) {
+Graph sum(const std::vector<Graph>& graphs) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     int arcOffset = 0;
     for (auto& graph : inputs) {
@@ -216,11 +218,11 @@ Graph sum(std::vector<Graph> graphs) {
   return summed;
 }
 
-Graph remove(Graph other, int label /* = Graph::epsilon */) {
+Graph remove(const Graph& other, int label /* = Graph::epsilon */) {
   return remove(other, label, label);
 }
 
-Graph remove(Graph other, int ilabel, int olabel) {
+Graph remove(const Graph& other, int ilabel, int olabel) {
   /* TODO we may want to make this function work appropriately with weights.
    * In order to do so for DAGs, we can modify the routine to accumulate scores
    * of epsilon transitions appropriately. Every time we add a node to the
@@ -350,7 +352,7 @@ auto findReachable(Graph first, Graph second) {
 }
 
 // Composes two graphs and returns a new graph
-Graph compose(Graph first, Graph second) {
+Graph compose(const Graph& first, const Graph& second) {
   // Compute reachable nodes from any accept state in the new graph
   auto reachable = findReachable(first, second);
 
@@ -484,15 +486,15 @@ Graph compose(Graph first, Graph second) {
       ngraph, gradFunc, {first.withoutWeights(), second.withoutWeights()});
 }
 
-Graph forwardScore(Graph graph) {
+Graph forwardScore(const Graph& graph) {
   return detail::shortestDistance(graph);
 }
 
-Graph viterbiScore(Graph graph) {
+Graph viterbiScore(const Graph& graph) {
   return detail::shortestDistance(graph, true);
 }
 
-Graph viterbiPath(Graph graph) {
+Graph viterbiPath(const Graph& graph) {
   return detail::shortestPath(graph);
 }
 

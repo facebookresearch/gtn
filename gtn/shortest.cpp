@@ -74,7 +74,7 @@ void shortestDistanceGrad(
 
 } // namespace
 
-Graph shortestDistance(Graph graph, bool tropical /* = false */) {
+Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
   std::queue<int> computed;
   // List of scores and list of in degrees for each node
   std::vector<float> scores(graph.numNodes(), neginf);
@@ -122,7 +122,7 @@ Graph shortestDistance(Graph graph, bool tropical /* = false */) {
   }
 
   auto gradFunc = [scores = std::move(scores), output = score, tropical](
-      std::vector<Graph>& inputs, Graph deltas) mutable {
+                      std::vector<Graph>& inputs, Graph deltas) mutable {
     shortestDistanceGrad(inputs[0], output, deltas, scores, tropical);
   };
 
@@ -133,7 +133,7 @@ Graph shortestDistance(Graph graph, bool tropical /* = false */) {
   return result;
 }
 
-Graph shortestPath(Graph graph) {
+Graph shortestPath(const Graph& graph) {
   std::queue<int> computed;
   // List of in degrees for each node
   std::vector<int> degrees;
@@ -205,7 +205,7 @@ Graph shortestPath(Graph graph) {
   }
 
   auto gradFunc = [arcs = std::move(arcs)](
-      std::vector<Graph>& inputs, Graph deltas) mutable {
+                      std::vector<Graph>& inputs, Graph deltas) mutable {
     std::vector<float> grad(inputs[0].numArcs(), 0.0);
     for (auto a = 0; a < deltas.numArcs(); ++a) {
       grad[arcs[a]] += deltas.weight(a);
@@ -217,4 +217,3 @@ Graph shortestPath(Graph graph) {
 
 } // namespace detail
 } // namespace gtn
-
