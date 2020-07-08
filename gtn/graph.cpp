@@ -177,16 +177,6 @@ void Graph::arcSort(bool olabel /* = false */) {
   }
 }
 
-void Graph::weightsToArray(float* out) {
-  std::copy(sharedWeights_->data(), sharedWeights_->data() + numArcs(), out);
-}
-
-std::vector<float> Graph::weightsToVector() {
-  std::vector<float> out(numArcs());
-  weightsToArray(out.data());
-  return out;
-}
-
 void Graph::setWeights(const float* weights) {
   std::copy(weights, weights + numArcs(), sharedWeights_->data());
 }

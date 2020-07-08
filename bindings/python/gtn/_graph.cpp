@@ -30,6 +30,11 @@ PYBIND11_MODULE(_graph, m) {
       .def("item", &Graph::item)
       .def("calc_grad", &Graph::calcGrad)
       .def("zero_grad", &Graph::zeroGrad)
+      .def(
+          "weights",
+          [](Graph& g) {
+            return std::vector<float>(g.weights(), g.weights() + g.numArcs());
+          })
       .def("__repr__", [](const Graph& a) {
         std::ostringstream ss;
         print(a, ss);

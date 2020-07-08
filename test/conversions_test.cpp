@@ -32,5 +32,5 @@ TEST_CASE("Test Linear Conversion", "[conversions.createLinear]") {
     }
   }
 
-  CHECK(arr == g.weightsToVector());
+  CHECK(arr == std::vector<float>(g.weights(), g.weights() + g.numArcs()));
 }

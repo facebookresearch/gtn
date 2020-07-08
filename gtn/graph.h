@@ -192,13 +192,17 @@ class Graph {
   }
 
   /**
-   * Extract an array of weights from a graph. The array should have space for
+   * Returns an array of weights from a graph. The array will contain
    * `g.numArcs()` elements.
-   *
-   * @param[out] out pointer to the buffer to populate with labels
    */
-  void weightsToArray(float* out);
-  std::vector<float> weightsToVector();
+  float* weights() {
+    assert(sharedWeights_ != nullptr);
+    return sharedWeights_->data();
+  }
+  const float* weights() const {
+    assert(sharedWeights_ != nullptr);
+    return sharedWeights_->data();
+  }
 
   /**
    * Set weights on a graph. The array should contain `g.numArcs()` elements.

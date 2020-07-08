@@ -151,7 +151,7 @@ TEST_CASE("Test copy", "[Graph::deepCopy]") {
   CHECK(!equals(copied, graph));
 }
 
-TEST_CASE("Test arc weight get/set", "[graph setWeight weightsToVector]") {
+TEST_CASE("Test arc weight get/set", "[graph setWeight weights]") {
   std::vector<float> l = {1.1, 2.2, 3.3, 4.4};
 
   Graph g;
@@ -166,7 +166,7 @@ TEST_CASE("Test arc weight get/set", "[graph setWeight weightsToVector]") {
   g.addArc(3, 4, 0);
   g.setWeights(l.data());
 
-  CHECK(l == g.weightsToVector());
+  CHECK(l == std::vector<float>(g.weights(), g.weights() + g.numArcs()));
 }
 
 TEST_CASE("Test arc label getters", "[graph labelsToVector]") {
