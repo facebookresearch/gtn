@@ -378,17 +378,13 @@ Graph compose(const Graph& first, const Graph& second, std::shared_ptr<ArcMatche
   /* Here we assume deltas is the output (e.g. ngraph) and we know where
    * each arc came from. This makes it possible to disambiguate two arcs in the
    * composed graph with the same label and the same src and destination nodes.
-   * (TODO we may want to merge these arcs in general, though this may be
-   * better implemented in a more explicit way with e.g. minimize.)  */
+   */
   auto gradFunc = [gradInfo = std::move(gradInfo)](
                       std::vector<Graph>& inputs, Graph deltas) {
     // In this case the arc's parents are always from the
     // first and second input graphs respectively.
     bool calcGrad1 = inputs[0].calcGrad();
     bool calcGrad2 = inputs[1].calcGrad();
-    if (!(calcGrad1 || calcGrad2)) {
-      return;
-    }
     auto grad1 = calcGrad1 ? std::vector<float>(inputs[0].numArcs(), 0.0) : std::vector<float>{};
     auto grad2 = calcGrad2 ? std::vector<float>(inputs[1].numArcs(), 0.0) : std::vector<float>{};
     for (int i = 0; i < gradInfo.size(); i++) {

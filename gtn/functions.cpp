@@ -82,19 +82,16 @@ Graph concat(const Graph& lhs, const Graph& rhs) {
 
 Graph concat(const std::vector<Graph>& graphs) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
-    int arcOffset = 0;
+    auto grad = deltas.weights();
     for (auto i = 0; i < inputs.size(); ++i) {
       auto& graph = inputs[i];
       if (graph.calcGrad()) {
-        auto grad = std::vector<float>(graph.numArcs());
-        for (auto a = 0; a < grad.size(); ++a) {
-          grad[a] = deltas.weight(a + arcOffset);
-        }
-        graph.addGrad(std::move(grad));
+        graph.addGrad(
+          std::vector<float>(grad, grad + graph.numArcs()));
       }
-      arcOffset += graph.numArcs();
+      grad += graph.numArcs();
       if (i > 0) {
-        arcOffset += inputs[i - 1].numAccept() * graph.numStart();
+        grad += inputs[i - 1].numAccept() * graph.numStart();
       }
     }
   };
@@ -144,13 +141,10 @@ Graph concat(const std::vector<Graph>& graphs) {
 
 Graph closure(const Graph& graph) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
-    auto grad = std::vector<float>(inputs[0].numArcs());
+    auto grad = deltas.weights();
     // *NB* this assumes arcs in the new graph are the same order
     // as in the old graph.
-    for (auto i = 0; i < grad.size(); ++i) {
-      grad[i] = deltas.weight(i);
-    }
-    inputs[0].addGrad(std::move(grad));
+    inputs[0].addGrad(std::vector<float>(grad, grad + inputs[0].numArcs()));
   };
 
   Graph closed(gradFunc, {graph.withoutWeights()});
@@ -180,16 +174,13 @@ Graph closure(const Graph& graph) {
 
 Graph sum(const std::vector<Graph>& graphs) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
-    int arcOffset = 0;
+    auto grad = deltas.weights();
     for (auto& graph : inputs) {
       if (graph.calcGrad()) {
-        auto grad = std::vector<float>(graph.numArcs());
-        for (auto a = 0; a < grad.size(); ++a) {
-          grad[a] = deltas.weight(a + arcOffset);
-        }
-        graph.addGrad(std::move(grad));
+        graph.addGrad(
+          std::vector<float>(grad, grad + graph.numArcs()));
       }
-      arcOffset += graph.numArcs();
+      grad += graph.numArcs();
     }
   };
 
