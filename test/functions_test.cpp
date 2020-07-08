@@ -97,26 +97,34 @@ TEST_CASE("Test Composition", "[functions.compose]") {
 
     CHECK(equals(compose(g1, g2), Graph{}));
     CHECK(equals(compose(g2, g1), Graph{}));
+    CHECK(equals(intersect(g2, g1), Graph{}));
+
+    // Check singly sorted version
+    g1.arcSort(true);
+    CHECK(equals(compose(g1, g2), Graph{}));
+
+    // Check doubly sorted version
+    g2.arcSort();
+    CHECK(equals(compose(g1, g2), Graph{}));
   }
 
   {
     // Self-loop in the composed graph
-    Graph first;
-    first.addNode(true);
-    first.addNode(false, true);
-    first.addArc(0, 0, 0);
-    first.addArc(0, 1, 1);
-    first.addArc(1, 1, 2);
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 0, 0);
+    g1.addArc(0, 1, 1);
+    g1.addArc(1, 1, 2);
 
-    Graph second;
-    second.addNode(true);
-    second.addNode();
-    second.addNode(false, true);
-    second.addArc(0, 1, 0);
-    second.addArc(1, 1, 0);
-    second.addArc(1, 2, 1);
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode();
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 0);
+    g2.addArc(1, 1, 0);
+    g2.addArc(1, 2, 1);
 
-    Graph composed = compose(first, second);
     std::stringstream in(
         "0\n"
         "2\n"
@@ -124,26 +132,34 @@ TEST_CASE("Test Composition", "[functions.compose]") {
         "1 1 0\n"
         "1 2 1\n");
     Graph expected = load(in);
-    CHECK(isomorphic(composed, expected));
+    CHECK(isomorphic(compose(g1, g2), expected));
+    CHECK(isomorphic(intersect(g1, g2), expected));
+
+    // Check singly sorted version
+    g1.arcSort(true);
+    CHECK(isomorphic(compose(g1, g2), expected));
+
+    // Check doubly sorted version
+    g2.arcSort();
+    CHECK(isomorphic(compose(g1, g2), expected));
   }
 
   {
     // Loop in the composed graph
-    Graph first;
-    first.addNode(true);
-    first.addNode(false, true);
-    first.addArc(0, 1, 0);
-    first.addArc(1, 1, 1);
-    first.addArc(1, 0, 0);
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0);
+    g1.addArc(1, 1, 1);
+    g1.addArc(1, 0, 0);
 
-    Graph second;
-    second.addNode(true);
-    second.addNode(false, true);
-    second.addArc(0, 0, 0);
-    second.addArc(0, 1, 1);
-    second.addArc(1, 0, 1);
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 0, 0);
+    g2.addArc(0, 1, 1);
+    g2.addArc(1, 0, 1);
 
-    Graph composed = compose(first, second);
     std::stringstream in(
         "0\n"
         "2\n"
@@ -152,31 +168,39 @@ TEST_CASE("Test Composition", "[functions.compose]") {
         "1 2 1\n"
         "2 1 1\n");
     Graph expected = load(in);
-    CHECK(isomorphic(composed, expected));
+    CHECK(isomorphic(compose(g1, g2), expected));
+    CHECK(isomorphic(intersect(g1, g2), expected));
+
+    // Check singly sorted version
+    g1.arcSort(true);
+    CHECK(isomorphic(compose(g1, g2), expected));
+
+    // Check doubly sorted version
+    g2.arcSort();
+    CHECK(isomorphic(compose(g1, g2), expected));
   }
 
   {
-    Graph first;
-    first.addNode(true);
-    first.addNode();
-    first.addNode();
-    first.addNode();
-    first.addNode(false, true);
-    for (int i = 0; i < first.numNodes() - 1; i++) {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode();
+    g1.addNode();
+    g1.addNode();
+    g1.addNode(false, true);
+    for (int i = 0; i < g1.numNodes() - 1; i++) {
       for (int j = 0; j < 3; j++) {
-        first.addArc(i, i + 1, j, j, j);
+        g1.addArc(i, i + 1, j, j, j);
       }
     }
 
-    Graph second;
-    second.addNode(true);
-    second.addNode();
-    second.addNode(false, true);
-    second.addArc(0, 1, 0, 0, 3.5);
-    second.addArc(1, 1, 0, 0, 2.5);
-    second.addArc(1, 2, 1, 1, 1.5);
-    second.addArc(2, 2, 1, 1, 4.5);
-    Graph composed = compose(first, second);
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode();
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 0, 0, 3.5);
+    g2.addArc(1, 1, 0, 0, 2.5);
+    g2.addArc(1, 2, 1, 1, 1.5);
+    g2.addArc(2, 2, 1, 1, 4.5);
     std::stringstream in(
         "0\n"
         "6\n"
@@ -189,7 +213,16 @@ TEST_CASE("Test Composition", "[functions.compose]") {
         "3 6 1 1 2.5\n"
         "5 6 1 1 5.5\n");
     Graph expected = load(in);
-    CHECK(isomorphic(composed, expected));
+    CHECK(isomorphic(compose(g1, g2), expected));
+    CHECK(isomorphic(intersect(g1, g2), expected));
+
+    // Check singly sorted version
+    g1.arcSort(true);
+    CHECK(isomorphic(compose(g1, g2), expected));
+
+    // Check doubly sorted version
+    g2.arcSort();
+    CHECK(isomorphic(compose(g1, g2), expected));
   }
 }
 

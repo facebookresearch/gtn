@@ -68,9 +68,6 @@ class Graph {
   int numAccept() const {
     return sharedGraph_->accept.size();
   };
-  bool acceptor() const {
-    return sharedGraph_->acceptor;
-  }
 
   /* Get the score on a single arc graph. */
   float item() const;
@@ -178,6 +175,22 @@ class Graph {
     (*sharedWeights_)[i] = weight;
   }
 
+  /* Sort the arcs entering and exiting a node in increasing order by arc in
+   * label (default) or out label if `olabel = True`. This function is intended
+   * to be used prior to calls to `intersect` and `compose` to improve the
+   * efficiency of the algorithm. */
+  void arcSort(bool olabel = false);
+
+  /* Check if the arcs entering and exiting a node are sorted by in label. */
+  bool ilabelSorted() const {
+    return sharedGraph_->ilabelSorted;
+  }
+
+  /* Check if the arcs entering and exiting a node are sorted by out label. */
+  bool olabelSorted() const {
+    return sharedGraph_->olabelSorted;
+  }
+
   /**
    * Extract an array of weights from a graph. The array should have space for
    * `g.numArcs()` elements.
@@ -226,7 +239,10 @@ class Graph {
     std::vector<Node> nodes;
     std::vector<int> start;
     std::vector<int> accept;
-    bool acceptor{true};
+
+    // Some optional metadata about the graph
+    bool ilabelSorted{false};
+    bool olabelSorted{false};
   };
 
   struct SharedGrad {
@@ -234,7 +250,6 @@ class Graph {
     GradFunc gradFunc{nullptr};
     std::vector<Graph> inputs;
     std::unique_ptr<Graph> grad{nullptr};
-    // TODO what are the implications here
     bool calcGrad;
   };
 

@@ -45,6 +45,7 @@ Graph ctcGraph(const std::vector<int>& target) {
       ctc.addArc(l - 2, l, label);
     }
   }
+  ctc.arcSort();
   return ctc;
 }
 
@@ -66,6 +67,7 @@ Graph transitionsGraph(int M, int N) {
       graph.addArc(i, i % modVal, m, m);
     }
   }
+  graph.arcSort();
   return graph;
 }
 
@@ -76,11 +78,12 @@ void timeCtc() {
 
   Graph ctc = ctcGraph(randTarget(U, M));
   Graph emissions = linearGraph(T, M);
+  emissions.arcSort();
   emissions.setWeights(randVec(T * M).data());
 
   auto ctcLoss = [&ctc, &emissions]() {
     auto loss = subtract(
-        forwardScore(emissions), forwardScore(compose(ctc, emissions)));
+        forwardScore(emissions), forwardScore(intersect(ctc, emissions)));
     return loss;
   };
   TIME(ctcLoss);
@@ -105,8 +108,8 @@ void timeNgramCtc() {
   Graph transitions = transitionsGraph(M, N);
 
   auto ngramCtcLoss = [&ctc, &emissions, &transitions]() {
-    auto num = forwardScore(compose(compose(ctc, transitions), emissions));
-    auto denom = forwardScore(compose(emissions, transitions));
+    auto num = forwardScore(intersect(intersect(ctc, transitions), emissions));
+    auto denom = forwardScore(intersect(emissions, transitions));
     auto loss = subtract(denom, num);
     return loss;
   };
@@ -142,7 +145,7 @@ void timeBatchedCtc(const int B) {
     auto emissions = linearGraph(T, M);
     emissions.setWeights(emissionsScores[b].data());
     vec[b] = subtract(
-        forwardScore(emissions), forwardScore(compose(ctc, emissions)));
+        forwardScore(emissions), forwardScore(intersect(ctc, emissions)));
   };
 
   auto bwd = [](int b, std::vector<Graph>& vec) { backward(vec[b]); };

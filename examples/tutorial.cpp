@@ -492,9 +492,6 @@ void simpleTransducers() {
   graph.addNode();
   graph.addNode(false, true);
 
-  // By default a graph is an acceptor
-  assert(graph.acceptor());
-
   // Adding an arc with just an input label, the output label defaults to have
   // the same value as the input label
   graph.addArc(0, 1, 0);
@@ -502,14 +499,8 @@ void simpleTransducers() {
   // Add an arc from node 0 to 2 with the same input and output label of 1
   graph.addArc(0, 1, 1, 1);
 
-  // The graph is still an acceptor
-  assert(graph.acceptor());
-
   // However, adding an arc with a different input and output label
   graph.addArc(1, 2, 1, 2);
-
-  // The graph is no longer an acceptor
-  assert(!graph.acceptor());
 
   // Specify the input and output symbols
   draw(graph, "simple_fst.dot", isymbols, osymbols);

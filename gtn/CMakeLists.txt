@@ -4,6 +4,8 @@ set(
   GTN_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/autograd.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/autograd.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/compose.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/compose.h
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/common/conversions.h
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/common/conversions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/functions.cpp

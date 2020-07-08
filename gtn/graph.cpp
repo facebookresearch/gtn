@@ -48,6 +48,8 @@ int Graph::addNode(bool start /* = false */, bool accept /* = false */) {
   if (accept) {
     sharedGraph_->accept.push_back(idx);
   }
+  sharedGraph_->ilabelSorted = false;
+  sharedGraph_->olabelSorted = false;
   return idx;
 }
 
@@ -61,12 +63,14 @@ int Graph::addArc(
     int ilabel,
     int olabel,
     float weight /* = 0 */) {
-  sharedGraph_->acceptor &= (ilabel == olabel);
+  assert(ilabel >= epsilon && olabel >= epsilon);
   auto idx = numArcs();
   sharedGraph_->arcs.emplace_back(upNode, downNode, ilabel, olabel);
   sharedWeights_->push_back(weight);
   node(upNode).out.push_back(idx);
   node(downNode).in.push_back(idx);
+  sharedGraph_->ilabelSorted = false;
+  sharedGraph_->olabelSorted = false;
   return idx;
 }
 
@@ -152,9 +156,25 @@ Graph Graph::deepCopy(const Graph& src) {
   out.sharedGraph_->nodes = src.sharedGraph_->nodes;
   out.sharedGraph_->start = src.sharedGraph_->start;
   out.sharedGraph_->accept = src.sharedGraph_->accept;
-  out.sharedGraph_->acceptor = src.sharedGraph_->acceptor;
   *out.sharedWeights_ = *src.sharedWeights_;
   return out;
+}
+
+void Graph::arcSort(bool olabel /* = false */) {
+  if ((olabel && sharedGraph_->olabelSorted) ||
+      (!olabel && sharedGraph_->ilabelSorted)) {
+    return;
+  }
+  sharedGraph_->olabelSorted = olabel;
+  sharedGraph_->ilabelSorted = !olabel;
+  auto sortFn = [olabel, &arcs = sharedGraph_->arcs](int a, int b) {
+    return olabel ? arcs[a].olabel < arcs[b].olabel :
+      arcs[a].ilabel < arcs[b].ilabel;
+  };
+  for (auto& n : sharedGraph_->nodes) {
+    std::sort(n.in.begin(), n.in.end(), sortFn);
+    std::sort(n.out.begin(), n.out.end(), sortFn);
+  }
 }
 
 void Graph::weightsToArray(float* out) {

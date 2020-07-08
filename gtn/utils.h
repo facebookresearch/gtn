@@ -58,10 +58,10 @@ void print(Graph graph);
 void print(Graph graph, std::ostream& out);
 
 /* Draw a graph in graphviz dot format.
- * Arc labels are of the format "ilabel/olabel:weight". If the graph is an
- * acceptor and the output symbols are not specified then the olabel is omitted
- * "ilabel:weight"
- * */
+ * Arc labels are of the format "ilabel/olabel:weight". If the output symbols
+ * are not specified then the olabel is omitted and arc labels are of the
+ * format "ilabel:weight"
+ */
 using SymbolMap = std::unordered_map<int, std::string>;
 void draw(
     Graph graph,

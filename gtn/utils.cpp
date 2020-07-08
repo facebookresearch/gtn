@@ -271,7 +271,7 @@ void draw(
       auto ilabel = label_to_string(isymbols, graph.ilabel(a));
       out << "  " << graph.upNode(a) << " -> " << graph.downNode(a)
           << " [label = \"" << ilabel;
-      if (!graph.acceptor() || !osymbols.empty()) {
+      if (!osymbols.empty()) {
         auto olabel = label_to_string(osymbols, graph.olabel(a));
         out << ":" << olabel;
       }

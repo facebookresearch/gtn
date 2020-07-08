@@ -79,10 +79,14 @@ void timeForward() {
 }
 
 void timeCompose() {
-  auto first = makeLinear(100, 30);
-  auto second = makeLinear(50, 100);
-  for (int i = 0; i < 50; i++) {
-    for (int j = 0; j < 100; j++) {
+  const int N1 = 100;
+  const int N2 = 50;
+  const int A1 = 20;
+  const int A2 = 500;
+  auto first = makeLinear(N1, A1);
+  auto second = makeLinear(N2, A2);
+  for (int i = 0; i < N2; i++) {
+    for (int j = 0; j < A2; j++) {
       // add self loops so composition completes
       second.addArc(i, i, j);
     }
@@ -99,6 +103,14 @@ void timeCompose() {
     backward(out);
   };
   TIME(composeBackward);
+
+  first.arcSort(true);
+  second.arcSort();
+  auto composeForwardSorted = [&first, &second]() {
+    auto out = compose(first, second);
+  };
+  TIME(composeForwardSorted) {
+  }
 }
 
 int main() {

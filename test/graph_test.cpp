@@ -126,22 +126,6 @@ TEST_CASE("Test Graph", "[graph]") {
     CHECK(g.ilabel(1) == 1);
     CHECK(g.olabel(1) == 0);
   }
-
-  {
-    // Check acceptor status
-    Graph g;
-    g.addNode(true);
-    g.addNode();
-    g.addNode(false, true);
-    CHECK(g.acceptor());
-    g.addArc(0, 1, 1);
-    g.addArc(1, 2, 1, 1);
-    g.addArc(0, 1, 0, 0, 3.0);
-    CHECK(g.acceptor());
-    g.addArc(1, 2, 2, 1);
-    g.addArc(1, 2, 2, 2);
-    CHECK(!g.acceptor());
-  }
 }
 
 TEST_CASE("Test copy", "[Graph::deepCopy]") {
@@ -160,7 +144,6 @@ TEST_CASE("Test copy", "[Graph::deepCopy]") {
   // Test copy
   Graph copied = Graph::deepCopy(graph);
   CHECK(equals(copied, graph));
-  CHECK(copied.acceptor() == graph.acceptor());
   CHECK(copied.calcGrad() == graph.calcGrad());
   CHECK(copied.id() != graph.id());
 
@@ -294,4 +277,50 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
     g.grad().setWeight(0, 2.0);
     CHECK(gradsV[0] == 1.0);
   }
+}
+
+TEST_CASE("Test sort", "[Graph::arcSort]") {
+  // sort on empty graph does nothing
+  Graph g;
+  g.arcSort();
+
+  g.addNode();
+  g.addNode();
+  g.addNode();
+
+  g.addArc(0, 1, 1, 3);
+  g.addArc(0, 1, 0, 2);
+  g.addArc(0, 1, 3, 4);
+  g.addArc(1, 1, 3, 0);
+  g.addArc(1, 1, 0, 4);
+  g.addArc(1, 2, 0, 4);
+  g.addArc(1, 2, 1, 1);
+  g.addArc(1, 2, 2, 0);
+
+  // sort on ilabel
+  g.arcSort();
+  auto ilabelCmp = [&g](int a, int b) {
+    return g.ilabel(a) < g.ilabel(b);
+  };
+  for (auto n = 0; n < g.numNodes(); ++n) {
+    CHECK(std::is_sorted(g.in(n).begin(), g.in(n).end(), ilabelCmp));
+    CHECK(std::is_sorted(g.out(n).begin(), g.out(n).end(), ilabelCmp));
+  }
+  CHECK(g.ilabelSorted());
+  CHECK(!g.olabelSorted());
+
+  // sort on olabel
+  g.arcSort(true);
+  auto olabelCmp = [&g](int a, int b) {
+    return g.olabel(a) < g.olabel(b);
+  };
+  for (auto n = 0; n < g.numNodes(); ++n) {
+    CHECK(std::is_sorted(g.in(n).begin(), g.in(n).end(), olabelCmp));
+    CHECK(std::is_sorted(g.out(n).begin(), g.out(n).end(), olabelCmp));
+  }
+  CHECK(!g.ilabelSorted());
+  CHECK(g.olabelSorted());
+
+  g.addArc(1, 2, 0, 3);
+  CHECK(!g.olabelSorted());
 }

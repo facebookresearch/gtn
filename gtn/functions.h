@@ -38,7 +38,7 @@ Graph projectOutput(const Graph& other);
  *
  * Equivalent to `concat({lhs, rhs})`, see:
  *   `Graph concat(std::vector<Graph> * graphs)`.
- **/
+ */
 Graph concat(const Graph& lhs, const Graph& rhs);
 
 /* Create the concatenation of a vector of graphs. This operation is recorded
@@ -72,8 +72,24 @@ Graph sum(const std::vector<Graph>& graphs);
 Graph remove(const Graph& other, int label = Graph::epsilon);
 Graph remove(const Graph& other, int ilabel, int olabel);
 
-// Compose two graphs.
-Graph compose(const Graph& first, const Graph& second);
+/* Compose two transducers. This operation is recorded in the autograd tape.
+ * If x:y is transduced by `lhs` and `y:z` is transduced by `rhs` then the
+ * composition will transduce `x:z`. The arc scores are added in the composed
+ * graph.
+ */
+Graph compose(const Graph& lhs, const Graph& rhs);
+
+/* Intersect two acceptors. This operation is recorded in the autograd tape.
+ * This function only works on acceptors, calling it on a `graph` where
+ * `graph.ilabel(a) != graph.olabel(a)` for some `a` is undefined and may yield
+ * incorrect results. The intersected graph accepts any path `x` which is
+ * accepted by both `lhs` and `rhs`. The arc scores are added in the
+ * intersected graph.
+ *
+ * The result of `compose(lhs, rhs)` will yield an equivalent result, however;
+ * this function should be preferred since the implementation may be faster.
+ */
+Graph intersect(const Graph& lhs, const Graph& rhs);
 
 /*
  * Compute the forward score of a graph. Returns the score in a scalar graph
