@@ -33,9 +33,19 @@ class GraphTestCase(GTNModuleTestCase):
 
         self.assertEqual(self.g.num_arcs(), 5)
 
-    def test_graph_weights(self):
+    def test_graph_weights_get(self):
         weights = self.g.weights()
         expected = [0, 0, 0, 2.1, 0]
         self.assertEqual(len(weights), len(expected))
         for i in range(0, len(weights)):
             self.assertAlmostEqual(weights[i], expected[i], places=4)
+    
+    def test_graph_weights_set(self):
+        weights_original = self.g.weights()
+        weights_new_expected = [1.1, -3.4, 0, 0.5, 0]
+        self.g.set_weights(weights_new_expected)
+        weights_new = self.g.weights()
+        self.assertEqual(len(weights_new), len(weights_new_expected))
+        for i in range(0, len(weights_new)):
+            self.assertAlmostEqual(weights_new[i], weights_new_expected[i], places=4)
+        self.g.set_weights(weights_original)

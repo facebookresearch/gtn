@@ -35,6 +35,11 @@ PYBIND11_MODULE(_graph, m) {
           [](Graph& g) {
             return std::vector<float>(g.weights(), g.weights() + g.numArcs());
           })
+      .def(
+          "set_weights",
+          [](Graph& g, const std::vector<float>& weights) {
+            g.setWeights(weights.data());
+          })
       .def("__repr__", [](const Graph& a) {
         std::ostringstream ss;
         print(a, ss);
