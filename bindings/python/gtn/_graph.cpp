@@ -21,7 +21,8 @@ PYBIND11_MODULE(_graph, m) {
       .def("add_arc", py::overload_cast<int, int, int>(&Graph::addArc))
       .def(
           "add_arc",
-          py::overload_cast<int, int, int, int, float>(&Graph::addArc))
+          py::overload_cast<int, int, int, int, float>(&Graph::addArc),
+          "upNode"_a, "downNode"_a, "ilabel"_a, "olabel"_a, "weight"_a = 0.0)
       .def("grad", (Graph & (Graph::*)()) & Graph::grad)
       .def("num_arcs", &Graph::numArcs)
       .def("num_nodes", &Graph::numNodes)
@@ -45,4 +46,5 @@ PYBIND11_MODULE(_graph, m) {
         print(a, ss);
         return ss.str();
       });
+  m.attr("epsilon") = Graph::epsilon;
 }

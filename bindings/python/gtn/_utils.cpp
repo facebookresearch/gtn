@@ -22,7 +22,7 @@ static T castBytes(const py::bytes& b) {
 
 PYBIND11_MODULE(_utils, m) {
   m.def(
-      "draw",
+      "write_dot",
       [](Graph graph,
          const std::string& filename,
          const SymbolMap& isymbols = SymbolMap(),
