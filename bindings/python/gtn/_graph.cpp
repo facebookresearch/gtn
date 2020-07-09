@@ -29,6 +29,9 @@ PYBIND11_MODULE(_graph, m) {
       .def("num_start", &Graph::numStart)
       .def("num_accept", &Graph::numAccept)
       .def("item", &Graph::item)
+      .def("ilabel", &Graph::ilabel)
+      .def("olabel", &Graph::olabel)
+      .def("label", &Graph::label)
       .def("calc_grad", &Graph::calcGrad)
       .def("zero_grad", &Graph::zeroGrad)
       .def(
