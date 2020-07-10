@@ -318,12 +318,14 @@ TEST_CASE("Test ASG Viterbi Path", "[criterion.asg.viterbiPath]") {
   // clang-format on
 
   Graph transitions;
-  for (int i = 0; i < N; i++) {
-    transitions.addNode(true, true);
+  transitions.addNode(true);
+  for (int i = 1; i <= N; i++) {
+    transitions.addNode(false, true);
+    transitions.addArc(0, i, i - 1); // p(i | <s>)
   }
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
-      transitions.addArc(i, j, j, j, trans[j * N + i]); // p(j | i)
+      transitions.addArc(j + 1, i + 1, i , i, trans[i * N + j]); // p(i | j)
     }
   }
 
