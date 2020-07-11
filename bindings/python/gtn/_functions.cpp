@@ -9,6 +9,7 @@ namespace py = pybind11;
 using namespace py::literals;
 
 PYBIND11_MODULE(_functions, m) {
+  m.def("add", add, "lhs"_a, "rhs"_a);
   m.def(
       "concat",
       py::overload_cast<const Graph&, const Graph&>(&concat),
@@ -21,6 +22,7 @@ PYBIND11_MODULE(_functions, m) {
   m.def("compose", compose, "first"_a, "second"_a);
   m.def("closure", closure, "graph"_a);
   m.def("forward_score", forwardScore, "graph"_a);
+  m.def("negate", negate, "input"_a);
   m.def("project_input", projectInput, "other"_a);
   m.def("project_output", projectOutput, "other"_a);
   m.def(
