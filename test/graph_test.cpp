@@ -299,9 +299,7 @@ TEST_CASE("Test sort", "[Graph::arcSort]") {
 
   // sort on ilabel
   g.arcSort();
-  auto ilabelCmp = [&g](int a, int b) {
-    return g.ilabel(a) < g.ilabel(b);
-  };
+  auto ilabelCmp = [&g](int a, int b) { return g.ilabel(a) < g.ilabel(b); };
   for (auto n = 0; n < g.numNodes(); ++n) {
     CHECK(std::is_sorted(g.in(n).begin(), g.in(n).end(), ilabelCmp));
     CHECK(std::is_sorted(g.out(n).begin(), g.out(n).end(), ilabelCmp));
@@ -311,9 +309,7 @@ TEST_CASE("Test sort", "[Graph::arcSort]") {
 
   // sort on olabel
   g.arcSort(true);
-  auto olabelCmp = [&g](int a, int b) {
-    return g.olabel(a) < g.olabel(b);
-  };
+  auto olabelCmp = [&g](int a, int b) { return g.olabel(a) < g.olabel(b); };
   for (auto n = 0; n < g.numNodes(); ++n) {
     CHECK(std::is_sorted(g.in(n).begin(), g.in(n).end(), olabelCmp));
     CHECK(std::is_sorted(g.out(n).begin(), g.out(n).end(), olabelCmp));

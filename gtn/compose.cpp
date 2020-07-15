@@ -13,7 +13,10 @@ inline size_t toIndex(int n1, int n2, const Graph& g) {
 
 /* Find any state in the new composed graph which can reach
  * an accepting state. */
-auto findReachable(const Graph& first, const Graph& second, std::shared_ptr<ArcMatcher> matcher) {
+auto findReachable(
+    const Graph& first,
+    const Graph& second,
+    std::shared_ptr<ArcMatcher> matcher) {
   std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
   std::queue<std::pair<int, int>> toExplore;
   for (auto f : first.accept()) {
@@ -86,8 +89,7 @@ auto findReachable(const Graph& first, const Graph& second, std::shared_ptr<ArcM
 
 } // namespace
 
-void UnsortedMatcher::match(
-    int lnode, int rnode, bool matchIn /* = false*/) {
+void UnsortedMatcher::match(int lnode, int rnode, bool matchIn /* = false*/) {
   auto& lv = matchIn ? lhs_.in(lnode) : lhs_.out(lnode);
   auto& rv = matchIn ? rhs_.in(rnode) : rhs_.out(rnode);
   lIt_ = lv.begin();
@@ -113,27 +115,26 @@ std::pair<int, int> UnsortedMatcher::next() {
 }
 
 SinglySortedMatcher::SinglySortedMatcher(
-  const Graph& lhs,
-  const Graph& rhs,
-  bool searchLhs /* = false */) :
-    lhs_(lhs),
-    rhs_(rhs),
-    searchLhs_(searchLhs) {
+    const Graph& lhs,
+    const Graph& rhs,
+    bool searchLhs /* = false */)
+    : lhs_(lhs), rhs_(rhs), searchLhs_(searchLhs) {
   // Set the comparison function appropriately
   if (searchLhs_) {
-    comparisonFn_ = [&lhs = lhs_](auto arc, auto val) {
+    comparisonFn_ = [& lhs = lhs_](auto arc, auto val) {
       return lhs.olabel(arc) < val;
     };
   } else {
-    comparisonFn_ = [&rhs = rhs_](auto arc, auto val) {
+    comparisonFn_ = [& rhs = rhs_](auto arc, auto val) {
       return rhs.ilabel(arc) < val;
     };
   }
 }
 
 void SinglySortedMatcher::match(
-    int lnode, int rnode, bool matchIn /* = false */) {
-
+    int lnode,
+    int rnode,
+    bool matchIn /* = false */) {
   auto& lv = matchIn ? lhs_.in(lnode) : lhs_.out(lnode);
   auto& rv = matchIn ? rhs_.in(rnode) : rhs_.out(rnode);
 
@@ -166,11 +167,11 @@ bool SinglySortedMatcher::hasNext() {
   }
 
   // Update the query pointer and the start of the search range pointer
-  for(; queryIt_ != queryItEnd_; ++queryIt_) {
+  for (; queryIt_ != queryItEnd_; ++queryIt_) {
     auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
 
-    searchIt_ = std::lower_bound(
-      searchItBegin_, searchItEnd_, ql, comparisonFn_);
+    searchIt_ =
+        std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn_);
 
     if (searchIt_ == searchItEnd_) {
       continue;
@@ -193,8 +194,9 @@ std::pair<int, int> SinglySortedMatcher::next() {
 }
 
 void DoublySortedMatcher::match(
-    int lnode, int rnode, bool matchIn /* = false */) {
-
+    int lnode,
+    int rnode,
+    bool matchIn /* = false */) {
   auto& lv = matchIn ? lhs_.in(lnode) : lhs_.out(lnode);
   auto& rv = matchIn ? rhs_.in(rnode) : rhs_.out(rnode);
 
@@ -212,11 +214,11 @@ void DoublySortedMatcher::match(
 
   // Set the comparison function appropriately
   if (searchLhs_) {
-    comparisonFn_ = [&lhs = lhs_](auto arc, auto val) {
+    comparisonFn_ = [& lhs = lhs_](auto arc, auto val) {
       return lhs.olabel(arc) < val;
     };
   } else {
-    comparisonFn_ = [&rhs = rhs_](auto arc, auto val) {
+    comparisonFn_ = [& rhs = rhs_](auto arc, auto val) {
       return rhs.ilabel(arc) < val;
     };
   }
@@ -239,18 +241,18 @@ bool DoublySortedMatcher::hasNext() {
   }
 
   // Update the query pointer and the start of the search range pointer
-  for(; queryIt_ != queryItEnd_; ++queryIt_) {
+  for (; queryIt_ != queryItEnd_; ++queryIt_) {
     auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
 
     // Allowed because the query vector is sorted.
-    searchItBegin_ = std::lower_bound(
-      searchItBegin_, searchItEnd_, ql, comparisonFn_);
+    searchItBegin_ =
+        std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn_);
     if (searchItBegin_ == searchItEnd_) {
       return false;
     }
 
-    auto sl = searchLhs_ ?
-      lhs_.olabel(*searchItBegin_) : rhs_.ilabel(*searchItBegin_);
+    auto sl = searchLhs_ ? lhs_.olabel(*searchItBegin_)
+                         : rhs_.ilabel(*searchItBegin_);
     if (sl == ql) {
       searchIt_ = searchItBegin_;
       return true;
@@ -268,8 +270,10 @@ std::pair<int, int> DoublySortedMatcher::next() {
 }
 
 // Composes two graphs and returns a new graph
-Graph compose(const Graph& first, const Graph& second, std::shared_ptr<ArcMatcher> matcher) {
-
+Graph compose(
+    const Graph& first,
+    const Graph& second,
+    std::shared_ptr<ArcMatcher> matcher) {
   // Compute reachable nodes from any accept state in the new graph
   auto reachable = findReachable(first, second, matcher);
 
@@ -385,8 +389,10 @@ Graph compose(const Graph& first, const Graph& second, std::shared_ptr<ArcMatche
     // first and second input graphs respectively.
     bool calcGrad1 = inputs[0].calcGrad();
     bool calcGrad2 = inputs[1].calcGrad();
-    auto grad1 = calcGrad1 ? std::vector<float>(inputs[0].numArcs(), 0.0) : std::vector<float>{};
-    auto grad2 = calcGrad2 ? std::vector<float>(inputs[1].numArcs(), 0.0) : std::vector<float>{};
+    auto grad1 = calcGrad1 ? std::vector<float>(inputs[0].numArcs(), 0.0)
+                           : std::vector<float>{};
+    auto grad2 = calcGrad2 ? std::vector<float>(inputs[1].numArcs(), 0.0)
+                           : std::vector<float>{};
     for (int i = 0; i < gradInfo.size(); i++) {
       auto arcGrad = deltas.weight(i);
       auto& arcs = gradInfo[i];

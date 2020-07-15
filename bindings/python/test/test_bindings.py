@@ -2,6 +2,10 @@
 
 from test_utils import GTNModuleTestCase
 
+import ctypes
+import numpy as np
+import struct
+
 try:
     import gtn
 except ImportError:
@@ -33,24 +37,50 @@ class GraphTestCase(GTNModuleTestCase):
 
     def test_graph_weights_get(self):
         weights = self.g.weights()
+        weights_list = self.g.weights_to_list()
+        weights_numpy = self.g.weights_to_numpy()
         expected = [0, 0, 0, 2.1, 0]
-        self.assertEqual(len(weights), len(expected))
-        for i in range(0, len(weights)):
-            self.assertAlmostEqual(weights[i], expected[i], places=4)
+        # get weights as ptr
+        length = 5
+        get_weights_numpy = np.frombuffer(
+            (ctypes.c_float * length).from_address(weights), np.float32
+        )
+        self.assertListAlmostEqual(get_weights_numpy.tolist(), expected, places=4)
+
+        # get weights as list
+        self.assertListAlmostEqual(weights_list, expected, places=4)
+
+        # get weights as numpy
+        self.assertListAlmostEqual(weights_numpy.tolist(), expected, places=4)
 
     def test_graph_weights_set(self):
         weights_original = self.g.weights()
         weights_new_expected = [1.1, -3.4, 0, 0.5, 0]
+
+        # set weights as list
         self.g.set_weights(weights_new_expected)
-        weights_new = self.g.weights()
-        self.assertEqual(len(weights_new), len(weights_new_expected))
-        for i in range(0, len(weights_new)):
-            self.assertAlmostEqual(weights_new[i], weights_new_expected[i], places=4)
+        weights_new = self.g.weights_to_list()
+        self.assertListAlmostEqual(weights_new, weights_new_expected, places=4)
+        self.g.set_weights(weights_original)
+
+        # set weights via numpy
+        weights_new_arr = np.array(weights_new_expected, dtype="f")
+        self.g.set_weights(weights_new_arr)
+        weights_new = self.g.weights_to_numpy()
+        self.assertListAlmostEqual(
+            weights_new.tolist(), weights_new_arr.tolist(), places=4
+        )
+        self.g.set_weights(weights_original)
+
+        # set weights via ptr
+        weights_new_arr_ptr = weights_new_arr.__array_interface__["data"][0]
+        self.g.set_weights(weights_new_arr_ptr)
+        weights_new = self.g.weights_to_list()
+        self.assertListAlmostEqual(weights_new, weights_new_arr.tolist(), places=4)
         self.g.set_weights(weights_original)
 
 
 class FunctionsTestCase(GTNModuleTestCase):
-
     def test_scalar_ops(self):
         g1 = gtn.Graph()
         g1.add_node(True)

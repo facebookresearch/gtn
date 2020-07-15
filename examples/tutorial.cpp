@@ -314,7 +314,6 @@ void differentiableAcceptors() {
     std::cout << e.what() << std::endl;
   }
 
-
   // Zero the gradients before re-using the graphs in
   // a new computation, otherwise the gradients will
   // simply accumulate.

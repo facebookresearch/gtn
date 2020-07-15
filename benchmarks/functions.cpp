@@ -15,7 +15,6 @@ void timeSimpleOps() {
   };
   TIME(cloneBackward);
 
-
   // time closure
   auto closureForward = [&graph]() { auto closed = closure(graph); };
   TIME(closureForward);
@@ -58,7 +57,9 @@ void timeSimpleOps() {
 
 void timeForward() {
   auto graph = makeLinear(1000, 100);
-  auto forwardScoreLinearForward = [&graph]() { auto out = forwardScore(graph); };
+  auto forwardScoreLinearForward = [&graph]() {
+    auto out = forwardScore(graph);
+  };
   TIME(forwardScoreLinearForward);
 
   auto forwardScoreLinearBackward = [&graph, out = forwardScore(graph)] {
@@ -68,7 +69,9 @@ void timeForward() {
   TIME(forwardScoreLinearBackward);
 
   graph = makeRandomDAG(2000, 20000);
-  auto forwardScoreRandDAGForward = [&graph]() { auto out = forwardScore(graph); };
+  auto forwardScoreRandDAGForward = [&graph]() {
+    auto out = forwardScore(graph);
+  };
   TIME(forwardScoreRandDAGForward);
 
   auto forwardScoreRandDAGBackward = [&graph, out = forwardScore(graph)] {
@@ -109,8 +112,7 @@ void timeCompose() {
   auto composeForwardSorted = [&first, &second]() {
     auto out = compose(first, second);
   };
-  TIME(composeForwardSorted) {
-  }
+  TIME(composeForwardSorted) {}
 }
 
 int main() {

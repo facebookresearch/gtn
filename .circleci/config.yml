@@ -20,6 +20,7 @@ jobs:
           name: "Install Python bindings"
           command: |
             pip3 install packaging && \
+            pip3 install numpy && \
             cd bindings/python && pip3 install -e .
       - run:
           name: "Run C++ and Python Binding Tests"

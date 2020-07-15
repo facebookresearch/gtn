@@ -168,8 +168,8 @@ void Graph::arcSort(bool olabel /* = false */) {
   sharedGraph_->olabelSorted = olabel;
   sharedGraph_->ilabelSorted = !olabel;
   auto sortFn = [olabel, &arcs = sharedGraph_->arcs](int a, int b) {
-    return olabel ? arcs[a].olabel < arcs[b].olabel :
-      arcs[a].ilabel < arcs[b].ilabel;
+    return olabel ? arcs[a].olabel < arcs[b].olabel
+                  : arcs[a].ilabel < arcs[b].ilabel;
   };
   for (auto& n : sharedGraph_->nodes) {
     std::sort(n.in.begin(), n.in.end(), sortFn);

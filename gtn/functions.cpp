@@ -86,8 +86,7 @@ Graph concat(const std::vector<Graph>& graphs) {
     for (auto i = 0; i < inputs.size(); ++i) {
       auto& graph = inputs[i];
       if (graph.calcGrad()) {
-        graph.addGrad(
-          std::vector<float>(grad, grad + graph.numArcs()));
+        graph.addGrad(std::vector<float>(grad, grad + graph.numArcs()));
       }
       grad += graph.numArcs();
       if (i > 0) {
@@ -162,8 +161,8 @@ Graph closure(const Graph& graph) {
   }
 
   // Epsilon from new start to old accepts
-  for (auto s: graph.start()) {
-    closed.addArc(0, s+1, Graph::epsilon);
+  for (auto s : graph.start()) {
+    closed.addArc(0, s + 1, Graph::epsilon);
   }
   // Epsilon from old accepts to new start
   for (auto a : graph.accept()) {
@@ -177,8 +176,7 @@ Graph sum(const std::vector<Graph>& graphs) {
     auto grad = deltas.weights();
     for (auto& graph : inputs) {
       if (graph.calcGrad()) {
-        graph.addGrad(
-          std::vector<float>(grad, grad + graph.numArcs()));
+        graph.addGrad(std::vector<float>(grad, grad + graph.numArcs()));
       }
       grad += graph.numArcs();
     }
@@ -217,7 +215,8 @@ Graph compose(const Graph& lhs, const Graph& rhs) {
   if (lhsSorted && rhsSorted) {
     matcher = std::make_shared<detail::DoublySortedMatcher>(lhs, rhs);
   } else if (lhsSorted || rhsSorted) {
-    matcher = std::make_shared<detail::SinglySortedMatcher>(lhs, rhs, lhsSorted);
+    matcher =
+        std::make_shared<detail::SinglySortedMatcher>(lhs, rhs, lhsSorted);
   } else {
     matcher = std::make_shared<detail::UnsortedMatcher>(lhs, rhs);
   }
@@ -231,7 +230,8 @@ Graph intersect(const Graph& lhs, const Graph& rhs) {
   if (lhsSorted && rhsSorted) {
     matcher = std::make_shared<detail::DoublySortedMatcher>(lhs, rhs);
   } else if (lhsSorted || rhsSorted) {
-    matcher = std::make_shared<detail::SinglySortedMatcher>(lhs, rhs, lhsSorted);
+    matcher =
+        std::make_shared<detail::SinglySortedMatcher>(lhs, rhs, lhsSorted);
   } else {
     matcher = std::make_shared<detail::UnsortedMatcher>(lhs, rhs);
   }
@@ -265,8 +265,7 @@ Graph remove(const Graph& other, int ilabel, int olabel) {
   for (auto n = 0; n < other.numNodes(); ++n) {
     if (other.start(n) ||
         !std::all_of(other.in(n).begin(), other.in(n).end(), label_match)) {
-      nodes[n] =
-          graph.addNode(other.start(n));
+      nodes[n] = graph.addNode(other.start(n));
     }
   }
 

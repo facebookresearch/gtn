@@ -17,9 +17,7 @@ class ArcMatcher {
 
 class UnsortedMatcher : public ArcMatcher {
  public:
-  UnsortedMatcher(const Graph& lhs, const Graph& rhs) :
-    lhs_(lhs),
-    rhs_(rhs) {};
+  UnsortedMatcher(const Graph& lhs, const Graph& rhs) : lhs_(lhs), rhs_(rhs){};
 
   /* Match the arcs on the left node `lnode` and the right node `rnode`. If
    * `matchIn = false` (default) then arcs will be matched by `olabel`
@@ -64,14 +62,10 @@ class SinglySortedMatcher : public ArcMatcher {
   std::function<bool(int, int)> comparisonFn_;
 };
 
-
 class DoublySortedMatcher : public ArcMatcher {
  public:
-  DoublySortedMatcher(
-      const Graph& lhs,
-      const Graph& rhs) :
-    lhs_(lhs),
-    rhs_(rhs) {};
+  DoublySortedMatcher(const Graph& lhs, const Graph& rhs)
+      : lhs_(lhs), rhs_(rhs){};
 
   void match(int lnode, int rnode, bool matchIn /* = false */) override;
 
@@ -91,9 +85,11 @@ class DoublySortedMatcher : public ArcMatcher {
   std::function<bool(int, int)> comparisonFn_;
 };
 
-
 /* Composes two transducers. */
-Graph compose(const Graph& lhs, const Graph& rhs, std::shared_ptr<ArcMatcher> matcher);
+Graph compose(
+    const Graph& lhs,
+    const Graph& rhs,
+    std::shared_ptr<ArcMatcher> matcher);
 
 } // namespace detail
 } // namespace gtn

@@ -291,7 +291,7 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
 
   auto& grad = transitions.grad();
   for (int i = 0; i < N * N; i++) {
-    auto g = grad.weight(i + N); 
+    auto g = grad.weight(i + N);
     allClose &= (std::abs(trans_grad[i] - g) < 1e-4);
   }
   CHECK(allClose);
@@ -325,7 +325,7 @@ TEST_CASE("Test ASG Viterbi Path", "[criterion.asg.viterbiPath]") {
   }
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
-      transitions.addArc(j + 1, i + 1, i , i, trans[i * N + j]); // p(i | j)
+      transitions.addArc(j + 1, i + 1, i, i, trans[i * N + j]); // p(i | j)
     }
   }
 

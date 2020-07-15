@@ -50,7 +50,7 @@ conda activate gtn_env
 Install:
 ```
 cd bindings/python
-pip install packaging
+pip install packaging numpy
 pip install -e .
 ```
 

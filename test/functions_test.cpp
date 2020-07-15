@@ -528,9 +528,9 @@ TEST_CASE("Test Viterbi Path", "[functions.viterbiPath]") {
     best3.addArc(2, 3, 1, 1, 3);
 
     auto path = viterbiPath(g);
-    CHECK((randEquivalent(path, best1)
-      || randEquivalent(path, best2)
-      || randEquivalent(path, best3)));
+    CHECK(
+        (randEquivalent(path, best1) || randEquivalent(path, best2) ||
+         randEquivalent(path, best3)));
 
     CHECK(viterbiScore(path).item() == viterbiScore(g).item());
   }

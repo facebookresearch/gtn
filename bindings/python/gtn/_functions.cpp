@@ -13,7 +13,8 @@ PYBIND11_MODULE(_functions, m) {
   m.def(
       "concat",
       py::overload_cast<const Graph&, const Graph&>(&concat),
-      "lhs"_a, "rhs"_a);
+      "lhs"_a,
+      "rhs"_a);
   m.def(
       "concat",
       py::overload_cast<const std::vector<Graph>&>(&concat),
