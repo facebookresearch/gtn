@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-from test_utils import GTNModuleTestCase
 
 import ctypes
 import numpy as np
 import struct
+import unittest
+
+from test_utils import GTNModuleTestCase
 
 try:
     import gtn
@@ -24,7 +26,7 @@ class GraphTestCase(GTNModuleTestCase):
         g.add_arc(0, 1, 0)
         g.add_arc(0, 2, 1)
         g.add_arc(1, 2, 0)
-        g.add_arc(1, 1, 1, 1, 2.1)
+        g.add_arc(1, 1, 1, 2, 2.1)
         g.add_arc(2, 3, 2)
         self.g = g
 
@@ -34,6 +36,8 @@ class GraphTestCase(GTNModuleTestCase):
         self.assertEqual(self.g.num_accept(), 1)
 
         self.assertEqual(self.g.num_arcs(), 5)
+        self.assertEqual(self.g.labels_to_list(), [0, 1, 0, 1, 2])
+        self.assertEqual(self.g.labels_to_list(False), [0, 1, 0, 2, 2])
 
     def test_graph_weights_get(self):
         weights = self.g.weights()
@@ -114,3 +118,7 @@ class FunctionsTestCase(GTNModuleTestCase):
         gtn.backward(res)
         self.assertEqual(g1.grad().item(), 1.0)
         self.assertEqual(g2.grad().item(), -1.0)
+
+
+if __name__ == "__main__":
+    unittest.main()
