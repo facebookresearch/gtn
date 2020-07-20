@@ -35,6 +35,8 @@ PYBIND11_MODULE(_graph, m) {
       .def("num_start", &Graph::numStart)
       .def("num_accept", &Graph::numAccept)
       .def("item", &Graph::item)
+      .def("arc_sort", &Graph::arcSort, "olabel"_a = false)
+      .def("mark_arc_sorted", &Graph::markArcSorted, "olabel"_a = false)
       .def("calc_grad", &Graph::calcGrad)
       .def("zero_grad", &Graph::zeroGrad)
       .def(

@@ -317,6 +317,12 @@ TEST_CASE("Test sort", "[Graph::arcSort]") {
   CHECK(!g.ilabelSorted());
   CHECK(g.olabelSorted());
 
+  g.markArcSorted();
+  CHECK(g.ilabelSorted());
+
   g.addArc(1, 2, 0, 3);
   CHECK(!g.olabelSorted());
+
+  g.markArcSorted(true);
+  CHECK(g.olabelSorted());
 }

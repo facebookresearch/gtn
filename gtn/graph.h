@@ -181,6 +181,18 @@ class Graph {
    * efficiency of the algorithm. */
   void arcSort(bool olabel = false);
 
+  /* Mark a graph's arcs as sorted.
+   * If `olabel == false` (default) then the graph will be marked as sorted by
+   * arc input labels, otherwise it will be marked as sorted by the arc output
+   * labels. */
+  void markArcSorted(bool olabel = false) {
+    if (olabel) {
+      sharedGraph_->olabelSorted = true;
+    } else {
+      sharedGraph_->ilabelSorted = true;
+    }
+  }
+
   /* Check if the arcs entering and exiting a node are sorted by in label. */
   bool ilabelSorted() const {
     return sharedGraph_->ilabelSorted;
