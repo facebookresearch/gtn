@@ -12,8 +12,6 @@ Graph linearGraph(int M, int N, bool calcGrad /* = true */) {
       g.addArc(m - 1, m, n);
     }
   }
-  g.markArcSorted();
-  g.markArcSorted(true);
   return g;
 }
 
