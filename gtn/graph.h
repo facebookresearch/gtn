@@ -181,11 +181,27 @@ class Graph {
    * efficiency of the algorithm. */
   void arcSort(bool olabel = false);
 
+  /* Mark a graph's arcs as sorted.
+   * If `olabel == false` (default) then the graph will be marked as sorted by
+   * arc input labels, otherwise it will be marked as sorted by the arc output
+   * labels. */
+  void markArcSorted(bool olabel = false) {
+    if (olabel) {
+      sharedGraph_->olabelSorted = true;
+    } else {
+      sharedGraph_->ilabelSorted = true;
+    }
+  }
+
   /* Check if the arcs entering and exiting a node are sorted by in label. */
-  bool ilabelSorted() const ;
+  bool ilabelSorted() const {
+    return sharedGraph_->ilabelSorted;
+  }
 
   /* Check if the arcs entering and exiting a node are sorted by out label. */
-  bool olabelSorted() const ;
+  bool olabelSorted() const {
+    return sharedGraph_->olabelSorted;
+  }
 
   /**
    * Returns an array of weights from a graph. The array will contain
@@ -239,6 +255,10 @@ class Graph {
     std::vector<Node> nodes;
     std::vector<int> start;
     std::vector<int> accept;
+
+    // Some optional metadata about the graph
+    bool ilabelSorted{false};
+    bool olabelSorted{false};
   };
 
   struct SharedGrad {

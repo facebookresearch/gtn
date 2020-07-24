@@ -16,8 +16,6 @@ inline size_t toIndex(int n1, int n2, const Graph& g) {
 auto findReachable(
     const Graph& first,
     const Graph& second,
-    bool firstSorted,
-    bool secondSorted,
     std::shared_ptr<ArcMatcher> matcher) {
   std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
   std::queue<std::pair<int, int>> toExplore;
@@ -50,7 +48,7 @@ auto findReachable(
     if (!epsilon_matched) {
       for (auto i : first.in(curr.first)) {
         if (first.olabel(i) != Graph::epsilon) {
-          if (firstSorted) {
+          if (first.olabelSorted()) {
             // Graph::epsilon < 0
             break;
           } else {
@@ -69,7 +67,7 @@ auto findReachable(
     if (!epsilon_matched) {
       for (auto j : second.in(curr.second)) {
         if (second.ilabel(j) != Graph::epsilon) {
-          if (secondSorted) {
+          if (second.ilabelSorted()) {
             // Graph::epsilon < 0
             break;
           } else {
@@ -120,7 +118,18 @@ SinglySortedMatcher::SinglySortedMatcher(
     const Graph& lhs,
     const Graph& rhs,
     bool searchLhs /* = false */)
-    : lhs_(lhs), rhs_(rhs), searchLhs_(searchLhs) {}
+    : lhs_(lhs), rhs_(rhs), searchLhs_(searchLhs) {
+  // Set the comparison function appropriately
+  if (searchLhs_) {
+    comparisonFn_ = [& lhs = lhs_](auto arc, auto val) {
+      return lhs.olabel(arc) < val;
+    };
+  } else {
+    comparisonFn_ = [& rhs = rhs_](auto arc, auto val) {
+      return rhs.ilabel(arc) < val;
+    };
+  }
+}
 
 void SinglySortedMatcher::match(
     int lnode,
@@ -161,10 +170,8 @@ bool SinglySortedMatcher::hasNext() {
   for (; queryIt_ != queryItEnd_; ++queryIt_) {
     auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
 
-    searchIt_ = std::lower_bound(
-        searchItBegin_, searchItEnd_, ql, [this](int arc, int val) {
-          return searchLhs_ ? lhs_.olabel(arc) < val : rhs_.ilabel(arc) < val;
-        });
+    searchIt_ =
+        std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn_);
 
     if (searchIt_ == searchItEnd_) {
       continue;
@@ -204,6 +211,17 @@ void DoublySortedMatcher::match(
     std::swap(queryIt_, searchIt_);
     std::swap(queryItEnd_, searchItEnd_);
   }
+
+  // Set the comparison function appropriately
+  if (searchLhs_) {
+    comparisonFn_ = [& lhs = lhs_](auto arc, auto val) {
+      return lhs.olabel(arc) < val;
+    };
+  } else {
+    comparisonFn_ = [& rhs = rhs_](auto arc, auto val) {
+      return rhs.ilabel(arc) < val;
+    };
+  }
 }
 
 bool DoublySortedMatcher::hasNext() {
@@ -227,10 +245,8 @@ bool DoublySortedMatcher::hasNext() {
     auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
 
     // Allowed because the query vector is sorted.
-    searchItBegin_ = std::lower_bound(
-        searchItBegin_, searchItEnd_, ql, [this](int arc, int val) {
-          return searchLhs_ ? lhs_.olabel(arc) < val : rhs_.ilabel(arc) < val;
-        });
+    searchItBegin_ =
+        std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn_);
     if (searchItBegin_ == searchItEnd_) {
       return false;
     }
@@ -257,12 +273,9 @@ std::pair<int, int> DoublySortedMatcher::next() {
 Graph compose(
     const Graph& first,
     const Graph& second,
-    bool firstSorted,
-    bool secondSorted,
     std::shared_ptr<ArcMatcher> matcher) {
   // Compute reachable nodes from any accept state in the new graph
-  auto reachable =
-      findReachable(first, second, firstSorted, secondSorted, matcher);
+  auto reachable = findReachable(first, second, matcher);
 
   // Compose the graphs
   Graph ngraph;
@@ -311,7 +324,7 @@ Graph compose(
     // Check for output epsilons in the first graph
     for (auto i : first.out(curr.first)) {
       if (first.olabel(i) != Graph::epsilon) {
-        if (firstSorted) {
+        if (first.olabelSorted()) {
           // Graph::epsilon < 0
           break;
         } else {
@@ -339,7 +352,7 @@ Graph compose(
     // Check out input epsilons in the second graph
     for (auto j : second.out(curr.second)) {
       if (second.ilabel(j) != Graph::epsilon) {
-        if (secondSorted) {
+        if (second.ilabelSorted()) {
           // Graph::epsilon < 0
           break;
         } else {

@@ -220,7 +220,7 @@ Graph compose(const Graph& lhs, const Graph& rhs) {
   } else {
     matcher = std::make_shared<detail::UnsortedMatcher>(lhs, rhs);
   }
-  return detail::compose(lhs, rhs, lhsSorted, rhsSorted, matcher);
+  return detail::compose(lhs, rhs, matcher);
 }
 
 Graph intersect(const Graph& lhs, const Graph& rhs) {
@@ -235,7 +235,7 @@ Graph intersect(const Graph& lhs, const Graph& rhs) {
   } else {
     matcher = std::make_shared<detail::UnsortedMatcher>(lhs, rhs);
   }
-  return detail::compose(lhs, rhs, lhsSorted, rhsSorted, matcher);
+  return detail::compose(lhs, rhs, matcher);
 }
 
 Graph remove(const Graph& other, int label /* = Graph::epsilon */) {

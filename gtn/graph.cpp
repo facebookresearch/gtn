@@ -48,6 +48,8 @@ int Graph::addNode(bool start /* = false */, bool accept /* = false */) {
   if (accept) {
     sharedGraph_->accept.push_back(idx);
   }
+  sharedGraph_->ilabelSorted = false;
+  sharedGraph_->olabelSorted = false;
   return idx;
 }
 
@@ -67,6 +69,8 @@ int Graph::addArc(
   sharedWeights_->push_back(weight);
   node(upNode).out.push_back(idx);
   node(downNode).in.push_back(idx);
+  sharedGraph_->ilabelSorted = false;
+  sharedGraph_->olabelSorted = false;
   return idx;
 }
 
@@ -157,6 +161,12 @@ Graph Graph::deepCopy(const Graph& src) {
 }
 
 void Graph::arcSort(bool olabel /* = false */) {
+  if ((olabel && sharedGraph_->olabelSorted) ||
+      (!olabel && sharedGraph_->ilabelSorted)) {
+    return;
+  }
+  sharedGraph_->olabelSorted = olabel;
+  sharedGraph_->ilabelSorted = !olabel;
   auto sortFn = [olabel, &arcs = sharedGraph_->arcs](int a, int b) {
     return olabel ? arcs[a].olabel < arcs[b].olabel
                   : arcs[a].ilabel < arcs[b].ilabel;
@@ -165,36 +175,6 @@ void Graph::arcSort(bool olabel /* = false */) {
     std::sort(n.in.begin(), n.in.end(), sortFn);
     std::sort(n.out.begin(), n.out.end(), sortFn);
   }
-}
-
-bool Graph::ilabelSorted() const {
-  auto sortFn = [& arcs = sharedGraph_->arcs](int a, int b) {
-    return arcs[a].ilabel < arcs[b].ilabel;
-  };
-  for (auto& n : sharedGraph_->nodes) {
-    if (!std::is_sorted(n.in.begin(), n.in.end(), sortFn)) {
-      return false;
-    }
-    if (!std::is_sorted(n.out.begin(), n.out.end(), sortFn)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool Graph::olabelSorted() const {
-  auto sortFn = [& arcs = sharedGraph_->arcs](int a, int b) {
-    return arcs[a].olabel < arcs[b].olabel;
-  };
-  for (auto& n : sharedGraph_->nodes) {
-    if (!std::is_sorted(n.in.begin(), n.in.end(), sortFn)) {
-      return false;
-    }
-    if (!std::is_sorted(n.out.begin(), n.out.end(), sortFn)) {
-      return false;
-    }
-  }
-  return true;
 }
 
 void Graph::setWeights(const float* weights) {
