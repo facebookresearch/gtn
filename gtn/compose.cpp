@@ -118,18 +118,7 @@ SinglySortedMatcher::SinglySortedMatcher(
     const Graph& lhs,
     const Graph& rhs,
     bool searchLhs /* = false */)
-    : lhs_(lhs), rhs_(rhs), searchLhs_(searchLhs) {
-  // Set the comparison function appropriately
-  if (searchLhs_) {
-    comparisonFn_ = [& lhs = lhs_](auto arc, auto val) {
-      return lhs.olabel(arc) < val;
-    };
-  } else {
-    comparisonFn_ = [& rhs = rhs_](auto arc, auto val) {
-      return rhs.ilabel(arc) < val;
-    };
-  }
-}
+    : lhs_(lhs), rhs_(rhs), searchLhs_(searchLhs) {}
 
 void SinglySortedMatcher::match(
     int lnode,
@@ -169,9 +158,12 @@ bool SinglySortedMatcher::hasNext() {
   // Update the query pointer and the start of the search range pointer
   for (; queryIt_ != queryItEnd_; ++queryIt_) {
     auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
-
+    // Set the comparison function appropriately
+    auto comparisonFn = [this](int arc, int val) {
+      return searchLhs_ ? lhs_.olabel(arc) < val : rhs_.ilabel(arc) < val;
+    };
     searchIt_ =
-        std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn_);
+        std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn);
 
     if (searchIt_ == searchItEnd_) {
       continue;
@@ -211,17 +203,6 @@ void DoublySortedMatcher::match(
     std::swap(queryIt_, searchIt_);
     std::swap(queryItEnd_, searchItEnd_);
   }
-
-  // Set the comparison function appropriately
-  if (searchLhs_) {
-    comparisonFn_ = [& lhs = lhs_](auto arc, auto val) {
-      return lhs.olabel(arc) < val;
-    };
-  } else {
-    comparisonFn_ = [& rhs = rhs_](auto arc, auto val) {
-      return rhs.ilabel(arc) < val;
-    };
-  }
 }
 
 bool DoublySortedMatcher::hasNext() {
@@ -244,9 +225,13 @@ bool DoublySortedMatcher::hasNext() {
   for (; queryIt_ != queryItEnd_; ++queryIt_) {
     auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
 
+    // Set the comparison function appropriately
+    auto comparisonFn = [this](int arc, int val) {
+      return searchLhs_ ? lhs_.olabel(arc) < val : rhs_.ilabel(arc) < val;
+    };
     // Allowed because the query vector is sorted.
     searchItBegin_ =
-        std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn_);
+        std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn);
     if (searchItBegin_ == searchItEnd_) {
       return false;
     }

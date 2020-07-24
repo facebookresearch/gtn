@@ -1,5 +1,5 @@
 #pragma once
-#include <functional>
+
 #include <utility>
 #include <vector>
 
@@ -59,7 +59,6 @@ class SinglySortedMatcher : public ArcMatcher {
   std::vector<int>::const_iterator searchItEnd_;
   std::vector<int>::const_iterator queryIt_;
   std::vector<int>::const_iterator queryItEnd_;
-  std::function<bool(int, int)> comparisonFn_;
 };
 
 class DoublySortedMatcher : public ArcMatcher {
@@ -82,7 +81,6 @@ class DoublySortedMatcher : public ArcMatcher {
   std::vector<int>::const_iterator searchItEnd_;
   std::vector<int>::const_iterator queryIt_;
   std::vector<int>::const_iterator queryItEnd_;
-  std::function<bool(int, int)> comparisonFn_;
 };
 
 /* Composes two transducers. */
