@@ -58,7 +58,7 @@ TEST_CASE("Test Graph", "[graph]") {
   // If we construct a graph from another graph it should also have the same
   // structure.
   Graph g_copy2 = Graph(g, nullptr, {});
-  CHECK(equals(g_copy2, g));
+  CHECK(equal(g_copy2, g));
 
   // Modifying g should modify g_copy and g_copy2
   g.addNode();
@@ -71,8 +71,8 @@ TEST_CASE("Test Graph", "[graph]") {
     g.addArc(i, i + 1, i);
     g.addArc(i, i + 1, i + 1);
   }
-  CHECK(equals(g, g_copy));
-  CHECK(equals(g, g_copy2));
+  CHECK(equal(g, g_copy));
+  CHECK(equal(g, g_copy2));
 
   // Check that we can copy a graph and the destination still
   // works when the source graph is out of scope
@@ -143,12 +143,12 @@ TEST_CASE("Test copy", "[Graph::deepCopy]") {
 
   // Test copy
   Graph copied = Graph::deepCopy(graph);
-  CHECK(equals(copied, graph));
+  CHECK(equal(copied, graph));
   CHECK(copied.calcGrad() == graph.calcGrad());
   CHECK(copied.id() != graph.id());
 
   copied.addArc(0, 3, 0);
-  CHECK(!equals(copied, graph));
+  CHECK(!equal(copied, graph));
 }
 
 TEST_CASE("Test arc weight get/set", "[graph setWeight weights]") {
@@ -212,7 +212,7 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
 
     // Empty gradient
     g.addGrad(Graph{});
-    CHECK(equals(g.grad(), Graph{}));
+    CHECK(equal(g.grad(), Graph{}));
 
     // No gradient
     g.zeroGrad();
@@ -228,7 +228,7 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
     grad.addArc(0, 1, 0, 0, 1.0);
 
     g.addGrad(grad);
-    CHECK(equals(g.grad(), grad));
+    CHECK(equal(g.grad(), grad));
 
     // Grads accumulate properly
     g.addGrad(grad);
@@ -236,7 +236,7 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
     expected.addNode();
     expected.addNode();
     expected.addArc(0, 1, 0, 0, 2.0);
-    CHECK(equals(g.grad(), expected));
+    CHECK(equal(g.grad(), expected));
 
     // Wrong sized grad throws
     grad.addArc(0, 1, 0, 0, 2.0);

@@ -48,7 +48,7 @@ TEST_CASE("Test Project/clone", "[functions.clone]") {
 
   // Test clone
   Graph cloned = clone(graph);
-  CHECK(equals(graph, cloned));
+  CHECK(equal(graph, cloned));
 
   // Test projecting input
   Graph inputExpected =
@@ -62,7 +62,7 @@ TEST_CASE("Test Project/clone", "[functions.clone]") {
                              "1 4 0 0 2\n"
                              "2 4 1 1 3\n"
                              "3 4 0 0 2\n"));
-  CHECK(equals(projectInput(graph), inputExpected));
+  CHECK(equal(projectInput(graph), inputExpected));
 
   // Test projecting output
   Graph outputExpected =
@@ -76,7 +76,7 @@ TEST_CASE("Test Project/clone", "[functions.clone]") {
                              "1 4 1 1 2\n"
                              "2 4 1 1 3\n"
                              "3 4 2 2 2\n"));
-  CHECK(equals(projectOutput(graph), outputExpected));
+  CHECK(equal(projectOutput(graph), outputExpected));
 }
 
 TEST_CASE("Test Composition", "[functions.compose]") {
@@ -84,7 +84,7 @@ TEST_CASE("Test Composition", "[functions.compose]") {
     // Composing with an empty graph gives an empty graph
     Graph g1;
     Graph g2;
-    CHECK(equals(compose(g1, g2), Graph{}));
+    CHECK(equal(compose(g1, g2), Graph{}));
 
     g1.addNode(true);
     g1.addNode();
@@ -95,17 +95,17 @@ TEST_CASE("Test Composition", "[functions.compose]") {
     g2.addArc(0, 1, 0);
     g2.addArc(0, 1, 0);
 
-    CHECK(equals(compose(g1, g2), Graph{}));
-    CHECK(equals(compose(g2, g1), Graph{}));
-    CHECK(equals(intersect(g2, g1), Graph{}));
+    CHECK(equal(compose(g1, g2), Graph{}));
+    CHECK(equal(compose(g2, g1), Graph{}));
+    CHECK(equal(intersect(g2, g1), Graph{}));
 
     // Check singly sorted version
     g1.arcSort(true);
-    CHECK(equals(compose(g1, g2), Graph{}));
+    CHECK(equal(compose(g1, g2), Graph{}));
 
     // Check doubly sorted version
     g2.arcSort();
-    CHECK(equals(compose(g1, g2), Graph{}));
+    CHECK(equal(compose(g1, g2), Graph{}));
   }
 
   {
@@ -556,7 +556,7 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     expected.addArc(0, 0, 0, Graph::epsilon, 1.0);
     expected.addArc(0, 1, 1, 3);
 
-    CHECK(equals(compose(g1, g2), expected));
+    CHECK(equal(compose(g1, g2), expected));
   }
 
   {
@@ -578,7 +578,7 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     expected.addArc(0, 1, 1, 3);
     expected.addArc(1, 1, Graph::epsilon, 0, 2.0);
 
-    CHECK(equals(compose(g1, g2), expected));
+    CHECK(equal(compose(g1, g2), expected));
   }
 
   {
@@ -652,7 +652,7 @@ TEST_CASE("Test Concat", "[functions.concat]") {
     Graph g;
     g.addNode(true, true);
 
-    CHECK(equals(concat({}), g));
+    CHECK(equal(concat({}), g));
     CHECK(randEquivalent(concat(g, g), g));
     CHECK(randEquivalent(concat({g, g, g}), g));
   }
@@ -662,7 +662,7 @@ TEST_CASE("Test Concat", "[functions.concat]") {
     g.addNode(true);
     g.addNode(false, true);
     g.addArc(0, 1, 1);
-    CHECK(equals(concat({g}), g));
+    CHECK(equal(concat({g}), g));
   }
 
   {
@@ -729,7 +729,7 @@ TEST_CASE("Test Closure", "[functions.closure]") {
     // Empty graph
     Graph expected;
     expected.addNode(true, true);
-    CHECK(equals(closure(Graph{}), expected));
+    CHECK(equal(closure(Graph{}), expected));
   }
 
   {
@@ -768,7 +768,7 @@ TEST_CASE("Test Closure", "[functions.closure]") {
 TEST_CASE("Test Sum", "[functions.sum]") {
   {
     // Empty graph
-    CHECK(equals(sum({}), Graph{}));
+    CHECK(equal(sum({}), Graph{}));
   }
 
   {
@@ -777,7 +777,7 @@ TEST_CASE("Test Sum", "[functions.sum]") {
     g1.addNode(true);
     g1.addNode(false, true);
     g1.addArc(0, 1, 1);
-    CHECK(equals(sum({g1}), g1));
+    CHECK(equal(sum({g1}), g1));
   }
 
   {
@@ -838,7 +838,7 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     expected.addNode(true);
     expected.addNode(false, true);
     expected.addArc(0, 1, 0);
-    CHECK(equals(remove(g, Graph::epsilon), expected));
+    CHECK(equal(remove(g, Graph::epsilon), expected));
   }
 
   {
@@ -854,7 +854,7 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     expected.addNode(true);
     expected.addNode(false, true);
     expected.addArc(0, 1, 0, 1);
-    CHECK(equals(remove(g, 2, 1), expected));
+    CHECK(equal(remove(g, 2, 1), expected));
   }
 
   {
@@ -864,7 +864,7 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     g.addNode(false, true);
     g.addArc(0, 1, 0, 1);
     g.addArc(0, 1, 1, 1);
-    CHECK(equals(remove(g), g));
+    CHECK(equal(remove(g), g));
   }
 
   {
@@ -885,7 +885,7 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     expected.addNode(false, true);
     expected.addArc(0, 1, 0);
     expected.addArc(0, 2, 1);
-    CHECK(equals(remove(g), expected));
+    CHECK(equal(remove(g), expected));
   }
 
   {
@@ -909,7 +909,7 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     expected.addArc(2, 1, 0);
     expected.addArc(1, 3, 1);
     expected.addArc(0, 3, 1);
-    CHECK(equals(remove(g), expected));
+    CHECK(equal(remove(g), expected));
   }
 
   {
@@ -935,7 +935,7 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     expected.addArc(1, 2, 0);
     expected.addArc(1, 2, 1);
     expected.addArc(1, 2, 2);
-    CHECK(equals(remove(g), expected));
+    CHECK(equal(remove(g), expected));
   }
 
   // Multiple interior removals
@@ -957,6 +957,6 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     expected.addNode(false, true);
     expected.addArc(0, 1, 0);
     expected.addArc(1, 2, 0);
-    CHECK(equals(remove(g), expected));
+    CHECK(equal(remove(g), expected));
   }
 }

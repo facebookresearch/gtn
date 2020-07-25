@@ -10,12 +10,12 @@
 
 using namespace gtn;
 
-TEST_CASE("Test Graph equality", "[utils.equals]") {
+TEST_CASE("Test Graph equality", "[utils.equal]") {
   {
     // Empty graph is equal to itself
     Graph g1;
     Graph g2;
-    CHECK(equals(g1, g2));
+    CHECK(equal(g1, g2));
   }
 
   {
@@ -25,7 +25,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
 
     Graph g2;
     g2.addNode(false);
-    CHECK_FALSE(equals(g1, g2));
+    CHECK_FALSE(equal(g1, g2));
   }
 
   {
@@ -37,7 +37,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
     Graph g2;
     g2.addNode(true);
     g2.addNode();
-    CHECK(equals(g1, g2));
+    CHECK(equal(g1, g2));
   }
 
   {
@@ -51,7 +51,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
     g2.addNode(true);
     g2.addNode();
     g2.addArc(0, 1, 1);
-    CHECK_FALSE(equals(g1, g2));
+    CHECK_FALSE(equal(g1, g2));
   }
 
   {
@@ -65,7 +65,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
     g2.addNode(true);
     g2.addNode();
     g2.addArc(0, 1, 0, 0, 2.2);
-    CHECK_FALSE(equals(g1, g2));
+    CHECK_FALSE(equal(g1, g2));
   }
 
   {
@@ -86,7 +86,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
     g2.addArc(0, 1, 0);
     g2.addArc(0, 1, 1);
     g2.addArc(1, 2, 2);
-    CHECK_FALSE(equals(g1, g2));
+    CHECK_FALSE(equal(g1, g2));
   }
 
   {
@@ -108,7 +108,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
     g2.addArc(0, 1, 1, 1, 3.1);
     g2.addArc(1, 1, 1, 1, 4.1);
     g2.addArc(1, 2, 2, 2, 5.1);
-    CHECK(equals(g1, g2));
+    CHECK(equal(g1, g2));
   }
 
   {
@@ -130,7 +130,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
     g2.addArc(0, 1, 1, 1, 3.1);
     g2.addArc(1, 2, 2, 2, 5.1);
     g2.addArc(1, 1, 1, 1, 4.1);
-    CHECK(equals(g1, g2));
+    CHECK(equal(g1, g2));
   }
 
   {
@@ -148,7 +148,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
     g2.addArc(0, 1, 1, 1, 3.1);
     g2.addArc(0, 1, 1, 1, 4.1);
     g2.addArc(0, 1, 1, 1, 4.1);
-    CHECK(!equals(g1, g2));
+    CHECK(!equal(g1, g2));
   }
 
   {
@@ -164,7 +164,7 @@ TEST_CASE("Test Graph equality", "[utils.equals]") {
     g2.addNode(false, true);
     g2.addArc(0, 1, 0, 1, 2.1);
     g2.addArc(1, 1, 1, 4, 4.1);
-    CHECK(!equals(g1, g2));
+    CHECK(!equal(g1, g2));
   }
 }
 
@@ -293,7 +293,7 @@ TEST_CASE("Test load", "[utils.load]") {
         "0 2 1 1 1.1\n"
         "2 1 2 2 2.1\n";
     auto g2 = load(std::stringstream(graph_string));
-    CHECK(equals(g1, g2));
+    CHECK(equal(g1, g2));
     CHECK(isomorphic(g1, g2));
 
     // Get user unique filename
@@ -311,7 +311,7 @@ TEST_CASE("Test load", "[utils.load]") {
     outf.close();
 
     auto g3 = load(fn);
-    CHECK(equals(g1, g3));
+    CHECK(equal(g1, g3));
   }
 
   // Empty graph doesn't load
@@ -338,7 +338,7 @@ TEST_CASE("Test load", "[utils.load]") {
     Graph g;
     g.addNode(true);
     g.addNode(false, true);
-    CHECK(equals(g, load(in)));
+    CHECK(equal(g, load(in)));
   }
 
   // Graph doesn't load if arc incorrect
@@ -364,7 +364,7 @@ TEST_CASE("Test load", "[utils.load]") {
         "0 2 1 2 1.1\n"
         "2 1 2 3 2.1\n";
     auto g2 = load(std::stringstream(graph_string));
-    CHECK(equals(g1, g2));
+    CHECK(equal(g1, g2));
     CHECK(isomorphic(g1, g2));
   }
 }

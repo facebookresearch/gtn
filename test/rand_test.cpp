@@ -18,35 +18,35 @@ TEST_CASE("Test sample", "[rand.sample]") {
     Graph empty;
 
     Graph g;
-    CHECK(equals(sample(g), empty));
+    CHECK(equal(sample(g), empty));
 
     g.addNode();
-    CHECK(equals(sample(g), empty));
+    CHECK(equal(sample(g), empty));
 
     g.addNode(false, true);
-    CHECK(equals(sample(g), empty));
+    CHECK(equal(sample(g), empty));
 
     g.addNode(true);
-    CHECK(equals(sample(g), empty));
+    CHECK(equal(sample(g), empty));
 
     g.addArc(0, 0, 1, 0);
     g.addArc(1, 1, 1, 0);
     g.addArc(2, 2, 1, 0);
-    CHECK(equals(sample(g), empty));
+    CHECK(equal(sample(g), empty));
 
     g.addArc(0, 2, 0, 1);
     g.addArc(2, 0, 2, 0);
-    CHECK(equals(sample(g), empty));
+    CHECK(equal(sample(g), empty));
 
     g.addArc(0, 1, 1, 1);
-    CHECK(!equals(sample(g), empty));
+    CHECK(!equal(sample(g), empty));
   }
 
   {
     // Check that we can sample the empty path (not the empty graph).
     Graph g;
     g.addNode(true, true);
-    CHECK(equals(g, sample(g)));
+    CHECK(equal(g, sample(g)));
   }
 
   {
@@ -62,11 +62,11 @@ TEST_CASE("Test sample", "[rand.sample]") {
         load(std::stringstream("0\n"
                                "1\n"
                                "0 1 1\n"));
-    CHECK(equals(expected, path));
+    CHECK(equal(expected, path));
 
     for (int i = 1; i < 20; i++) {
       path = sample(g, i);
-      CHECK(!equals(path, Graph{}));
+      CHECK(!equal(path, Graph{}));
       CHECK(path.numArcs() <= i);
     }
   }

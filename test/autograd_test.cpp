@@ -135,7 +135,7 @@ TEST_CASE("Test Clone/Project Grad", "[functions.clone (grad)]") {
   g2.zeroGrad();
   result = add(cloned, g2);
   backward(result);
-  CHECK(equals(cloned.grad(), g1.grad()));
+  CHECK(equal(cloned.grad(), g1.grad()));
 }
 
 TEST_CASE("Test Compose Grad", "[functions.compose (grad)]") {

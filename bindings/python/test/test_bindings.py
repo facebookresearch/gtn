@@ -84,6 +84,29 @@ class GraphTestCase(GTNModuleTestCase):
         self.g.set_weights(weights_original)
 
 
+    def test_comparisons(self):
+        g1 = gtn.Graph()
+        g1.add_node(True)
+        g1.add_node(False, True)
+        g1.add_arc(0, 1, 0)
+
+        g2 = gtn.Graph()
+        g2.add_node(True)
+        g2.add_node(False, True)
+        g2.add_arc(0, 1, 0)
+
+        self.assertTrue(gtn.equal(g1, g2))
+        self.assertTrue(gtn.isomorphic(g1, g2))
+
+        g2 = gtn.Graph()
+        g2.add_node(False, True)
+        g2.add_node(True)
+        g2.add_arc(1, 0, 0)
+
+        self.assertFalse(gtn.equal(g1, g2))
+        self.assertTrue(gtn.isomorphic(g1, g2))
+
+
 class FunctionsTestCase(GTNModuleTestCase):
     def test_scalar_ops(self):
         g1 = gtn.Graph()

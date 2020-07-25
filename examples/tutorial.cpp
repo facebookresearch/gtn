@@ -58,7 +58,7 @@ void simpleAcceptors() {
 
   // Exact match the two graphs, the node indices,
   // arc weights and arc labels should all be identical.
-  assert(equals(graph, other_graph));
+  assert(equal(graph, other_graph));
 
   // Check that the graphs have the same structure but
   // potentially different state indices. In this case,

@@ -31,7 +31,7 @@ static std::vector<std::string> split(const std::string& input) {
   return result;
 }
 
-bool equals(Graph a, Graph b) {
+bool equal(Graph a, Graph b) {
   if (a.numNodes() != b.numNodes() || a.numStart() != b.numStart() ||
       a.numAccept() != b.numAccept() || a.numArcs() != b.numArcs()) {
     return false;

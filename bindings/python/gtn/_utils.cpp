@@ -9,6 +9,9 @@ namespace py = pybind11;
 using namespace py::literals;
 
 PYBIND11_MODULE(_utils, m) {
+  m.def("equal", equal, "first"_a, "second"_a);
+  m.def("isomorphic", isomorphic, "first"_a, "second"_a);
+
   m.def(
       "write_dot",
       [](Graph graph,

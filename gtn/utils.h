@@ -9,7 +9,7 @@
 namespace gtn {
 
 /* Checks if two graphs are exactly equal (not isomorphic). */
-bool equals(Graph a, Graph b);
+bool equal(Graph a, Graph b);
 
 /* Checks if two graphs are isomorphic. Note this function will be very very
  * slow for large graphs. */

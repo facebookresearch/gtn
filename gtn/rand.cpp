@@ -80,7 +80,7 @@ bool randEquivalent(
     auto path = sample(rand() % 2 ? a : b, maxLength);
 
     // Ignore empty paths
-    if (equals(path, Graph{})) {
+    if (equal(path, Graph{})) {
       continue;
     }
 
@@ -90,8 +90,8 @@ bool randEquivalent(
     auto composedA = compose(compose(inp, a), outp);
     auto composedB = compose(compose(inp, b), outp);
 
-    auto isEmptyA = equals(composedA, Graph{});
-    auto isEmptyB = equals(composedB, Graph{});
+    auto isEmptyA = equal(composedA, Graph{});
+    auto isEmptyB = equal(composedB, Graph{});
 
     // Only one of the graphs is empty
     if (isEmptyA != isEmptyB) {
