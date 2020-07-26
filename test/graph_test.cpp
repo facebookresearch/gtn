@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <thread>
 
 #include "catch.hpp"
 
@@ -325,4 +326,32 @@ TEST_CASE("Test sort", "[Graph::arcSort]") {
 
   g.markArcSorted(true);
   CHECK(g.olabelSorted());
+}
+
+TEST_CASE("Test threaded grad", "[threaded_graph_grad]") {
+  Graph g;
+  g.addNode(true);
+  g.addNode(false, true);
+  for (int i = 0; i < 1000; i++) {
+    g.addArc(0, 1, i);
+  }
+
+  auto add_to_grad = [&g] () {
+    auto grad = std::vector<float>(g.numArcs(), 1);
+    g.addGrad(grad);
+  };
+
+  int num_threads = 16;
+  std::vector<std::thread> threads;
+  for (int i = 0; i < num_threads; i++) {
+    threads.push_back(std::thread(add_to_grad));
+  }
+  for (auto& th : threads) {
+    th.join();
+  }
+  // Check the grad is correct
+  CHECK((std::all_of(
+    g.grad().weights(),
+    g.grad().weights() + g.numArcs(),
+    [num_threads] (float v) { return v == num_threads; })));
 }

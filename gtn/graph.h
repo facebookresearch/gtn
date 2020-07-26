@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include <mutex>
 
 namespace gtn {
 
@@ -259,6 +260,8 @@ class Graph {
     // Some optional metadata about the graph
     bool ilabelSorted{false};
     bool olabelSorted{false};
+
+    std::mutex grad_lock;
   };
 
   struct SharedGrad {

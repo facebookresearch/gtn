@@ -101,6 +101,7 @@ void Graph::addGrad(std::vector<float>&& other) {
     if (other.size() != numArcs()) {
       throw std::logic_error("[Graph::addGrad] Invalid grad size.");
     }
+    std::lock_guard<std::mutex> lock(sharedGraph_->grad_lock);
     if (isGradAvailable()) {
       for (int i = 0; i < numArcs(); i++) {
         grad().setWeight(i, grad().weight(i) + other[i]);
@@ -118,13 +119,15 @@ void Graph::addGrad(const std::vector<float>& other) {
     if (other.size() != numArcs()) {
       throw std::logic_error("[Graph::addGrad] Invalid grad size.");
     }
+    std::lock_guard<std::mutex> lock(sharedGraph_->grad_lock);
     if (isGradAvailable()) {
       for (int i = 0; i < numArcs(); i++) {
         grad().setWeight(i, grad().weight(i) + other[i]);
       }
     } else {
-      // make a copy
-      addGrad(std::vector<float>(other));
+      sharedGrad_->grad = std::make_unique<Graph>(false);
+      sharedGrad_->grad->sharedGraph_ = sharedGraph_;
+      *(sharedGrad_->grad->sharedWeights_) = other;
     }
   }
 }
