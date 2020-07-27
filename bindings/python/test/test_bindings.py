@@ -143,5 +143,59 @@ class FunctionsTestCase(GTNModuleTestCase):
         self.assertEqual(g2.grad().item(), -1.0)
 
 
+class AutogradTestCase(GTNModuleTestCase):
+    def test_retain_graph(self):
+        # The graph is not retained by default
+        g1 = gtn.Graph(True)
+        g1.add_node(True)
+        g1.add_node(False, True)
+        g1.add_arc(0, 1, 0, 0, 3.0)
+
+        g2 = gtn.Graph(True)
+        g2.add_node(True)
+        g2.add_node(False, True)
+        g2.add_arc(0, 1, 0, 0, 3.0)
+
+        result = gtn.add(g1, g2)
+        gtn.backward(result)
+        with self.assertRaises(ValueError):
+            gtn.backward(result)
+
+        # Check the graph is retained
+        g1.zero_grad()
+        g2.zero_grad()
+        result = gtn.add(g1, g2);
+        gtn.backward(result, True);
+        g1.zero_grad()
+        g2.zero_grad()
+        result.zero_grad()
+        gtn.backward(result, True);
+        self.assertTrue(g1.grad().weights_to_list() == [1.0])
+        self.assertTrue(g2.grad().weights_to_list() == [1.0])
+
+
+    def test_input_grad(self):
+        # Check that provided input gradients are used.
+        g1 = gtn.Graph(True)
+        g1.add_node(True)
+        g1.add_node(False, True)
+        g1.add_arc(0, 1, 0, 0, 3.0)
+
+        g2 = gtn.Graph(True)
+        g2.add_node(True)
+        g2.add_node(False, True)
+        g2.add_arc(0, 1, 0, 0, 3.0)
+
+        result = gtn.add(g1, g2)
+
+        deltas = gtn.Graph()
+        deltas.add_node(True)
+        deltas.add_node(False, True)
+        deltas.add_arc(0, 1, 0, 0, 7.0);
+        gtn.backward(result, deltas);
+        self.assertTrue(g1.grad().weights_to_list() == [7.0])
+        self.assertTrue(g2.grad().weights_to_list() == [7.0])
+
+
 if __name__ == "__main__":
     unittest.main()

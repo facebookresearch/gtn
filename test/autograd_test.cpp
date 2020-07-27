@@ -55,11 +55,33 @@ TEST_CASE("Test Autograd", "[autograd]") {
   auto result = add(g1, g2);
   backward(result);
   CHECK(result.inputs().empty());
+  // Cannot backward twice when graph is cleared.
+  CHECK_THROWS(backward(result));
 
   // Check the graph is retained
+  g1.zeroGrad();
+  g2.zeroGrad();
   result = add(g1, g2);
   backward(result, true);
   CHECK(result.inputs().size() == 2);
+  result.zeroGrad();
+  g1.zeroGrad();
+  g2.zeroGrad();
+  backward(result, true);
+  CHECK(g1.grad().item() == 1.0);
+  CHECK(g2.grad().item() == 1.0);
+
+  // Check that provided input gradients are used.
+  g1.zeroGrad();
+  g2.zeroGrad();
+  result = add(g1, g2);
+  Graph deltas;
+  deltas.addNode(true);
+  deltas.addNode(false, true);
+  deltas.addArc(0, 1, 0, 0, 7.0);
+  backward(result, deltas);
+  CHECK(g1.grad().item() == 7.0);
+  CHECK(g2.grad().item() == 7.0);
 }
 
 TEST_CASE("Test Scalar Ops Grad", "[functions.scalar (grad)]") {
