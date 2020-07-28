@@ -144,6 +144,26 @@ class FunctionsTestCase(GTNModuleTestCase):
 
 
 class AutogradTestCase(GTNModuleTestCase):
+    def test_calc_grad(self):
+        g1 = gtn.Graph(False)
+        g1.calc_grad = True
+        g1.add_node(True)
+        g1.add_node(False, True)
+        g1.add_arc(0, 1, 1, 1, 1.0)
+
+        g2 = gtn.Graph(True)
+        g2.calc_grad = False
+        g2.add_node(True)
+        g2.add_node(False, True)
+        g2.add_arc(0, 0, 1, 1, 1.0)
+
+        result = gtn.add(g1, g2)
+        gtn.backward(result)
+
+        self.assertTrue(g1.grad().item() == 1.0)
+        with self.assertRaises(RuntimeError):
+            g2.grad()
+
     def test_retain_graph(self):
         # The graph is not retained by default
         g1 = gtn.Graph(True)

@@ -257,6 +257,21 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
     CHECK(!g5.calcGrad());
   }
 
+  // Setting setCalcGrad works
+  {
+    Graph g1(true);
+    g1.addNode();
+    g1.addArc(0, 0, 1);
+
+    g1.setCalcGrad(false);
+    g1.addGrad(std::vector<float>({1.0}));
+    CHECK(!g1.isGradAvailable());
+
+    g1.setCalcGrad(true);
+    g1.addGrad(std::vector<float>({1.0}));
+    CHECK(g1.isGradAvailable());
+  }
+
   {
     // Check copy vs move
     Graph g;
