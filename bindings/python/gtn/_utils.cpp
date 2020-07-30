@@ -21,6 +21,10 @@ PYBIND11_MODULE(_utils, m) {
         draw(graph, filename, isymbols, osymbols);
       });
 
+  m.def("load",
+      py::overload_cast<const std::string&>(&load),
+      "file_name"_a);
+
   m.def("linear_graph", [](int M, int N, bool calcGrad) {
     return linearGraph(M, N, calcGrad);
   });

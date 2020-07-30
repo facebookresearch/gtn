@@ -5,6 +5,7 @@ import ctypes
 import numpy as np
 import struct
 import unittest
+import tempfile
 
 from test_utils import GTNModuleTestCase
 
@@ -83,7 +84,6 @@ class GraphTestCase(GTNModuleTestCase):
         self.assertListAlmostEqual(weights_new, weights_new_arr.tolist(), places=4)
         self.g.set_weights(weights_original)
 
-
     def test_comparisons(self):
         g1 = gtn.Graph()
         g1.add_node(True)
@@ -105,6 +105,13 @@ class GraphTestCase(GTNModuleTestCase):
 
         self.assertFalse(gtn.equal(g1, g2))
         self.assertTrue(gtn.isomorphic(g1, g2))
+
+    def test_save_load(self):
+        with tempfile.NamedTemporaryFile(mode='w') as fid:
+            fid.write(self.g.__repr__().strip())
+            fid.flush()
+            loaded = gtn.load(fid.name)
+            self.assertTrue(gtn.isomorphic(self.g, loaded))
 
 
 class FunctionsTestCase(GTNModuleTestCase):
