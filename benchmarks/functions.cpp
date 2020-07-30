@@ -11,7 +11,7 @@ void timeSimpleOps() {
 
   auto cloneBackward = [&graph, out = clone(graph)]() {
     graph.zeroGrad();
-    backward(out);
+    backward(out, true);
   };
   TIME(cloneBackward);
 
@@ -21,7 +21,7 @@ void timeSimpleOps() {
 
   auto closureBackward = [&graph, out = closure(graph)]() {
     graph.zeroGrad();
-    backward(out);
+    backward(out, true);
   };
   TIME(closureBackward);
 
@@ -38,7 +38,7 @@ void timeSimpleOps() {
     for (auto& g : graphs) {
       g.zeroGrad();
     }
-    backward(out);
+    backward(out, true);
   };
   TIME(sumBackward);
 
@@ -50,7 +50,7 @@ void timeSimpleOps() {
     for (auto& g : graphs) {
       g.zeroGrad();
     }
-    backward(out);
+    backward(out, true);
   };
   TIME(concatBackward);
 }
@@ -64,7 +64,7 @@ void timeForward() {
 
   auto forwardScoreLinearBackward = [&graph, out = forwardScore(graph)] {
     graph.zeroGrad();
-    backward(out);
+    backward(out, true);
   };
   TIME(forwardScoreLinearBackward);
 
@@ -76,7 +76,7 @@ void timeForward() {
 
   auto forwardScoreRandDAGBackward = [&graph, out = forwardScore(graph)] {
     graph.zeroGrad();
-    backward(out);
+    backward(out, true);
   };
   TIME(forwardScoreRandDAGBackward);
 }
@@ -103,7 +103,7 @@ void timeCompose() {
   auto composeBackward = [&first, &second, out = compose(first, second)] {
     first.zeroGrad();
     second.zeroGrad();
-    backward(out);
+    backward(out, true);
   };
   TIME(composeBackward);
 

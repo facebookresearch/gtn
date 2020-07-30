@@ -12,11 +12,11 @@ PYBIND11_MODULE(_autograd, m) {
       "backward",
       py::overload_cast<Graph, bool>(&backward),
       "graph"_a,
-      "reatin_graph"_a = false);
+      "retain_graph"_a = false);
   m.def(
       "backward",
       py::overload_cast<Graph, const Graph&, bool>(&backward),
       "graph"_a,
       "grad"_a,
-      "reatin_graph"_a = false);
+      "retain_graph"_a = false);
 }
