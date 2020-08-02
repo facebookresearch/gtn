@@ -185,7 +185,7 @@ Graph shortestPath(const Graph& graph) {
 
   // Chase the pointers to get the best path (backwards)
   std::vector<int> arcs;
-  while (backPointers[best] != -1) {
+  while (best != -1 && backPointers[best] != -1) {
     auto arc = backPointers[best];
     best = graph.upNode(arc);
     arcs.push_back(arc);
@@ -193,7 +193,9 @@ Graph shortestPath(const Graph& graph) {
 
   // Build the best path
   Graph out;
-  out.addNode(true, arcs.size() == 0);
+  if (best != -1) {
+    out.addNode(true, arcs.size() == 0);
+  }
   for (auto i = arcs.size(); i > 0; --i) {
     out.addNode(false, i == 1);
     out.addArc(

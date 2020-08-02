@@ -228,6 +228,12 @@ TEST_CASE("Test Composition", "[functions.compose]") {
 
 TEST_CASE("Test Forward", "[functions.forwardScore]") {
   {
+    // Check score of empty graph
+    Graph g;
+    CHECK(forwardScore(g).item() == -std::numeric_limits<float>::infinity());
+  }
+
+  {
     // Throws on self-loops
     Graph g;
     g.addNode(true, true);
@@ -343,6 +349,12 @@ TEST_CASE("Test Forward", "[functions.forwardScore]") {
 
 TEST_CASE("Test Viterbi Score", "[functions.viterbiScore]") {
   {
+    // Check score of empty graph
+    Graph g;
+    CHECK(viterbiScore(g).item() == -std::numeric_limits<float>::infinity());
+  }
+
+  {
     // A simple test case
     Graph g;
     g.addNode(true);
@@ -400,6 +412,17 @@ TEST_CASE("Test Viterbi Score", "[functions.viterbiScore]") {
 }
 
 TEST_CASE("Test Viterbi Path", "[functions.viterbiPath]") {
+  {
+    Graph g;
+
+    // Empty graph gives empty path
+    CHECK(equal(viterbiPath(g), g));
+
+    // Accepting empty string
+    g.addNode(true, true);
+    CHECK(equal(viterbiPath(g), g));
+  }
+
   {
     // A simple test case
     Graph g;
