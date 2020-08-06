@@ -288,6 +288,27 @@ TEST_CASE("Test Forward", "[functions.forwardScore]") {
     CHECK_THROWS(forwardScore(g));
   }
 
+  const float inf = std::numeric_limits<float>::infinity();
+  {
+    // Handles negative infinity
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, -inf);
+    g.addArc(0, 1, 1, 1, -inf);
+    CHECK(forwardScore(g).item() == -inf);
+  }
+
+  {
+    // Handles infinity
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, inf);
+    g.addArc(0, 1, 1, 1, 0);
+    CHECK(forwardScore(g).item() == inf);
+  }
+
   {
     // A simple test case
     Graph g;

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <queue>
@@ -9,6 +10,7 @@ namespace detail {
 
 namespace {
 
+static const float inf = std::numeric_limits<float>::infinity();
 static const float neginf = -std::numeric_limits<float>::infinity();
 
 inline float logadd(float a, float b) {
@@ -77,30 +79,48 @@ void shortestDistanceGrad(
 Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
   std::queue<int> computed;
   // List of scores and list of in degrees for each node
-  std::vector<float> scores(graph.numNodes(), neginf);
+  std::vector<float> scores(graph.numNodes());
   std::vector<int> degrees;
   degrees.reserve(graph.numNodes());
   for (auto n = 0; n < graph.numNodes(); ++n) {
     degrees[n] = graph.numIn(n);
   }
   for (auto n : graph.start()) {
-    scores[n] = 0.0;
     if (graph.numIn(n) == 0) {
       computed.push(n);
     }
   }
 
+  auto getScore = [tropical](const std::vector<float>& in) {
+    if (in.empty()) {
+      return neginf;
+    }
+    auto maxScore = *std::max_element(in.begin(), in.end());
+    if (tropical || maxScore == inf || maxScore == -inf) {
+      return maxScore;
+    }
+    float score = -1.0;
+    for (auto s : in) {
+      score += std::exp(s - maxScore);
+    }
+    return maxScore + std::log1p(score);
+  };
+
+  std::vector<float> inScores;
   while (!computed.empty()) {
     auto n = computed.front();
     computed.pop();
-    auto score = scores[n];
+    for (auto a : graph.in(n)) {
+      auto un = graph.upNode(a);
+      inScores.push_back(scores[un] + graph.weight(a));
+    }
+    if (graph.start(n)) {
+      inScores.push_back(0.0);
+    }
+    scores[n] = getScore(inScores);
+    inScores.clear();
     for (auto a : graph.out(n)) {
       auto dn = graph.downNode(a);
-      if (tropical) {
-        scores[dn] = std::max(score + graph.weight(a), scores[dn]);
-      } else {
-        scores[dn] = logadd(score + graph.weight(a), scores[dn]);
-      }
       if ((--degrees[dn]) == 0) {
         computed.push(dn);
       }
@@ -108,18 +128,14 @@ Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
   }
 
   // Accumulate scores at all the accept nodes.
-  float score = neginf;
   for (auto a : graph.accept()) {
     if (degrees[a] > 0) {
       throw std::invalid_argument(
           "Graph has a cycle, self-loop or is disconnected!");
     }
-    if (tropical) {
-      score = std::max(score, scores[a]);
-    } else {
-      score = logadd(score, scores[a]);
-    }
+    inScores.push_back(scores[a]);
   }
+  auto score = getScore(inScores);
 
   auto gradFunc = [scores = std::move(scores), output = score, tropical](
                       std::vector<Graph>& inputs, Graph deltas) mutable {
