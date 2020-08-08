@@ -129,6 +129,34 @@ TEST_CASE("Test Graph", "[graph]") {
   }
 }
 
+TEST_CASE("Test id", "[Graph::id]") {
+  Graph g;
+  auto id = g.id();
+  g.addNode(true);
+  g.addNode(false, true);
+  g.addArc(0, 1, 0, 2);
+  g.addArc(0, 1, 1, 2);
+  g.addArc(0, 1, 2, 2);
+
+  CHECK(g.id() == id);
+
+  auto g1 = g;
+  CHECK(g1.id() == g.id());
+
+  std::vector<float> weights = {1, 2, 3};
+  g1.setWeights(weights.data());
+  CHECK(g1.id() == g.id());
+
+  Graph g2(g);
+  CHECK(g2.id() == g.id());
+
+  Graph g3(g, nullptr, {});
+  CHECK(g3.id() == g.id());
+
+  auto g4 = Graph::deepCopy(g);
+  CHECK(g4.id() != g.id());
+}
+
 TEST_CASE("Test copy", "[Graph::deepCopy]") {
   Graph graph =
       load(std::stringstream("0 1\n"

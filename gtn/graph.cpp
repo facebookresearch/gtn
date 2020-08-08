@@ -19,7 +19,9 @@ Graph::Graph(GradFunc gradFunc, std::vector<Graph> inputs) {
 }
 
 Graph::Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs)
-    : sharedGraph_(data.sharedGraph_), sharedWeights_(data.sharedWeights_) {
+    : sharedGraph_(data.sharedGraph_),
+      sharedWeights_(data.sharedWeights_),
+      sharedGrad_(data.sharedGrad_) {
   sharedGrad_->calcGrad = false;
   // If any inputs require a gradient, then this should
   // also compute a gradient.
