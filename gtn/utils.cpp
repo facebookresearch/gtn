@@ -248,7 +248,7 @@ void draw(
     std::ostream& out,
     const SymbolMap& isymbols /* = SymbolMap() */,
     const SymbolMap& osymbols /* = SymbolMap() */) {
-  out << "digraph FST {\n  rankdir = LR;\n  label = \"\";\n"
+  out << "digraph FST {\n  margin = 0;\n  rankdir = LR;\n  label = \"\";\n"
       << "  center = 1;\n  ranksep = \"0.4\";\n  nodesep = \"0.25\";\n";
 
   auto label_to_string = [](const auto& symbols, const auto label) {
@@ -263,10 +263,10 @@ void draw(
 
   auto drawNode = [&graph, &out, &isymbols, &osymbols, &label_to_string](
                       auto n) {
-    std::string style = graph.start(n) || graph.accept(n) ? "bold" : "solid";
+    std::string penwidth = graph.start(n) ? "2.0" : "1.0";
     std::string shape = graph.accept(n) ? "doublecircle" : "circle";
     out << "  " << n << " [label = \"" << n << "\", shape = " << shape
-        << ", style = " << style << ", fontsize = 14];\n";
+        << ", penwidth = " << penwidth << ", fontsize = 14];\n";
     for (auto a : graph.out(n)) {
       auto ilabel = label_to_string(isymbols, graph.ilabel(a));
       out << "  " << graph.upNode(a) << " -> " << graph.downNode(a)
