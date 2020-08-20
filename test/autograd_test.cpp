@@ -275,6 +275,72 @@ TEST_CASE("Test forwardScore Grad", "[functions.forwardScore (grad)]") {
   }
 
   {
+    // Handle case where some arcs don't lead to accepting states
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, false);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 2);
+    g.addArc(0, 2, 0, 0, 2);
+    backward(forwardScore(g));
+    CHECK(numericalGradCheck(forwardScore, g, 1e-3, 1e-3));
+    auto& grad = g.grad();
+    CHECK(grad.weight(0) == Approx(0.0));
+    CHECK(grad.weight(1) == Approx(1.0));
+  }
+
+  const float inf = std::numeric_limits<float>::infinity();
+  {
+    // Handles negative infinity
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, -inf);
+    g.addArc(0, 1, 1, 1, -inf);
+    backward(forwardScore(g));
+    
+    auto& grad = g.grad();
+    CHECK(std::isnan(grad.weight(0)));
+    CHECK(std::isnan(grad.weight(1)));
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 0, 0, -inf);
+    g2.addArc(0, 1, 1, 1, 1.0);
+    backward(forwardScore(g2));
+
+    auto& grad2 = g2.grad();
+    CHECK(grad2.weight(0) == Approx(0.0));
+    CHECK(grad2.weight(1) == Approx(1.0));
+  }
+
+  {
+    // Handles infinity
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, inf);
+    g.addArc(0, 1, 1, 1, 0);
+    backward(forwardScore(g));
+    auto& grad = g.grad();
+    CHECK(std::isnan(grad.weight(0)));
+    CHECK(std::isnan(grad.weight(1)));
+
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 0, 0, inf);
+    g2.addArc(0, 1, 1, 1, 1.0);
+    backward(forwardScore(g2));
+
+    auto& grad2 = g2.grad();
+    CHECK(std::isnan(grad2.weight(0)));
+    CHECK(std::isnan(grad2.weight(1)));
+  }
+
+  {
     // A more complex test case
     std::stringstream in(
         "0 1\n"
@@ -345,7 +411,7 @@ TEST_CASE("Test viterbiScore Grad", "[functions.viterbiScore (grad)]") {
     std::vector<float> expected = {1.0, 0.0, 1.0};
     CHECK(gradsToVec(g) == expected);
   }
-
+  
   {
     // A more complex test case
     std::stringstream in(
@@ -361,7 +427,7 @@ TEST_CASE("Test viterbiScore Grad", "[functions.viterbiScore (grad)]") {
         "3 4 0 0 2\n");
     Graph g = load(in);
     backward(viterbiScore(g));
-    std::vector<float> expected = {1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0};
+    std::vector<float> expected = {1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
     CHECK(gradsToVec(g) == expected);
   }
 }

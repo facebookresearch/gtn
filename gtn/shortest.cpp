@@ -24,55 +24,86 @@ inline float logadd(float a, float b) {
 }
 
 void shortestDistanceGrad(
-    Graph input,
+    Graph& graph,
     float output,
     const Graph& deltas,
-    std::vector<float>& scores,
+    const std::vector<float>& nodeScores,
     bool tropical) {
   std::queue<int> computed;
-  std::vector<int> degrees;
-  degrees.reserve(input.numNodes());
-  std::vector<float> nodeGrads(input.numNodes(), 0.0);
-  std::vector<float> arcGrads(input.numArcs());
-  for (auto n = 0; n < input.numNodes(); ++n) {
-    degrees[n] = input.numOut(n);
+  std::vector<int> degrees(graph.numNodes());
+  std::vector<float> nodeGrads(graph.numNodes(), 0.0);
+  std::vector<float> arcGrads(graph.numArcs(), 0.0);
+  for (auto n = 0; n < graph.numNodes(); ++n) {
+    degrees[n] = graph.numOut(n);
   }
-  for (auto n : input.accept()) {
-    if (tropical) {
-      nodeGrads[n] = deltas.item() * (scores[n] >= output);
-    } else {
-      nodeGrads[n] = deltas.item() * std::exp(scores[n] - output);
+  auto updateGrad = [tropical, &nodeGrads, &arcGrads, &deltas](
+                        std::vector<std::pair<float, std::pair<int, int>>>& in,
+                        float scale) {
+    // NB: Perf could be improved by passing max val, idx to the function directly
+    if (in.empty()) {
+      return;
     }
-    if (input.numOut(n) == 0) {
+    auto maxIt = std::max_element(in.begin(), in.end());
+    auto maxVal = maxIt->first;
+    auto maxIdx = std::distance(in.begin(), maxIt);
+    if (tropical) {
+      auto& n = in[maxIdx];
+      if (n.second.first >= 0) { // node grad
+        nodeGrads[n.second.first] += scale;
+      }
+      if (n.second.second >= 0) { // arc grad
+        arcGrads[n.second.second] = scale * deltas.item();
+      }
+    } else {
+      float denom = 0.0;
+      for (auto& n : in) {
+        n.first = std::exp(n.first - maxVal);
+        denom += n.first;
+      }
+      for (auto& n : in) {
+        n.first = scale * (n.first / denom);
+        if (n.second.first >= 0) { // node grad
+          nodeGrads[n.second.first] += n.first;
+        }
+        if (n.second.second >= 0) { // arc grad
+          arcGrads[n.second.second] = n.first * deltas.item();
+        }
+      }
+    }
+
+  };
+
+  // {score, {node id, arc id}}
+  std::vector<std::pair<float, std::pair<int, int>>> inGrads;
+  for (auto n : graph.accept()) {
+    inGrads.emplace_back(nodeScores[n], std::make_pair(n, -1));
+    if (graph.numOut(n) == 0) {
       computed.push(n);
     }
   }
+  updateGrad(inGrads, 1.0);
+  inGrads.clear();
 
   while (!computed.empty()) {
     auto n = computed.front();
     computed.pop();
-    auto score = scores[n];
-    auto gradn = nodeGrads[n];
-    for (auto a : input.in(n)) {
-      auto un = input.upNode(a);
-      if (tropical) {
-        if ((input.weight(a) + scores[un]) >= score) {
-          arcGrads[a] = gradn;
-          nodeGrads[un] = gradn;
-        } else {
-          arcGrads[a] = 0.0;
-        }
-      } else {
-        arcGrads[a] = gradn * std::exp(input.weight(a) + scores[un] - score);
-        nodeGrads[un] += arcGrads[a];
-      }
+    for (auto a : graph.in(n)) {
+      auto un = graph.upNode(a);
+      inGrads.emplace_back(
+          nodeScores[un] + graph.weight(a), std::make_pair(un, a));
       if ((--degrees[un]) == 0) {
         computed.push(un);
       }
     }
+    if (graph.start(n)) {
+      inGrads.emplace_back(0.0, std::make_pair(-1, -1));
+    }
+    updateGrad(inGrads, nodeGrads[n]);
+    inGrads.clear();
   }
-  input.addGrad(std::move(arcGrads));
+  graph.addGrad(std::move(arcGrads));
 }
+
 
 } // namespace
 
@@ -91,7 +122,9 @@ Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
     }
   }
 
+
   auto getScore = [tropical](const std::vector<float>& in) {
+    // NB: Perf could be improved by passing max val to the function directly
     if (in.empty()) {
       return neginf;
     }

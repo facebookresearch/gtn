@@ -310,6 +310,13 @@ TEST_CASE("Test Forward", "[functions.forwardScore]") {
   }
 
   {
+    // Single Node
+    Graph g;
+    g.addNode(true, true);
+    CHECK(forwardScore(g).item() == 0.0);
+  }
+
+  {
     // A simple test case
     Graph g;
     g.addNode(true);
@@ -348,6 +355,17 @@ TEST_CASE("Test Forward", "[functions.forwardScore]") {
     g.addArc(1, 2, 0, 0, 2);
     float expected = std::log(2 * std::exp(2) + std::exp(4));
     CHECK(forwardScore(g).item() == Approx(expected));
+  }
+
+  {
+    // Handle case where some arcs don't lead to accepting states
+    Graph g;
+    g.addNode(true);
+    g.addNode(false, false);
+    g.addNode(false, true);
+    g.addArc(0, 1, 0, 0, 2);
+    g.addArc(0, 2, 0, 0, 2);
+    CHECK(forwardScore(g).item() == 2.0);
   }
 
   {
