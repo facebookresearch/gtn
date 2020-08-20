@@ -321,7 +321,7 @@ TEST_CASE("Test forwardScore Grad", "[functions.forwardScore (grad)]") {
     g.addNode(true);
     g.addNode(false, true);
     g.addArc(0, 1, 0, 0, inf);
-    g.addArc(0, 1, 1, 1, 0);
+    g.addArc(0, 1, 1, 1, inf);
     backward(forwardScore(g));
     auto& grad = g.grad();
     CHECK(std::isnan(grad.weight(0)));
@@ -334,7 +334,6 @@ TEST_CASE("Test forwardScore Grad", "[functions.forwardScore (grad)]") {
     g2.addArc(0, 1, 0, 0, inf);
     g2.addArc(0, 1, 1, 1, 1.0);
     backward(forwardScore(g2));
-
     auto& grad2 = g2.grad();
     CHECK(std::isnan(grad2.weight(0)));
     CHECK(std::isnan(grad2.weight(1)));
