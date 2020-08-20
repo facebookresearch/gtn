@@ -42,10 +42,33 @@ class Graph {
   Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs);
   Graph(bool calcGrad = true);
 
+  /**
+   * Adds a node to the graph.
+   * @param start Indicates if the node is a starting node.
+   * @param accept Indicates if the node is an accepting node.
+   * @return The id of the node (used for e.g. adding arcs).
+   */
   int addNode(bool start = false, bool accept = false);
 
-  /* Add an arc between two nodes. */
+  /**
+   * Add a arc between two nodes. This assumes the graph is an acceptor, the
+   * input label on the arc is the same as the output label.
+   * @param upNode The id of the source node.
+   * @param downNode The id of the destination node.
+   * @param label The arc label.
+   * @return The id of the added arc.
+   */
   int addArc(int upNode, int downNode, int label);
+
+  /**
+   * Add a arc between two nodes.
+   * @param upNode The id of the source node.
+   * @param downNode The id of the destination node.
+   * @param ilabel The arc input label.
+   * @param olabel The arc output label.
+   * @param weight The arc weight.
+   * @return The id of the added arc.
+   */
   int addArc(
       int upNode,
       int downNode,
@@ -57,20 +80,24 @@ class Graph {
   int addArc(int upNode, int downNode, int label, float) = delete;
   int addArc(int upNode, int downNode, int label, double) = delete;
 
+  /** The number of arcs in the graph. */
   int numArcs() const {
     return sharedGraph_->arcs.size();
   };
+  /** The number of nodes in the graph. */
   int numNodes() const {
     return sharedGraph_->nodes.size();
   };
+  /** The number of starting nodes in the graph. */
   int numStart() const {
     return sharedGraph_->start.size();
   };
+  /** The number of accepting nodes in the graph. */
   int numAccept() const {
     return sharedGraph_->accept.size();
   };
 
-  /* Get the score on a single arc graph. */
+  /** Get the weight on a single arc graph.  */
   float item() const;
 
   void addGrad(std::vector<float>&& other);
@@ -206,7 +233,7 @@ class Graph {
 
   /**
    * Returns an array of weights from a graph. The array will contain
-   * `g.numArcs()` elements.
+   * `Graph::numArcs()` elements.
    */
   float* weights() {
     assert(sharedWeights_ != nullptr);
@@ -218,19 +245,24 @@ class Graph {
   }
 
   /**
-   * Set weights on a graph. The array should contain `g.numArcs()` elements.
+   * Set the arc weights on a graph. The `weights` array must have
+   * `Graph::numArcs()` elements.
    */
   void setWeights(const float* weights);
 
   /**
    * Extract an array of labels from a graph. The array should have space for
-   * `g.numArcs()` elements.
+   * `Graph::numArcs()` elements.
    *
-   * @param[out] out pointer to the buffer to populate with labels
-   * @param[in] inlabel gets ilabels if true, use olabels if false
+   * @param[out] out A pointer to the buffer to populate with labels.
+   * @param[in] ilabel Retreive ilabels if true, otherwise gets olabels.
    */
-  void labelsToArray(int* out, bool inLabel = true);
-  std::vector<int> labelsToVector(bool inLabel = true);
+  void labelsToArray(int* out, bool ilabel = true);
+
+  /**
+   * Extract a vector of labels from the graph. See `Graph::labelsToArray`.
+   */
+  std::vector<int> labelsToVector(bool ilabel = true);
 
  private:
   const Node& node(int i) const {

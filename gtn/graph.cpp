@@ -186,15 +186,15 @@ void Graph::setWeights(const float* weights) {
   std::copy(weights, weights + numArcs(), sharedWeights_->data());
 }
 
-void Graph::labelsToArray(int* out, bool inLabel) {
+void Graph::labelsToArray(int* out, bool ilabel) {
   for (int i = 0; i < numArcs(); ++i) {
-    out[i] = inLabel ? ilabel(i) : olabel(i);
+    out[i] = ilabel ? this->ilabel(i) : olabel(i);
   }
 }
 
-std::vector<int> Graph::labelsToVector(bool inLabel) {
+std::vector<int> Graph::labelsToVector(bool ilabel) {
   std::vector<int> out(numArcs());
-  labelsToArray(out.data(), inLabel);
+  labelsToArray(out.data(), ilabel);
   return out;
 }
 
