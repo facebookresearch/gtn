@@ -10,6 +10,21 @@ from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 
+# Long description from README.md:
+def load_readme():
+    with open("README.md", encoding="utf8") as f:
+        readme = f.read()
+    return readme
+
+
+# version string from module:
+def load_version():
+    init_path = os.path.join(os.path.dirname(__file__), "gtn/__init__.py")
+    with open(init_path, "r") as f:
+        version = re.search(r"__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M).group(1)
+    return version
+
+
 class CMakeExtension(Extension):
     def __init__(self, name):
         Extension.__init__(self, name, sources=[])
@@ -33,7 +48,7 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
-        extdir = os.path.abspath("gtn")
+        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         srcdir = os.path.abspath("../..")
         # required for auto - detection of auxiliary "native" libs
         if not extdir.endswith(os.path.sep):
@@ -79,11 +94,13 @@ class CMakeBuild(build_ext):
 
 setup(
     name="gtn",
-    version="0.0.1",
-    author="Vineel Pratap",
-    author_email="vineelkpratap@fb.com",
-    description="gtn bindings for python",
-    long_description="",
+    version=load_version(),
+    author="GTN Contributors",
+    description="Automatic differentiation with WFSTs",
+    url="https://github.com/facebookresearch/gtn",
+    long_description=load_readme(),
+    long_description_content_type="text/markdown",
+    packages=["gtn"],
     ext_modules=[
         CMakeExtension("gtn._graph"),
         CMakeExtension("gtn._autograd"),
@@ -92,4 +109,6 @@ setup(
     ],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
+    license="MIT licensed, as found in the LICENSE file",
+    python_requires='>=3.5',
 )

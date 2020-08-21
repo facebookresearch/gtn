@@ -3,6 +3,7 @@
 
 # Project-specific files
 build
+dist
 
 # vim
 *.swp

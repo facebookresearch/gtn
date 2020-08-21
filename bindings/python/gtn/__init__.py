@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
+
+__version__ = "0.0.0"
+
 import os
 import subprocess
 import tempfile
 
-from gtn._graph import *
-from gtn._functions import *
-from gtn._autograd import *
-from gtn._utils import *
+from ._graph import *
+from ._functions import *
+from ._autograd import *
+from ._utils import *
 
 
 def draw(graph, file_name, isymbols={}, osymbols={}):
