@@ -1,5 +1,5 @@
 GTN
----
+===
 
 Documentation for GTN, a library for automatic
 differentiation with weighted finite state tranducers
@@ -22,6 +22,8 @@ differentiation with weighted finite state tranducers
    :maxdepth: 2
 
    graph 
+   functions
+   utils
 
 .. toctree::
    :caption: Language Bindings

@@ -19,13 +19,22 @@ PYBIND11_MODULE(_utils, m) {
          const SymbolMap& isymbols = SymbolMap(),
          const SymbolMap& osymbols = SymbolMap()) {
         draw(graph, filename, isymbols, osymbols);
-      });
+      },
+      "graph"_a,
+      "file_name"_a,
+      "isymbols"_a = SymbolMap(),
+      "osymbols"_a = SymbolMap());
 
   m.def("load",
       py::overload_cast<const std::string&>(&load),
       "file_name"_a);
 
-  m.def("linear_graph", [](int M, int N, bool calcGrad) {
-    return linearGraph(M, N, calcGrad);
-  });
+  m.def(
+    "linear_graph",
+    [](int M, int N, bool calcGrad) {
+        return linearGraph(M, N, calcGrad);
+    },
+    "M"_a,
+    "N"_a,
+    "calc_grad"_a);
 }

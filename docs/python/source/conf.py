@@ -10,7 +10,7 @@ import sphinx_rtd_theme
 project = 'GTN'
 copyright = '2020, GTN Contributors'
 author = 'GTN Contributors'
-release = 'v0.1'
+version = '0.0'
 
 
 # -- General configuration ---------------------------------------------------

@@ -35,6 +35,11 @@ class Graph {
   };
 
  public:
+
+  /**
+   * \defgroup graphMethods Graph-level methods
+   * @{
+   */
   using GradFunc =
       std::function<void(std::vector<Graph>& inputs, Graph& deltas)>;
 
@@ -75,10 +80,6 @@ class Graph {
       int ilabel,
       int olabel,
       float weight = 0.0);
-
-  // Attempt to keep code like `g.addArc(n1, n2, 0, 2.0)` from compiling
-  int addArc(int upNode, int downNode, int label, float) = delete;
-  int addArc(int upNode, int downNode, int label, double) = delete;
 
   /** The number of arcs in the graph. */
   int numArcs() const {
@@ -123,96 +124,36 @@ class Graph {
     return sharedGrad_->inputs;
   };
 
-  /* A deep copy of a graph `other` which is not recorded in the
+  /**
+   * A deep copy of a graph `other` which is not recorded in the
    * autograd tape. For a version which is recorded in the
-   * autograd tape see `clone`. */
+   * autograd tape see `gtn::clone`.
+   */
   static Graph deepCopy(const Graph& src);
 
-  /* Clear the weights on a graph if they are no longer needed. */
+  /**
+   * Clear the weights on a graph if they are no longer needed.
+   */
   Graph withoutWeights() const {
     Graph other = *this;
     other.sharedWeights_ = nullptr;
     return other;
   }
 
-  static constexpr int epsilon{-1};
-
-  // Accessing and modifying nodes.
-
-  const std::vector<int>& start() const {
-    return sharedGraph_->start;
-  };
-  const std::vector<int>& accept() const {
-    return sharedGraph_->accept;
-  };
-  bool start(int i) const {
-    return node(i).start;
-  };
-  bool accept(int i) const {
-    return node(i).accept;
-  };
-  void makeAccept(int i) {
-    auto& n = node(i);
-    if (!n.accept) {
-      sharedGraph_->accept.push_back(i);
-      n.accept = true;
-    }
-  };
-  int numOut(int i) const {
-    return node(i).out.size();
-  }
-  const std::vector<int>& out(int i) const {
-    return node(i).out;
-  }
-  int out(int i, int j) const {
-    return node(i).out[j];
-  }
-  int numIn(int i) const {
-    return node(i).in.size();
-  }
-  const std::vector<int>& in(int i) const {
-    return node(i).in;
-  }
-  int in(int i, int j) const {
-    return node(i).in[j];
-  }
-
-  // Accessing and modifying arcs.
-
-  int upNode(int i) const {
-    return arc(i).upNode;
-  }
-  int downNode(int i) const {
-    return arc(i).downNode;
-  }
-  int label(int i) const {
-    return arc(i).ilabel;
-  }
-  int ilabel(int i) const {
-    return arc(i).ilabel;
-  }
-  int olabel(int i) const {
-    return arc(i).olabel;
-  }
-  float weight(int i) const {
-    assert(sharedWeights_ != nullptr);
-    return (*sharedWeights_)[i];
-  }
-  void setWeight(int i, float weight) {
-    assert(sharedWeights_ != nullptr);
-    (*sharedWeights_)[i] = weight;
-  }
-
-  /* Sort the arcs entering and exiting a node in increasing order by arc in
+  /**
+   * Sort the arcs entering and exiting a node in increasing order by arc in
    * label (default) or out label if `olabel = True`. This function is intended
    * to be used prior to calls to `intersect` and `compose` to improve the
-   * efficiency of the algorithm. */
+   * efficiency of the algorithm.
+   */
   void arcSort(bool olabel = false);
 
-  /* Mark a graph's arcs as sorted.
+  /**
+   * Mark a graph's arcs as sorted.
    * If `olabel == false` (default) then the graph will be marked as sorted by
    * arc input labels, otherwise it will be marked as sorted by the arc output
-   * labels. */
+   * labels.
+   */
   void markArcSorted(bool olabel = false) {
     if (olabel) {
       sharedGraph_->olabelSorted = true;
@@ -221,12 +162,18 @@ class Graph {
     }
   }
 
-  /* Check if the arcs entering and exiting a node are sorted by in label. */
+  /**
+   * Check if the arcs entering and exiting every node are sorted by input
+   * label.
+   */
   bool ilabelSorted() const {
     return sharedGraph_->ilabelSorted;
   }
 
-  /* Check if the arcs entering and exiting a node are sorted by out label. */
+  /**
+   * Check if the arcs entering and exiting every node are sorted by output
+   * label.
+   */
   bool olabelSorted() const {
     return sharedGraph_->olabelSorted;
   }
@@ -264,7 +211,108 @@ class Graph {
    */
   std::vector<int> labelsToVector(bool ilabel = true);
 
+  /** The index of epsilon label. */
+  static constexpr int epsilon{-1};
+
+  /** @}*/
+
+  /** \defgroup nodeAccess Node accessors
+    *  @{
+    */
+
+  /** Get the indices of the start nodes of the graph. */
+  const std::vector<int>& start() const {
+    return sharedGraph_->start;
+  };
+  /** Get the indices of the accepting nodes of the graph. */
+  const std::vector<int>& accept() const {
+    return sharedGraph_->accept;
+  };
+  /** Check if the `i`-th node is a start node. */
+  bool start(int i) const {
+    return node(i).start;
+  };
+  /** Check if the `i`-th node is an accepting node. */
+  bool accept(int i) const {
+    return node(i).accept;
+  };
+  /** Make the the `i`-th node an accepting node. */
+  void makeAccept(int i) {
+    auto& n = node(i);
+    if (!n.accept) {
+      sharedGraph_->accept.push_back(i);
+      n.accept = true;
+    }
+  };
+  /** The number of outgoing arcs from the `i`-th node. */
+  int numOut(int i) const {
+    return node(i).out.size();
+  }
+  /** Get the indices of outgoing arcs from the `i`-th node. */
+  const std::vector<int>& out(int i) const {
+    return node(i).out;
+  }
+  /** Get the index of the `j`-th outgoing arc from the `i`-th node. */
+  int out(int i, int j) const {
+    return node(i).out[j];
+  }
+  /** The number of incoming arcs to the `i`-th node. */
+  int numIn(int i) const {
+    return node(i).in.size();
+  }
+  /** Get the indices of incoming arcs to the `i`-th node. */
+  const std::vector<int>& in(int i) const {
+    return node(i).in;
+  }
+  /** Get the index of the `j`-th incoming arc to the `i`-th node. */
+  int in(int i, int j) const {
+    return node(i).in[j];
+  }
+
+  /** @}*/
+
+  /** \defgroup arcAccess Arc accessors
+    *  @{
+    */
+
+  /** The destination node of the `i`-th arc. */
+  int upNode(int i) const {
+    return arc(i).upNode;
+  }
+  /** The source node of the `i`-th arc. */
+  int downNode(int i) const {
+    return arc(i).downNode;
+  }
+  /** The label of the `i`-th arc (use this for acceptors). */
+  int label(int i) const {
+    return arc(i).ilabel;
+  }
+  /** The input label of the `i`-th arc. */
+  int ilabel(int i) const {
+    return arc(i).ilabel;
+  }
+  /** The output label of the `i`-th arc. */
+  int olabel(int i) const {
+    return arc(i).olabel;
+  }
+
+  /** The weight of the `i`-th arc. */
+  float weight(int i) const {
+    assert(sharedWeights_ != nullptr);
+    return (*sharedWeights_)[i];
+  }
+  /** Set the weight of the `i`-th arc. */
+  void setWeight(int i, float weight) {
+    assert(sharedWeights_ != nullptr);
+    (*sharedWeights_)[i] = weight;
+  }
+  /** @}*/
+
  private:
+  // Attempt to keep code like `g.addArc(n1, n2, 0, 2.0)` from compiling
+  int addArc(int upNode, int downNode, int label, float) = delete;
+  int addArc(int upNode, int downNode, int label, double) = delete;
+
   const Node& node(int i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numNodes());

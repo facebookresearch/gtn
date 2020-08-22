@@ -14,7 +14,7 @@ if read_the_docs_build:
 project = 'GTN'
 copyright = '2020, GTN Contributors'
 author = 'GTN Contributors'
-version = 'v0.1'
+version = '0.0'
 
 # -- General configuration ---------------------------------------------------
 
@@ -24,8 +24,8 @@ extensions = [
     'breathe'
 ]
 
-breathe_projects = {"flashlight" : "../build/xml"}
-breathe_default_project = "flashlight"
+breathe_projects = {"gtn" : "../build/xml"}
+breathe_default_project = "gtn"
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
