@@ -16,8 +16,7 @@ version = '0.0'
 # -- General configuration ---------------------------------------------------
 
 extensions = [
-    'sphinx.ext.githubpages',
-    'sphinx.ext.graphviz',
+    'sphinx.ext.mathjax',
 ]
 
 templates_path = ['_templates']

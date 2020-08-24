@@ -6,7 +6,7 @@ gtn.Graph
   A weighted finite state acceptor or transducer.
 
   :param bool calc_grad: Specify if a gradient is required for the graph.
-  
+
   .. py:method:: add_node(start=False, accept=False)
 
     Add a node to the graph.
@@ -36,3 +36,17 @@ gtn.Graph
     :param int olabel: Output label for the arc
     :param float weight: Weight for the arc
     :return: The integer id of the arc.
+
+  .. py:method:: arc_sort(olabel=False)
+
+    Sort the arcs entering and exiting a node by label.
+
+    This function is intended to be used prior to calls to :func:`intersect`
+    and :func:`compose` to improve the efficiency of the algorithms.
+
+    :param bool olabel: Sort by increasing order on the arc input label
+      (default) or output label if ``olabel == True``.
+
+  .. py:method:: item()
+
+    Get the weight on a single arc graph.

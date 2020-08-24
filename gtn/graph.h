@@ -142,7 +142,7 @@ class Graph {
 
   /**
    * Sort the arcs entering and exiting a node in increasing order by arc in
-   * label (default) or out label if `olabel = True`. This function is intended
+   * label (default) or out label if `olabel = true`. This function is intended
    * to be used prior to calls to `intersect` and `compose` to improve the
    * efficiency of the algorithm.
    */
