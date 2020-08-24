@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-__version__ = "0.0.0"
-
 import os
 import subprocess
 import tempfile
 
 from ._graph import *
+from ._graph import __version__
 from ._functions import *
 from ._autograd import *
 from ._utils import *

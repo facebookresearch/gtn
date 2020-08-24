@@ -21,7 +21,8 @@ jobs:
           command: |
             pip3 install packaging && \
             pip3 install numpy && \
-            cd bindings/python && pip3 install -e .
+            cd bindings/python && \
+            python3 setup.py install --user
       - run:
           name: "Run C++ and Python Binding Tests"
           command: |

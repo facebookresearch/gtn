@@ -1,0 +1,3 @@
+include src/CMakeLists.txt src/cmake/* 
+recursive-include src/gtn *.h *.cpp CMakeLists.txt
+include src/bindings/python/gtn/*.cpp src/bindings/python/CMakeLists.txt
