@@ -9,10 +9,10 @@ gtn
 
   Compute the gradients of any inputs w.r.t ``grap``.
 
-  :param graph gtn.Graph: The graph to cmpute graidents with respect to.
+  :param graph gtn.Graph: The graph to compute gradients with respect to.
   :param grad gtn.Graph: A seed gradient, typically set to be a gradient of
     another function with respect to ``graph``.
-  :param bool reaint_graph: Whether or not to save the autograd graph. Setting
+  :param bool retain_graph: Whether or not to save the autograd graph. Setting
     this to False is more memory efficient as temporary Graphs created during
     the forward computation may be destroyed.
 

@@ -4,15 +4,26 @@
 
 namespace gtn {
 
-/* Attempt to sample a successful path from the graph. If the graph has
- * dead-ends or does not have any accepting paths, then an empty path may be
- * returned. Note that there is a difference between an empty path "{}" and the
- * path which is the empty string "{ε}". */
+/** @ingroup functions
+ * Attempt to sample an accepting path from the graph. If the graph has
+ * dead-ends or does accept any paths, then an empty path may be returned. Note
+ * that the empty path "{}" is different from the path which is the empty
+ * string "{ε}".
+ * @param graph The graph to sample from.
+ * @param maxLength The maximum length of a sampled path.
+ */
 Graph sample(Graph graph, size_t maxLength = 1000);
 
-/* Compare two graphs by sampling `numSamples` (using `sample`) and
- * checking that the score (over all accepting paths) for the sample is
- * within `tol` for the two graphs. */
+/** @ingroup comparisons
+ * Compare two graphs by sampling paths and checking they have the same scores
+ * in both graphs.
+ * @param a A graph to be compared.
+ * @param b A graph to be compared.
+ * @param numSamples The number of samples to use. The more samples the more
+ * likely the result is accurate.
+ * @param tol The largest allowed absolute difference between the path score from each graph.
+ * @param maxLength The maximum length of sampled paths.
+ */
 bool randEquivalent(
     Graph a,
     Graph b,

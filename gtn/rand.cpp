@@ -73,11 +73,9 @@ bool randEquivalent(
     size_t numSamples /* = 100 */,
     double tol /* = 1e-4 */,
     size_t maxLength /* = 1000 */) {
-  // TODO, awni, find a way to break the autograd tape here.. we need to break
-  // it on a and b but without clearing their gradFuncs and inputs and ideally
-  // without making a deep copy of the graphs.
   for (int i = 0; i < numSamples; i++) {
     auto path = sample(rand() % 2 ? a : b, maxLength);
+    path.setCalcGrad(false);
 
     // Ignore empty paths
     if (equal(path, Graph{})) {
@@ -87,8 +85,13 @@ bool randEquivalent(
     auto inp = projectInput(path);
     auto outp = projectOutput(path);
 
-    auto composedA = compose(compose(inp, a), outp);
-    auto composedB = compose(compose(inp, b), outp);
+    auto composedA = compose(inp, a);
+    composedA.setCalcGrad(false);
+    composedA = compose(composedA, outp);
+
+    auto composedB = compose(inp, b);
+    composedB.setCalcGrad(false);
+    composedB = compose(composedB, outp);
 
     auto isEmptyA = equal(composedA, Graph{});
     auto isEmptyB = equal(composedB, Graph{});

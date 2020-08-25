@@ -10,11 +10,39 @@
 
 namespace gtn {
 
-/* Graph operations are in the log or tropical semirings. The default score
- * for an arc is 0 (e.g. the multiplicative identity) and the additive
- * identity is -infinity. Path scores are accumulated with the logadd or
- * max operations and the score for a path is accumulated with addition. */
-
+/**
+ * A `Graph` class to perform automatic differentiation with weighted finite
+ * state acceptors (WFSAs) and transducers (WFSTs).
+ *
+ * Example:
+ *
+ * \code{.cpp}
+ * Graph graph;
+ * graph.addNode(true); // Add a start node
+ * graph.addNode(); // Add an internal node
+ * graph.addNode(false, true); // Add an accept node
+ *
+ * // Add an arc from node 0 to 1 with ilabel 0, olabel 1 and weight 2.0
+ * graph.addArc(0, 1, 0, 1, 2.0);
+ *
+ * // Add an arc from node 1 to 2 with ilabel 1, olabel 2 and weight 1.0
+ * graph.addArc(1, 2, 1, 2, 1.0);
+ *
+ * // Compute the Viterbi score of the graph
+ * auto score = viterbiScore(graph);
+ *
+ * print(score); // Print the score graph to std out
+ *
+ * backward(score); // Compute the gradient
+ * graph.grad(); // Access the gradient
+ * graph.zeroGrad(); // Clear the gradient
+ * \endcode
+ *
+ * All operations are in the log or tropical semirings. The default score
+ * for an arc is `0` (e.g. the multiplicative identity) and the additive
+ * identity is `-infinity`. Path scores are accumulated with log-sum-exp or
+ * max operations and the score for a path is accumulated with addition.
+ */
 class Graph {
  private:
   struct Node {
@@ -36,15 +64,20 @@ class Graph {
 
  public:
 
+  using GradFunc =
+      std::function<void(std::vector<Graph>& inputs, Graph& deltas)>;
+  Graph(GradFunc gradFunc, std::vector<Graph> inputs);
+  Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs);
+
   /**
    * \defgroup graphMethods Graph-level methods
    * @{
    */
-  using GradFunc =
-      std::function<void(std::vector<Graph>& inputs, Graph& deltas)>;
 
-  Graph(GradFunc gradFunc, std::vector<Graph> inputs);
-  Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs);
+  /** Construct a `Graph`.
+   * @param calcGrad Whether or not to compute gradients with respect to this
+   *   graph when calling `gtn::backward`.
+   */
   Graph(bool calcGrad = true);
 
   /**
@@ -101,48 +134,16 @@ class Graph {
   /** Get the weight on a single arc graph.  */
   float item() const;
 
-  void addGrad(std::vector<float>&& other);
-  void addGrad(const std::vector<float>& other);
-  void addGrad(const Graph& other);
-
-  bool calcGrad() const {
-    return sharedGrad_->calcGrad;
-  };
-  bool isGradAvailable() const {
-    return sharedGrad_->grad != nullptr;
-  }
-  Graph& grad();
-  const Graph& grad() const;
-
-  void setCalcGrad(bool calcGrad);
-  void zeroGrad();
-  std::uintptr_t id();
-  GradFunc gradFunc() {
-    return sharedGrad_->gradFunc;
-  };
-  std::vector<Graph>& inputs() {
-    return sharedGrad_->inputs;
-  };
-
   /**
-   * A deep copy of a graph `other` which is not recorded in the
+   * A deep copy of a graph `src` which is not recorded in the
    * autograd tape. For a version which is recorded in the
    * autograd tape see `gtn::clone`.
    */
   static Graph deepCopy(const Graph& src);
 
   /**
-   * Clear the weights on a graph if they are no longer needed.
-   */
-  Graph withoutWeights() const {
-    Graph other = *this;
-    other.sharedWeights_ = nullptr;
-    return other;
-  }
-
-  /**
    * Sort the arcs entering and exiting a node in increasing order by arc in
-   * label (default) or out label if `olabel = true`. This function is intended
+   * label or out label if `olabel == true`. This function is intended
    * to be used prior to calls to `intersect` and `compose` to improve the
    * efficiency of the algorithm.
    */
@@ -150,7 +151,7 @@ class Graph {
 
   /**
    * Mark a graph's arcs as sorted.
-   * If `olabel == false` (default) then the graph will be marked as sorted by
+   * If `olabel == false` then the graph will be marked as sorted by
    * arc input labels, otherwise it will be marked as sorted by the arc output
    * labels.
    */
@@ -186,6 +187,9 @@ class Graph {
     assert(sharedWeights_ != nullptr);
     return sharedWeights_->data();
   }
+  /**
+   * A `const` version of `Graph::weights`.
+   */
   const float* weights() const {
     assert(sharedWeights_ != nullptr);
     return sharedWeights_->data();
@@ -207,14 +211,96 @@ class Graph {
   void labelsToArray(int* out, bool ilabel = true);
 
   /**
-   * Extract a vector of labels from the graph. See `Graph::labelsToArray`.
+   * Extract a `std::vector` of labels from the graph. See
+   * `Graph::labelsToArray`.
    */
   std::vector<int> labelsToVector(bool ilabel = true);
 
-  /** The index of epsilon label. */
+  /** The index of the epsilon label. */
   static constexpr int epsilon{-1};
 
   /** @}*/
+
+  /**
+   * \defgroup gradMethods Autograd methods
+   * @{
+   */
+
+  /**
+   * Add a `std::vector` of gradients to the gradient graph weights without
+   * making a copy of `other`. The `Graph::addGrad` methods are intended for
+   * use by the autograd.
+   * This overload is used with an `rvalue` or `std::move` to avoid an extra
+   * copy:
+   * \code{.cpp}
+   * graph.addGrad(std::move(graphGrad));
+   * \endcode
+   */
+  void addGrad(std::vector<float>&& other);
+
+  /**
+   * Add a `std::vector` of gradients to the gradient graph weights. The
+   * `Graph::addGrad` methods are intended for use by the autograd.
+   */
+  void addGrad(const std::vector<float>& other);
+
+  /**
+   * Add a `Graph` of gradients to the gradient graph. The `Graph::addGrad`
+   * methods are intended for use by the autograd.
+   */
+  void addGrad(const Graph& other);
+
+  /** Check if a graph requires a gradient. */
+  bool calcGrad() const {
+    return sharedGrad_->calcGrad;
+  };
+  /** Check if a graph's gradient is computed. */
+  bool isGradAvailable() const {
+    return sharedGrad_->grad != nullptr;
+  }
+  /** Get the gradient graph. */
+  Graph& grad();
+
+  /** A `const` version of `Graph::grad`. */
+  const Graph& grad() const;
+
+  /** Specify if the gradient for this graph should be computed. */
+  void setCalcGrad(bool calcGrad);
+
+  /** Clear the graph's gradients. */
+  void zeroGrad();
+
+  /**
+   * A unique identifier for a graph. Intended for use by the autograd.
+   */
+  std::uintptr_t id();
+
+  /**
+   * Get the gradient function of a graph. Intended for use by the autograd.
+   */
+  GradFunc gradFunc() {
+    return sharedGrad_->gradFunc;
+  };
+
+  /**
+   * Get the vector of inputs used to compute the graph. Intended for use by
+   * the autograd.
+   */
+  std::vector<Graph>& inputs() {
+    return sharedGrad_->inputs;
+  };
+
+  /**
+   * Clear the weights on a graph if they are no longer needed. Intended for
+   * use by the autograd.
+   */
+  Graph withoutWeights() const {
+    Graph other = *this;
+    other.sharedWeights_ = nullptr;
+    return other;
+  }
+
+  /** @} */
 
   /** \defgroup nodeAccess Node accessors
     *  @{

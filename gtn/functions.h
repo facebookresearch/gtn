@@ -4,6 +4,10 @@
 
 namespace gtn {
 
+/** \addtogroup functions
+ *  @{
+ */
+
 /** Negate a scalar graph. */
 Graph negate(const Graph& other);
 /** Add two scalar graphs. */
@@ -12,11 +16,14 @@ Graph add(const Graph& lhs, const Graph& rhs);
 Graph subtract(const Graph& lhs, const Graph& rhs);
 
 /**
- * Projeciton type
+ * Projection type used with `gtn::clone`.
  */
 enum class Projection {
+  /** Keep both input and output labels. */
   NONE = 0,
+  /** Keep only the input lables. */
   INPUT = 1,
+  /** Keep only the output lables. */
   OUTPUT = 2,
 };
 
@@ -136,4 +143,6 @@ Graph viterbiScore(const Graph& graph);
  * NB: This assumes the input graph is acyclic.
  */
 Graph viterbiPath(const Graph& graph);
+
+/** @} */
 } // namespace gtn

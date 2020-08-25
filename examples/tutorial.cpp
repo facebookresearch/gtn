@@ -204,13 +204,11 @@ void simpleOps() {
   }
 }
 
-// Composing WFSAs
-void composingAcceptors() {
-  // The composition of two acceptors is the graph which represents the set of
-  // all paths present in both. More precisely, this would be called the
-  // intersection, though the algorithm is the same. The score for a path in
-  // the composed graph should be the sum of the scores for the path in the two
-  // input graphs.
+// Intersecting WFSAs
+void intersectingAcceptors() {
+  // The intersection of two acceptors is the graph which represents the set of
+  // all paths present in both. The score for a path in the intersected graph is
+  // the sum of the scores for the path in the two input graphs.
   Graph g1;
   g1.addNode(true);
   g1.addNode(false, true);
@@ -233,17 +231,16 @@ void composingAcceptors() {
   g2.addArc(2, 3, 1);
   g2.addArc(2, 3, 2);
 
-  auto composed = compose(g1, g2);
-  draw(g1, "simple_compose_g1.dot", symbols);
-  draw(g2, "simple_compose_g2.dot", symbols);
-  draw(composed, "simple_compose.dot", symbols);
+  auto intersected = intersect(g1, g2);
+  draw(g1, "simple_intersect_g1.dot", symbols);
+  draw(g2, "simple_intersect_g2.dot", symbols);
+  draw(intersected, "simple_intersect.dot", symbols);
 }
 
 // Forwarding WFSAs
 void forwardingAcceptors() {
-  // The forward algorithm computes the sum of the scores for
-  // all accepting paths in a graph. The graph must not have
-  // cycles.
+  // The forward algorithm computes the log-sum-exp of the scores for all
+  // accepting paths in a graph. The graph must not have cycles.
   Graph graph;
   graph.addNode(true);
   graph.addNode(true);
@@ -257,7 +254,7 @@ void forwardingAcceptors() {
 
   // The accepting paths are:
   // 0 2 0 (nodes 0 -> 1 -> 2 -> 3 and score = 1.1 + 1.4 + 2.1)
-  // 1 0 (nodes 0 -> 2 0 -> 3 and score = 3.2 + 2.1)
+  // 1 0 (nodes 0 -> 2 -> 3 and score = 3.2 + 2.1)
   // 2 0 (nodes 1 -> 2 -> 3 and score = 1.4 + 2.1)
   // The final score is the logadd of the individual path scores.
   auto forwarded = forwardScore(graph);
@@ -590,7 +587,7 @@ int main() {
   simpleAcceptors();
   interestingAcceptors();
   simpleOps();
-  composingAcceptors();
+  intersectingAcceptors();
   forwardingAcceptors();
   differentiableAcceptors();
   autoSegCriterion();

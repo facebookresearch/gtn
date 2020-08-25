@@ -15,13 +15,15 @@ differentiation with weighted finite state tranducers
    :caption: USAGE
    :maxdepth: 1
 
-   autograd
+   basic_usage
+   common_functions
 
 .. toctree::
    :caption: C++ API REFERENCE
    :maxdepth: 2
 
-   graph 
+   graph
+   autograd
    functions
    utils
 
@@ -31,7 +33,7 @@ differentiation with weighted finite state tranducers
 
    Python <https://gtn.readthedocs.io/projects/python/en/latest/>
 
-  
+
 
 Indices
 -------

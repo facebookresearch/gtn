@@ -3,4 +3,5 @@
 Functions
 =========
 
-.. doxygenfile:: functions.h
+.. doxygengroup:: functions
+  :content-only:

@@ -90,11 +90,20 @@ void print(Graph graph, std::ostream& out);
 using SymbolMap = std::unordered_map<int, std::string>;
 
 /**
- * Write a graph in graphviz dot format to a file.
+ * Write a graph in the [Graphviz](https://graphviz.org/) dot format to a file.
  * Arc labels are of the format `ilabel/olabel:weight`. If the output symbols
  * are not specified then the `olabel` is omitted and arc labels are of the
  * format `ilabel:weight`. If the input symbols are not specified then integer
  * ids are used as the label.
+ *
+ * Compile to pdf with:
+ * ```
+ * dot -Tpdf graph.dot -o graph.pdf
+ * ```
+ * @param graph The graph to draw
+ * @param filename The name of the file to write to (e.g. graph.dot).
+ * @param isymbols A map of integer ids to strings used for arc input labels
+ * @param osymbols A map of integer ids to strings used for arc output labels
  */
 void draw(
     Graph graph,
@@ -102,8 +111,8 @@ void draw(
     const SymbolMap& isymbols = SymbolMap(),
     const SymbolMap& osymbols = SymbolMap());
 
-/** Write a graph in graphviz dot format to an output stream.
- * See `gtn::draw`
+/**
+ * Write a graph in graphviz dot format to an output stream. See `gtn::draw`.
  */
 void draw(
     Graph graph,

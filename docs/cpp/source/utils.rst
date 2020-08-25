@@ -10,5 +10,5 @@ Comparisons
 
 Input and Output
 ----------------
-.. doxygengroup:: input_output 
+.. doxygengroup:: input_output
    :content-only:
