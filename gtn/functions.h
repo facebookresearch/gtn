@@ -68,8 +68,8 @@ Graph concat(const Graph& lhs, const Graph& rhs);
  * of the concatenated graphs are starting states of `graphs[0]` and the
  * accepting states are accepting states of `graphs.back()`.
  *
- * Note the concatenation of 0 graphs `gtn::concat({})` is the graph which accepts
- * the empty string (epsilon). The concatentation of a single graph is
+ * Note the concatenation of 0 graphs `gtn::concat({})` is the graph which
+ * accepts the empty string (epsilon). The concatentation of a single graph is
  * equivalent to a clone.
  */
 Graph concat(const std::vector<Graph>& graphs);

@@ -26,6 +26,7 @@ differentiation with weighted finite state tranducers
    graph
    autograd
    functions
+   creations
    utils
 
 .. toctree::

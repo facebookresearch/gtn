@@ -91,6 +91,8 @@ gtn
 
 .. py:function:: isomorphic(first, second)
 
+.. py:function:: scalar_graph(val, calc_grad)
+
 .. py:function:: linear_graph(M, N, calc_grad)
 
 .. py:function:: load(file_name)
