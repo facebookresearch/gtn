@@ -2,9 +2,9 @@
 #include <queue>
 #include <set>
 
-#include "compose.h"
-#include "functions.h"
-#include "shortest.h"
+#include "gtn/functions.h"
+#include "gtn/functions/compose.h"
+#include "gtn/functions/shortest.h"
 
 namespace gtn {
 

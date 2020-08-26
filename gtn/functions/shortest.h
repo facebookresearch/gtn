@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graph.h"
+#include "gtn/graph.h"
 
 namespace gtn {
 namespace detail {

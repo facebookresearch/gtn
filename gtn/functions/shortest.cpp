@@ -3,7 +3,7 @@
 #include <limits>
 #include <queue>
 
-#include "shortest.h"
+#include "gtn/functions/shortest.h"
 
 namespace gtn {
 namespace detail {

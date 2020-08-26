@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <queue>
 
-#include "compose.h"
+#include "gtn/functions/compose.h"
 
 namespace gtn {
 namespace detail {
