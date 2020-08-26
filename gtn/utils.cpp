@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "gtn/utils.h"
 
 #include <list>
 #include <unordered_set>

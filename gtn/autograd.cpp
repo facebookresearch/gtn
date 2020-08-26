@@ -1,7 +1,7 @@
 #include <cstdint>
 #include <unordered_set>
 
-#include "autograd.h"
+#include "gtn/autograd.h"
 
 namespace gtn {
 

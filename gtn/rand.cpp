@@ -1,6 +1,6 @@
-#include "rand.h"
-#include "functions.h"
-#include "utils.h"
+#include "gtn/rand.h"
+#include "gtn/functions.h"
+#include "gtn/utils.h"
 
 namespace gtn {
 

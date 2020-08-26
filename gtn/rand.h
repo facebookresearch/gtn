@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graph.h"
+#include "gtn/graph.h"
 
 namespace gtn {
 
@@ -21,7 +21,8 @@ Graph sample(Graph graph, size_t maxLength = 1000);
  * @param b A graph to be compared.
  * @param numSamples The number of samples to use. The more samples the more
  * likely the result is accurate.
- * @param tol The largest allowed absolute difference between the path score from each graph.
+ * @param tol The largest allowed absolute difference between the path score
+   from each graph.
  * @param maxLength The maximum length of sampled paths.
  */
 bool randEquivalent(

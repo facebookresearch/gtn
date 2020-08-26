@@ -1,4 +1,4 @@
-#include "conversions.h"
+#include "gtn/common/conversions.h"
 
 namespace gtn {
 

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <unordered_map>
 
-#include "graph.h"
+#include "gtn/graph.h"
 
 namespace gtn {
 
