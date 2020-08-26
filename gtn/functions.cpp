@@ -68,8 +68,8 @@ Graph clone(
   }
   for (auto a = 0; a < other.numArcs(); ++a) {
     out.addArc(
-        other.upNode(a),
-        other.downNode(a),
+        other.srcNode(a),
+        other.dstNode(a),
         projection == Projection::OUTPUT ? other.olabel(a) : other.ilabel(a),
         projection == Projection::INPUT ? other.ilabel(a) : other.olabel(a),
         other.weight(a));
@@ -125,8 +125,8 @@ Graph concat(const std::vector<Graph>& graphs) {
     }
     for (auto a = 0; a < graph.numArcs(); ++a) {
       out.addArc(
-          nodeOffset + graph.upNode(a),
-          nodeOffset + graph.downNode(a),
+          nodeOffset + graph.srcNode(a),
+          nodeOffset + graph.dstNode(a),
           graph.ilabel(a),
           graph.olabel(a),
           graph.weight(a));
@@ -162,8 +162,8 @@ Graph closure(const Graph& graph) {
   }
   for (auto a = 0; a < graph.numArcs(); ++a) {
     closed.addArc(
-        graph.upNode(a) + 1,
-        graph.downNode(a) + 1,
+        graph.srcNode(a) + 1,
+        graph.dstNode(a) + 1,
         graph.ilabel(a),
         graph.olabel(a),
         graph.weight(a));
@@ -205,8 +205,8 @@ Graph sum(const std::vector<Graph>& graphs) {
     }
     for (auto a = 0; a < graph.numArcs(); ++a) {
       summed.addArc(
-          nodeOffset + graph.upNode(a),
-          nodeOffset + graph.downNode(a),
+          nodeOffset + graph.srcNode(a),
+          nodeOffset + graph.dstNode(a),
           graph.ilabel(a),
           graph.olabel(a),
           graph.weight(a));
@@ -293,7 +293,7 @@ Graph remove(const Graph& other, int ilabel, int olabel) {
         graph.makeAccept(curr);
       }
       for (auto a : other.out(next)) {
-        auto dn = other.downNode(a);
+        auto dn = other.dstNode(a);
         if (label_match(a)) {
           if (!reachable.count(dn)) {
             toExplore.push(dn);

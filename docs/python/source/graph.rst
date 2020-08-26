@@ -16,21 +16,21 @@ gtn.Graph
     :return: The integer id of the node.
     :rtype: int
 
-  .. py:method:: add_arc(up_node, down_node, label)
+  .. py:method:: add_arc(src_node, dst_node, label)
     :noindex:
 
     Add an accepting arc to the graph.
 
-    :param int up_node: The id of the source node
+    :param int src_node: The id of the source node
     :param int down_nodw: The id of the destination node
     :param int label: Label for the arc
     :return: The integer id of the arc.
 
-  .. py:method:: add_arc(up_node, down_node, ilabel, olabel, weight=0.0)
+  .. py:method:: add_arc(src_node, dst_node, ilabel, olabel, weight=0.0)
 
     Add a transducing arc to the graph.
 
-    :param int up_node: The id of the source node
+    :param int src_node: The id of the source node
     :param int down_nodw: The id of the destination node
     :param int ilabel: Input label for the arc
     :param int olabel: Output label for the arc

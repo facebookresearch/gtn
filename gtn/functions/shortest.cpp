@@ -88,7 +88,7 @@ void shortestDistanceGrad(
     auto n = computed.front();
     computed.pop();
     for (auto a : graph.in(n)) {
-      auto un = graph.upNode(a);
+      auto un = graph.srcNode(a);
       inGrads.emplace_back(
           nodeScores[un] + graph.weight(a), std::make_pair(un, a));
       if ((--degrees[un]) == 0) {
@@ -144,7 +144,7 @@ Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
     auto n = computed.front();
     computed.pop();
     for (auto a : graph.in(n)) {
-      auto un = graph.upNode(a);
+      auto un = graph.srcNode(a);
       inScores.push_back(scores[un] + graph.weight(a));
     }
     if (graph.start(n)) {
@@ -153,7 +153,7 @@ Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
     scores[n] = getScore(inScores);
     inScores.clear();
     for (auto a : graph.out(n)) {
-      auto dn = graph.downNode(a);
+      auto dn = graph.dstNode(a);
       if ((--degrees[dn]) == 0) {
         computed.push(dn);
       }
@@ -206,7 +206,7 @@ Graph shortestPath(const Graph& graph) {
     computed.pop();
     auto score = scores[n];
     for (auto a : graph.out(n)) {
-      auto dn = graph.downNode(a);
+      auto dn = graph.dstNode(a);
       auto nScore = score + graph.weight(a);
       if (nScore > scores[dn]) {
         scores[dn] = nScore;
@@ -236,7 +236,7 @@ Graph shortestPath(const Graph& graph) {
   std::vector<int> arcs;
   while (best != -1 && backPointers[best] != -1) {
     auto arc = backPointers[best];
-    best = graph.upNode(arc);
+    best = graph.srcNode(arc);
     arcs.push_back(arc);
   }
 

@@ -36,8 +36,8 @@ auto findReachable(
     while (matcher->hasNext()) {
       std::tie(i, j) = matcher->next();
       epsilon_matched |= (first.olabel(i) == Graph::epsilon);
-      auto un1 = first.upNode(i);
-      auto un2 = second.upNode(j);
+      auto un1 = first.srcNode(i);
+      auto un2 = second.srcNode(j);
       auto idx = toIndex(un1, un2, first);
       if (!reachable[idx]) {
         // If we haven't seen this state before, explore it.
@@ -55,7 +55,7 @@ auto findReachable(
             continue;
           }
         }
-        auto un1 = first.upNode(i);
+        auto un1 = first.srcNode(i);
         auto idx = toIndex(un1, curr.second, first);
         if (!reachable[idx]) {
           // If we haven't seen this state before, explore it.
@@ -74,7 +74,7 @@ auto findReachable(
             continue;
           }
         }
-        auto un2 = second.upNode(j);
+        auto un2 = second.srcNode(j);
         auto idx = toIndex(curr.first, un2, first);
         if (!reachable[idx]) {
           // If we haven't seen this state before, explore it.
@@ -285,8 +285,8 @@ Graph compose(
     matcher->match(curr.first, curr.second);
     while (matcher->hasNext()) {
       std::tie(i, j) = matcher->next();
-      auto dn1 = first.downNode(i);
-      auto dn2 = second.downNode(j);
+      auto dn1 = first.dstNode(i);
+      auto dn2 = second.dstNode(j);
       // Ignore if we can't get to an accept state.
       auto idx = toIndex(dn1, dn2, first);
       if (!reachable[idx]) {
@@ -317,7 +317,7 @@ Graph compose(
         }
       }
       // We only advance along the first arc.
-      auto dn1 = first.downNode(i);
+      auto dn1 = first.dstNode(i);
       auto dn2 = curr.second;
       auto idx = toIndex(dn1, dn2, first);
       if (!reachable[idx]) {
@@ -346,7 +346,7 @@ Graph compose(
       }
       // We only advance along the second arc.
       auto dn1 = curr.first;
-      auto dn2 = second.downNode(j);
+      auto dn2 = second.dstNode(j);
       auto idx = toIndex(dn1, dn2, first);
       if (!reachable[idx]) {
         continue;

@@ -34,7 +34,7 @@ bool isomorphic(Graph a, Graph b);
  * start and accept nodes respectively. The following lines contain the arcs in
  * the format:
  *   ```
- *   upNode downNode ilabel [olabel=ilabel] [weight=0.0]
+ *   srcNode dstNode ilabel [olabel=ilabel] [weight=0.0]
  *   ```
  * where `[x=y]` indicate optional values for `x` with a default value of `y`.
  *
@@ -72,7 +72,7 @@ Graph load(std::istream&& in);
 /**
  * Prints a graph to stdout as a list of arcs:
  * ```
- * upNode downNode ilabel olabel weight
+ * srcNode dstNode ilabel olabel weight
  * ```
  * the first line will be a space separated list of the start nodes
  * (`Graph::start`) and the second line will be a space separated list of

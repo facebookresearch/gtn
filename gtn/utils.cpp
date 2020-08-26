@@ -48,8 +48,8 @@ bool equal(Graph a, Graph b) {
       auto it = bOut.begin();
       for (; it != bOut.end(); it++) {
         auto arcB = *it;
-        if (a.downNode(arcA) == b.downNode(arcB) &&
-            a.upNode(arcA) == b.upNode(arcB) &&
+        if (a.dstNode(arcA) == b.dstNode(arcB) &&
+            a.srcNode(arcA) == b.srcNode(arcB) &&
             a.ilabel(arcA) == b.ilabel(arcB) &&
             a.olabel(arcA) == b.olabel(arcB) &&
             a.weight(arcA) == b.weight(arcB)) {
@@ -90,7 +90,7 @@ bool isomorphic(Graph& a, Graph& b, int aNode, int bNode, NodeMap& visited) {
           a.weight(aArc) != b.weight(bArc)) {
         continue;
       }
-      if (isomorphic(a, b, a.downNode(aArc), b.downNode(bArc), visited)) {
+      if (isomorphic(a, b, a.dstNode(aArc), b.dstNode(bArc), visited)) {
         break;
       }
     }
@@ -238,7 +238,7 @@ void print(Graph graph, std::ostream& out) {
 
   // Print arcs
   for (int i = 0; i < graph.numArcs(); i++) {
-    out << graph.upNode(i) << " " << graph.downNode(i) << " " << graph.ilabel(i)
+    out << graph.srcNode(i) << " " << graph.dstNode(i) << " " << graph.ilabel(i)
         << " " << graph.olabel(i) << " " << graph.weight(i) << std::endl;
   }
 }
@@ -269,7 +269,7 @@ void draw(
         << ", penwidth = " << penwidth << ", fontsize = 14];\n";
     for (auto a : graph.out(n)) {
       auto ilabel = label_to_string(isymbols, graph.ilabel(a));
-      out << "  " << graph.upNode(a) << " -> " << graph.downNode(a)
+      out << "  " << graph.srcNode(a) << " -> " << graph.dstNode(a)
           << " [label = \"" << ilabel;
       if (!osymbols.empty()) {
         auto olabel = label_to_string(osymbols, graph.olabel(a));

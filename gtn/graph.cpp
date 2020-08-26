@@ -55,22 +55,22 @@ int Graph::addNode(bool start /* = false */, bool accept /* = false */) {
   return idx;
 }
 
-int Graph::addArc(int upNode, int downNode, int label) {
-  return addArc(upNode, downNode, label, label);
+int Graph::addArc(int srcNode, int dstNode, int label) {
+  return addArc(srcNode, dstNode, label, label);
 }
 
 int Graph::addArc(
-    int upNode,
-    int downNode,
+    int srcNode,
+    int dstNode,
     int ilabel,
     int olabel,
     float weight /* = 0 */) {
   assert(ilabel >= epsilon && olabel >= epsilon);
   auto idx = numArcs();
-  sharedGraph_->arcs.emplace_back(upNode, downNode, ilabel, olabel);
+  sharedGraph_->arcs.emplace_back(srcNode, dstNode, ilabel, olabel);
   sharedWeights_->push_back(weight);
-  node(upNode).out.push_back(idx);
-  node(downNode).in.push_back(idx);
+  node(srcNode).out.push_back(idx);
+  node(dstNode).in.push_back(idx);
   sharedGraph_->ilabelSorted = false;
   sharedGraph_->olabelSorted = false;
   return idx;

@@ -31,7 +31,7 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
     }
 
     auto arc = graph.out(node, i);
-    node = graph.downNode(arc);
+    node = graph.dstNode(arc);
     arcs.push_back(arc);
   }
 

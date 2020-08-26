@@ -54,10 +54,10 @@ class Graph {
   };
 
   struct Arc {
-    Arc(int upNode, int downNode, int ilabel, int olabel)
-        : upNode(upNode), downNode(downNode), ilabel(ilabel), olabel(olabel){};
-    int upNode;
-    int downNode;
+    Arc(int srcNode, int dstNode, int ilabel, int olabel)
+        : srcNode(srcNode), dstNode(dstNode), ilabel(ilabel), olabel(olabel){};
+    int srcNode;
+    int dstNode;
     int ilabel;
     int olabel;
   };
@@ -91,25 +91,25 @@ class Graph {
   /**
    * Add a arc between two nodes. This assumes the graph is an acceptor, the
    * input label on the arc is the same as the output label.
-   * @param upNode The id of the source node.
-   * @param downNode The id of the destination node.
+   * @param srcNode The id of the source node.
+   * @param dstNode The id of the destination node.
    * @param label The arc label.
    * @return The id of the added arc.
    */
-  int addArc(int upNode, int downNode, int label);
+  int addArc(int srcNode, int dstNode, int label);
 
   /**
    * Add a arc between two nodes.
-   * @param upNode The id of the source node.
-   * @param downNode The id of the destination node.
+   * @param srcNode The id of the source node.
+   * @param dstNode The id of the destination node.
    * @param ilabel The arc input label.
    * @param olabel The arc output label.
    * @param weight The arc weight.
    * @return The id of the added arc.
    */
   int addArc(
-      int upNode,
-      int downNode,
+      int srcNode,
+      int dstNode,
       int ilabel,
       int olabel,
       float weight = 0.0);
@@ -362,12 +362,12 @@ class Graph {
     */
 
   /** The destination node of the `i`-th arc. */
-  int upNode(int i) const {
-    return arc(i).upNode;
+  int srcNode(int i) const {
+    return arc(i).srcNode;
   }
   /** The source node of the `i`-th arc. */
-  int downNode(int i) const {
-    return arc(i).downNode;
+  int dstNode(int i) const {
+    return arc(i).dstNode;
   }
   /** The label of the `i`-th arc (use this for acceptors). */
   int label(int i) const {
@@ -396,8 +396,8 @@ class Graph {
 
  private:
   // Attempt to keep code like `g.addArc(n1, n2, 0, 2.0)` from compiling
-  int addArc(int upNode, int downNode, int label, float) = delete;
-  int addArc(int upNode, int downNode, int label, double) = delete;
+  int addArc(int srcNode, int dstNode, int label, float) = delete;
+  int addArc(int srcNode, int dstNode, int label, double) = delete;
 
   const Node& node(int i) const {
     // NB: assert gets stripped at in release mode

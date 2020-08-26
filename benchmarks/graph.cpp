@@ -37,7 +37,7 @@ void timeTraversal() {
       auto curr = toExplore.front();
       toExplore.pop();
       for (auto a : graph.out(curr)) {
-        auto dn = graph.downNode(a);
+        auto dn = graph.dstNode(a);
         if (!visited[dn]) {
           visited[dn] = true;
           toExplore.push(dn);
@@ -57,7 +57,7 @@ void timeTraversal() {
       auto curr = toExplore.front();
       toExplore.pop();
       for (auto a : graph.in(curr)) {
-        auto un = graph.upNode(a);
+        auto un = graph.srcNode(a);
         if (!visited[un]) {
           visited[un] = true;
           toExplore.push(un);

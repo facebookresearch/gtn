@@ -87,8 +87,8 @@ TEST_CASE("Test Graph", "[graph]") {
   }
   CHECK(g2.numNodes() == 2);
   CHECK(g2.label(0) == 0);
-  CHECK(g2.downNode(0) == 1);
-  CHECK(g2.upNode(0) == 0);
+  CHECK(g2.dstNode(0) == 1);
+  CHECK(g2.srcNode(0) == 0);
 
   {
     // We can get a scalar out of a single arc graph.

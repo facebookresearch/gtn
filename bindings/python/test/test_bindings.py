@@ -26,7 +26,7 @@ class GraphTestCase(GTNModuleTestCase):
 
         g.add_arc(0, 1, 0)
         g.add_arc(0, 2, 1)
-        g.add_arc(up_node=1, down_node=2, label=0)
+        g.add_arc(src_node=1, dst_node=2, label=0)
         g.add_arc(1, 1, ilabel=1, olabel=2, weight=2.1)
         g.add_arc(2, 3, 2)
         self.g = g
