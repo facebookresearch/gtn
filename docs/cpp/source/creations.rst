@@ -1,4 +1,4 @@
-.. _functions:
+.. _creations:
 
 Creation Functions
 =================

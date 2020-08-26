@@ -9,7 +9,11 @@ namespace py = pybind11;
 using namespace py::literals;
 
 PYBIND11_MODULE(_creations, m) {
-  m.def("scalar_graph", scalarGraph, "weight"_a, "calc_grad"_a = true);
+  m.def(
+      "scalar_graph",
+      scalarGraph,
+      "weight"_a = Graph::epsilon,
+      "calc_grad"_a = true);
 
   m.def(
       "linear_graph",

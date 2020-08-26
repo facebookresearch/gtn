@@ -5,6 +5,7 @@
 
 #include "catch.hpp"
 
+#include "gtn/creations.h"
 #include "gtn/functions.h"
 #include "gtn/graph.h"
 #include "gtn/rand.h"
@@ -13,18 +14,12 @@
 using namespace gtn;
 
 TEST_CASE("Test Scalar Ops", "[functions.scalars]") {
-  Graph g1;
-  g1.addNode(true);
-  g1.addNode(false, true);
-  g1.addArc(0, 1, 0, 0, 3.0);
+  auto g1 = scalarGraph(3.0);
 
   auto result = negate(g1);
   CHECK(result.item() == -3.0);
 
-  Graph g2;
-  g2.addNode(true);
-  g2.addNode(false, true);
-  g2.addArc(0, 1, 0, 0, 4.0);
+  auto g2 = scalarGraph(4.0);
 
   result = add(g1, g2);
   CHECK(result.item() == 7.0);

@@ -10,12 +10,16 @@
 using namespace gtn;
 
 TEST_CASE("Test Scalar Creation", "[creations.createScalar]") {
-  float weight = 4.5;
+  float weight = static_cast<float>(rand());
   auto g = scalarGraph(weight, false);
   CHECK(g.numArcs() == 1);
   CHECK(g.numNodes() == 2);
   CHECK(g.weight(0) == weight);
+  CHECK(g.item() == weight);
   CHECK(g.calcGrad() == false);
+
+  auto g1 = scalarGraph();
+  CHECK(g1.item() == Graph::epsilon);
 }
 
 TEST_CASE("Test Linear Creation", "[creations.createLinear]") {

@@ -5,6 +5,7 @@
 #include "catch.hpp"
 
 #include "gtn/autograd.h"
+#include "gtn/creations.h"
 #include "gtn/functions.h"
 #include "gtn/graph.h"
 #include "gtn/rand.h"
@@ -42,15 +43,8 @@ bool numericalGradCheck(
 
 TEST_CASE("Test Autograd", "[autograd]") {
   // The graph is not retained by default
-  Graph g1;
-  g1.addNode(true);
-  g1.addNode(false, true);
-  g1.addArc(0, 1, 0, 0, 3.0);
-
-  Graph g2;
-  g2.addNode(true);
-  g2.addNode(false, true);
-  g2.addArc(0, 1, 0, 0, 3.0);
+  auto g1 = scalarGraph(3.0);
+  auto g2 = scalarGraph(3.0);
 
   auto result = add(g1, g2);
   backward(result);
@@ -85,10 +79,7 @@ TEST_CASE("Test Autograd", "[autograd]") {
 }
 
 TEST_CASE("Test Scalar Ops Grad", "[functions.scalar (grad)]") {
-  Graph g1;
-  g1.addNode(true);
-  g1.addNode(false, true);
-  g1.addArc(0, 1, 0, 0, 3.0);
+  auto g1 = scalarGraph(3.0);
 
   auto result = negate(g1);
   backward(result);
@@ -96,10 +87,7 @@ TEST_CASE("Test Scalar Ops Grad", "[functions.scalar (grad)]") {
 
   g1.zeroGrad();
 
-  Graph g2;
-  g2.addNode(true);
-  g2.addNode(false, true);
-  g2.addArc(0, 1, 0, 0, 4.0);
+  auto g2 = scalarGraph(4.0);
 
   result = add(g1, g2);
   backward(result);
@@ -122,10 +110,7 @@ TEST_CASE("Test Scalar Ops Grad", "[functions.scalar (grad)]") {
   CHECK(g2.grad().item() == 1.0f);
   g1.zeroGrad();
 
-  Graph g2nograd(false);
-  g2nograd.addNode(true);
-  g2nograd.addNode(false, true);
-  g2nograd.addArc(0, 1, 0, 0, 4.0);
+  auto g2nograd = scalarGraph(4.0, /* calcGrad = */ false);
 
   result = add(g1, g2nograd);
   backward(result);
@@ -134,15 +119,8 @@ TEST_CASE("Test Scalar Ops Grad", "[functions.scalar (grad)]") {
 }
 
 TEST_CASE("Test Clone/Project Grad", "[functions.clone (grad)]") {
-  Graph g1;
-  g1.addNode(true);
-  g1.addNode(false, true);
-  g1.addArc(0, 1, 0, 0, 3.0);
-
-  Graph g2;
-  g2.addNode(true);
-  g2.addNode(false, true);
-  g2.addArc(0, 1, 0, 0, 4.0);
+  auto g1 = scalarGraph(3.0);
+  auto g2 = scalarGraph(4.0);
 
   auto cloned = clone(g1);
 
@@ -326,7 +304,6 @@ TEST_CASE("Test forwardScore Grad", "[functions.forwardScore (grad)]") {
     auto& grad = g.grad();
     CHECK(std::isnan(grad.weight(0)));
     CHECK(std::isnan(grad.weight(1)));
-
 
     Graph g2;
     g2.addNode(true);

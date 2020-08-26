@@ -15,7 +15,7 @@ namespace gtn {
  * given weight value.
  * \ingroup creations
  */
-Graph scalarGraph(float val, bool calcGrad = true);
+Graph scalarGraph(float val = Graph::epsilon, bool calcGrad = true);
 
 /**
  * Create a linear chain graph with M + 1 nodes and N edges between each node.

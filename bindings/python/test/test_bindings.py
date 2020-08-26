@@ -5,6 +5,7 @@ import ctypes
 import numpy as np
 import struct
 import unittest
+import random
 import tempfile
 
 from test_utils import GTNModuleTestCase
@@ -30,7 +31,6 @@ class GraphTestCase(GTNModuleTestCase):
         g.add_arc(1, 1, ilabel=1, olabel=2, weight=2.1)
         g.add_arc(2, 3, 2)
         self.g = g
-
 
     def test_graph_basic(self):
         self.assertEqual(self.g.num_nodes(), 5)
@@ -108,18 +108,21 @@ class GraphTestCase(GTNModuleTestCase):
         self.assertTrue(gtn.isomorphic(g1, g2))
 
     def test_save_load(self):
-        with tempfile.NamedTemporaryFile(mode='w') as fid:
+        with tempfile.NamedTemporaryFile(mode="w") as fid:
             fid.write(self.g.__repr__().strip())
             fid.flush()
             loaded = gtn.load(fid.name)
             self.assertTrue(gtn.isomorphic(self.g, loaded))
-            
+
     def test_scalar_graph(self):
-        weight = 2.3
+        weight = random.random()
         g = gtn.scalar_graph(weight)
         self.assertListAlmostEqual(g.weights_to_list(), [weight])
         self.assertEqual(g.num_arcs(), 1)
         self.assertEqual(g.num_nodes(), 2)
+
+        g_epsilon = gtn.scalar_graph()
+        self.assertEqual(g_epsilon.item(), gtn.epsilon)
 
 
 class FunctionsTestCase(GTNModuleTestCase):
@@ -199,15 +202,14 @@ class AutogradTestCase(GTNModuleTestCase):
         # Check the graph is retained
         g1.zero_grad()
         g2.zero_grad()
-        result = gtn.add(g1, g2);
-        gtn.backward(result, True);
+        result = gtn.add(g1, g2)
+        gtn.backward(result, True)
         g1.zero_grad()
         g2.zero_grad()
         result.zero_grad()
-        gtn.backward(result, True);
+        gtn.backward(result, True)
         self.assertTrue(g1.grad().weights_to_list() == [1.0])
         self.assertTrue(g2.grad().weights_to_list() == [1.0])
-
 
     def test_input_grad(self):
         # Check that provided input gradients are used.
@@ -226,8 +228,8 @@ class AutogradTestCase(GTNModuleTestCase):
         deltas = gtn.Graph()
         deltas.add_node(True)
         deltas.add_node(False, True)
-        deltas.add_arc(0, 1, 0, 0, 7.0);
-        gtn.backward(result, deltas);
+        deltas.add_arc(0, 1, 0, 0, 7.0)
+        gtn.backward(result, deltas)
         self.assertTrue(g1.grad().weights_to_list() == [7.0])
         self.assertTrue(g2.grad().weights_to_list() == [7.0])
 

@@ -5,6 +5,8 @@
 
 namespace gtn {
 
+constexpr int Graph::epsilon;
+
 Graph::Graph(GradFunc gradFunc, std::vector<Graph> inputs) {
   sharedGrad_->calcGrad = false;
   // If any inputs require a gradient, then this should
