@@ -9,6 +9,9 @@
 namespace gtn {
 
 Graph negate(const Graph& other) {
+  if (other.numArcs() != 1) {
+    throw std::logic_error("[gtn::negate] input must have only one arc");
+  }
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(negate(deltas));
   };
@@ -20,6 +23,9 @@ Graph negate(const Graph& other) {
 }
 
 Graph add(const Graph& lhs, const Graph& rhs) {
+  if (lhs.numArcs() != 1 || rhs.numArcs() != 1) {
+    throw std::logic_error("[gtn::add] inputs must have only one arc");
+  }
   float weight = lhs.item() + rhs.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
@@ -33,6 +39,9 @@ Graph add(const Graph& lhs, const Graph& rhs) {
 }
 
 Graph subtract(const Graph& lhs, const Graph& rhs) {
+  if (lhs.numArcs() != 1 || rhs.numArcs() != 1) {
+    throw std::logic_error("[gtn::subtract] inputs must have only one arc");
+  }
   float weight = lhs.item() - rhs.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);

@@ -17,6 +17,7 @@ differentiation with weighted finite state tranducers
 
    basic_usage
    common_functions
+   autograd_basics
 
 .. toctree::
    :caption: C++ API REFERENCE

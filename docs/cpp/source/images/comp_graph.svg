@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="-46 1688 443 238.5" width="443" height="238.5">
+  <defs>
+    <font-face font-family="Helvetica" font-size="16" units-per-em="1000" underline-position="-75.68359" underline-thickness="49.316406" slope="0" x-height="522.9492" cap-height="717.28516" ascent="770.0195" descent="-229.98047" font-weight="400">
+      <font-face-src>
+        <font-face-name name="Helvetica"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Helvetica" font-size="15" units-per-em="1000" underline-position="-75.68359" underline-thickness="49.316406" slope="0" x-height="522.9492" cap-height="717.28516" ascent="770.0195" descent="-229.98047" font-weight="400">
+      <font-face-src>
+        <font-face-name name="Helvetica"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-9 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M -8 0 L 0 3 L 0 -3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <font-face font-family="Helvetica" font-size="12" units-per-em="1000" underline-position="-75.68359" underline-thickness="49.316406" slope="0" x-height="522.9492" cap-height="717.28516" ascent="770.0195" descent="-229.98047" font-weight="400">
+      <font-face-src>
+        <font-face-name name="Helvetica"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Helvetica" font-size="14" units-per-em="1000" underline-position="-75.68359" underline-thickness="49.316406" slope="0" x-height="522.9492" cap-height="717.28516" ascent="770.0195" descent="-229.98047" font-weight="400">
+      <font-face-src>
+        <font-face-name name="Helvetica"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.13 
+    <dc:date>2020-08-25 16:00:47 +0000</dc:date>
+  </metadata>
+  <g id="Canvas_1" fill-opacity="1" fill="none" stroke-dasharray="none" stroke="none" stroke-opacity="1">
+    <title>Canvas 1</title>
+    <g id="Canvas_1: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_277">
+        <title>Base 02</title>
+        <desc>Background highlights</desc>
+        <path d="M -31 1698 L -1 1698 C 1.7614237 1698 4 1700.2386 4 1703 L 4 1733 C 4 1735.7614 1.7614237 1738 -1 1738 L -31 1738 C -33.761424 1738 -36 1735.7614 -36 1733 L -36 1703 C -36 1700.2386 -33.761424 1698 -31 1698 Z" stroke="#083542" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(-36 1708.5)" fill="black">
+          <tspan font-family="Helvetica" font-size="16" font-weight="400" fill="black" x="11.101562" y="15">g1</tspan>
+        </text>
+      </g>
+      <g id="Graphic_278">
+        <title>Base 02</title>
+        <desc>Background highlights</desc>
+        <path d="M -31 1777 L -1 1777 C 1.7614237 1777 4 1779.2386 4 1782 L 4 1812 C 4 1814.7614 1.7614237 1817 -1 1817 L -31 1817 C -33.761424 1817 -36 1814.7614 -36 1812 L -36 1782 C -36 1779.2386 -33.761424 1777 -31 1777 Z" stroke="#083542" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(-36 1787.5)" fill="black">
+          <tspan font-family="Helvetica" font-size="16" font-weight="400" fill="black" x="11.101562" y="15">g2</tspan>
+        </text>
+      </g>
+      <g id="Graphic_279">
+        <title>Base 02</title>
+        <desc>Background highlights</desc>
+        <path d="M 98.5 1824.5 L 128.5 1824.5 C 131.26142 1824.5 133.5 1826.7386 133.5 1829.5 L 133.5 1859.5 C 133.5 1862.2614 131.26142 1864.5 128.5 1864.5 L 98.5 1864.5 C 95.73858 1864.5 93.5 1862.2614 93.5 1859.5 L 93.5 1829.5 C 93.5 1826.7386 95.73858 1824.5 98.5 1824.5 Z" stroke="#083542" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(93.5 1835)" fill="black">
+          <tspan font-family="Helvetica" font-size="16" font-weight="400" fill="black" x="11.101562" y="15">g3</tspan>
+        </text>
+      </g>
+      <g id="Graphic_280">
+        <title>Base 02</title>
+        <desc>Background highlights</desc>
+        <circle cx="106.75" cy="1759.25" r="26.7500427438757" stroke="#083542" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(85.35 1750.25)" fill="black">
+          <tspan font-family="Helvetica" font-size="15" font-weight="400" fill="black" x="1.8077145" y="15">gSum</tspan>
+        </text>
+      </g>
+      <g id="Graphic_281">
+        <title>Base 02</title>
+        <desc>Background highlights</desc>
+        <circle cx="242.75" cy="1790.25" r="26.7500427438758" stroke="#083542" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(221.35 1780.75)" fill="black">
+          <tspan font-family="Helvetica" font-size="16" font-weight="400" fill="black" x="2.716406" y="15">gSub</tspan>
+        </text>
+      </g>
+      <g id="Graphic_282">
+        <title>Base 02</title>
+        <desc>Background highlights</desc>
+        <path d="M 352 1770.25 L 382 1770.25 C 384.76142 1770.25 387 1772.4886 387 1775.25 L 387 1805.25 C 387 1808.0114 384.76142 1810.25 382 1810.25 L 352 1810.25 C 349.23858 1810.25 347 1808.0114 347 1805.25 L 347 1775.25 C 347 1772.4886 349.23858 1770.25 352 1770.25 Z" stroke="#083542" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(347 1780.75)" fill="black">
+          <tspan font-family="Helvetica" font-size="16" font-weight="400" fill="black" x="11.101562" y="15">g4</tspan>
+        </text>
+      </g>
+      <g id="Line_283">
+        <line x1="73.52573" y1="1772.1934" x2="6" y2="1798.5" marker-start="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_284">
+        <line x1="73.86752" y1="1745.4606" x2="6" y2="1717" marker-start="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_285">
+        <line x1="207.9439" y1="1782.5242" x2="133.5" y2="1766" marker-start="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_286">
+        <line x1="210.98936" y1="1806.4574" x2="133.5" y2="1846" marker-start="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_287">
+        <line x1="336.1" y1="1790.2763" x2="270.5" y2="1790.332" marker-start="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_288">
+        <text transform="translate(49.39304 1751.026)" fill="black">
+          <tspan font-family="Helvetica" font-size="12" font-weight="400" fill="black" x="0" y="11">sum</tspan>
+        </text>
+      </g>
+      <g id="Graphic_289">
+        <text transform="translate(155.40723 1786.802)" fill="black">
+          <tspan font-family="Helvetica" font-size="12" font-weight="400" fill="black" x="0" y="11">subtract</tspan>
+        </text>
+      </g>
+      <g id="Graphic_290">
+        <text transform="translate(299.63644 1770.5)" fill="black">
+          <tspan font-family="Helvetica" font-size="12" font-weight="400" fill="black" x="0" y="11">negate</tspan>
+        </text>
+      </g>
+      <g id="Graphic_291">
+        <text transform="translate(98.5 1895.5)" fill="black">
+          <tspan font-family="Helvetica" font-size="14" font-weight="400" fill="black" x="0" y="14">Computation Graph</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>
