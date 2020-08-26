@@ -9,7 +9,7 @@ from packaging import version
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
-__version__ = '0.0.0'
+__version__ = "0.0.0"
 
 # Long description from README.md:
 def load_readme():
@@ -94,16 +94,16 @@ setup(
     long_description=load_readme(),
     long_description_content_type="text/markdown",
     packages=["gtn"],
-    package_dir = {'': "src/bindings/python/",
-        "gtn": "src/bindings/python/gtn"},
+    package_dir={"": "src/bindings/python/", "gtn": "src/bindings/python/gtn"},
     ext_modules=[
         CMakeExtension("gtn._graph"),
         CMakeExtension("gtn._autograd"),
         CMakeExtension("gtn._utils"),
+        CMakeExtension("gtn._creations"),
         CMakeExtension("gtn._functions"),
     ],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     license="MIT licensed, as found in the LICENSE file",
-    python_requires='>=3.5',
+    python_requires=">=3.5",
 )

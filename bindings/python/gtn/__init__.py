@@ -9,6 +9,7 @@ from ._graph import __version__
 from ._functions import *
 from ._autograd import *
 from ._utils import *
+from ._creations import *
 
 
 def draw(graph, file_name, isymbols={}, osymbols={}):

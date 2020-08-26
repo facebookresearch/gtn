@@ -15,6 +15,7 @@ TEST_CASE("Test Scalar Creation", "[creations.createScalar]") {
   CHECK(g.numArcs() == 1);
   CHECK(g.numNodes() == 2);
   CHECK(g.weight(0) == weight);
+  CHECK(g.calcGrad() == false);
 }
 
 TEST_CASE("Test Linear Creation", "[creations.createLinear]") {

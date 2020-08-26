@@ -113,6 +113,13 @@ class GraphTestCase(GTNModuleTestCase):
             fid.flush()
             loaded = gtn.load(fid.name)
             self.assertTrue(gtn.isomorphic(self.g, loaded))
+            
+    def test_scalar_graph(self):
+        weight = 2.3
+        g = gtn.scalar_graph(weight)
+        self.assertListAlmostEqual(g.weights_to_list(), [weight])
+        self.assertEqual(g.num_arcs(), 1)
+        self.assertEqual(g.num_nodes(), 2)
 
 
 class FunctionsTestCase(GTNModuleTestCase):
