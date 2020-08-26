@@ -1,5 +1,7 @@
 # gtn
 
+`gtn` is a framework with which to build differentiable weighted finite-state transducers (WFSTs). The framework is written in C++ and has bindings to Python.
+
 ## Getting Started
 
 ### Requirements
@@ -12,7 +14,7 @@
 First, clone the project:
 
 ```
-git clone git@github.com:awni/gtn.git
+git clone git@github.com:facebookresearch/gtn.git
 cd gtn
 ```
 
@@ -47,10 +49,14 @@ Setting up your environment:
 conda create -n gtn_env -c nogil python=3.9
 conda activate gtn_env
 ```
-Install:
+Required dependencies:
 ```
 cd bindings/python
 pip install packaging numpy
+```
+
+Install bindings:
+```
 pip install -e .
 ```
 
@@ -63,4 +69,11 @@ python -m unittest discover bindings/python/test
 Run a simple example:
 ```
 python bindings/python/examples/simple_graph.py
+```
+
+### Building Python Bindings from Scratch
+To develop on Python bindings, follow the steps above to create your environment and install dependencies, then run:
+```
+python setup.py install
+pip install -e .
 ```
