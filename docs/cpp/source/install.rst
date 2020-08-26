@@ -71,3 +71,44 @@ Once flashlight is built and installed, including it in another project is simpl
    target_link_libraries(myCompiledTarget PUBLIC gtn::gtn)
 
 Your target's files will be linked with the library and can include headers (e.g. ``#include <gtn/gtn.h>``) directly.
+
+Installing Python Bindings
+--------------------------
+
+Installing
+~~~~~~~~~~
+
+Set up your environment:
+
+.. code-block:: shell
+
+    conda create -n gtn_env -c nogil python=3.9
+    conda activate gtn_env
+
+Install required dependencies:
+
+.. code-block:: shell
+
+    cd bindings/python
+    pip install packaging numpy
+
+Install bindings:
+
+.. code-block:: shell
+    pip install -e .
+
+Running Python Tests
+~~~~~~~~~~~~~~~~~~~~
+
+Python binding tests can be run with ``make test``, or with
+
+.. code-block::
+   
+    python -m unittest discover bindings/python/test
+
+
+Run a simple example:
+
+.. code-block::
+
+   python bindings/python/examples/simple_graph.py
