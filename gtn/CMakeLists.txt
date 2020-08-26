@@ -6,8 +6,8 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/autograd.h
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/functions/compose.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/functions/compose.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/common/conversions.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/common/conversions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/creations.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/creations.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/functions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/functions.h
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/graph.cpp

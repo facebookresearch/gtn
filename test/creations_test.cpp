@@ -4,12 +4,20 @@
 
 #include <vector>
 
-#include "gtn/common/conversions.h"
+#include "gtn/creations.h"
 #include "gtn/graph.h"
 
 using namespace gtn;
 
-TEST_CASE("Test Linear Conversion", "[conversions.createLinear]") {
+TEST_CASE("Test Scalar Creation", "[creations.createScalar]") {
+  float weight = 4.5;
+  auto g = scalarGraph(weight, false);
+  CHECK(g.numArcs() == 1);
+  CHECK(g.numNodes() == 2);
+  CHECK(g.weight(0) == weight);
+}
+
+TEST_CASE("Test Linear Creation", "[creations.createLinear]") {
   auto rand_float = []() {
     return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
   };
