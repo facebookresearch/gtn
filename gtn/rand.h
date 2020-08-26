@@ -12,7 +12,7 @@ namespace gtn {
  * @param graph The graph to sample from.
  * @param maxLength The maximum length of a sampled path.
  */
-Graph sample(Graph graph, size_t maxLength = 1000);
+Graph sample(const Graph& graph, size_t maxLength = 1000);
 
 /** @ingroup comparisons
  * Compare two graphs by sampling paths and checking they have the same scores
@@ -26,8 +26,8 @@ Graph sample(Graph graph, size_t maxLength = 1000);
  * @param maxLength The maximum length of sampled paths.
  */
 bool randEquivalent(
-    Graph a,
-    Graph b,
+    const Graph& a,
+    const Graph& b,
     size_t numSamples = 100,
     double tol = 1e-4,
     size_t maxLength = 1000);

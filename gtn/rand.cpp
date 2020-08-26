@@ -4,7 +4,7 @@
 
 namespace gtn {
 
-Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
+Graph sample(const Graph& graph, size_t maxLength /* = 1000 */) {
   if (!graph.numStart() || !graph.numAccept()) {
     return Graph{};
   }
@@ -68,8 +68,8 @@ Graph sample(Graph graph, size_t maxLength /* = 1000 */) {
 }
 
 bool randEquivalent(
-    Graph a,
-    Graph b,
+    const Graph& a,
+    const Graph& b,
     size_t numSamples /* = 100 */,
     double tol /* = 1e-4 */,
     size_t maxLength /* = 1000 */) {

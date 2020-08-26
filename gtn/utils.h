@@ -13,13 +13,13 @@ namespace gtn {
  */
 
 /** Checks if two graphs are exactly equal (not isomorphic). */
-bool equal(Graph a, Graph b);
+bool equal(const Graph& a, const Graph& b);
 
 /**
  * Checks if two graphs are isomorphic. Note this function will be very very
  * slow for large graphs.
  */
-bool isomorphic(Graph a, Graph b);
+bool isomorphic(const Graph& a, const Graph& b);
 
 /** @}*/
 
@@ -78,10 +78,10 @@ Graph load(std::istream&& in);
  * (`Graph::start`) and the second line will be a space separated list of
  * accepting nodes (`Graph::accept`).
  */
-void print(Graph graph);
+void print(const Graph& graph);
 
 /** Prints a graph to an output stream. */
-void print(Graph graph, std::ostream& out);
+void print(const Graph& graph, std::ostream& out);
 
 /**
  * User defined map of integer to arc label strings for use with e.g.
@@ -106,7 +106,7 @@ using SymbolMap = std::unordered_map<int, std::string>;
  * @param osymbols A map of integer ids to strings used for arc output labels
  */
 void draw(
-    Graph graph,
+    const Graph& graph,
     const std::string& filename,
     const SymbolMap& isymbols = SymbolMap(),
     const SymbolMap& osymbols = SymbolMap());
@@ -115,7 +115,7 @@ void draw(
  * Write a graph in graphviz dot format to an output stream. See `gtn::draw`.
  */
 void draw(
-    Graph graph,
+    const Graph& graph,
     std::ostream& out,
     const SymbolMap& isymbols = SymbolMap(),
     const SymbolMap& osymbols = SymbolMap());

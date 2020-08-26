@@ -31,7 +31,7 @@ static std::vector<std::string> split(const std::string& input) {
   return result;
 }
 
-bool equal(Graph a, Graph b) {
+bool equal(const Graph& a, const Graph& b) {
   if (a.numNodes() != b.numNodes() || a.numStart() != b.numStart() ||
       a.numAccept() != b.numAccept() || a.numArcs() != b.numArcs()) {
     return false;
@@ -65,7 +65,7 @@ bool equal(Graph a, Graph b) {
   return true;
 }
 
-bool isomorphic(Graph& a, Graph& b, int aNode, int bNode, NodeMap& visited) {
+bool isomorphic(const Graph& a, const Graph& b, int aNode, int bNode, NodeMap& visited) {
   auto state = std::make_pair(aNode, bNode);
   // We assume a state is good unless found to be otherwise
   auto item = visited.insert({state, aNode});
@@ -105,7 +105,7 @@ bool isomorphic(Graph& a, Graph& b, int aNode, int bNode, NodeMap& visited) {
   return true;
 }
 
-bool isomorphic(Graph a, Graph b) {
+bool isomorphic(const Graph& a, const Graph& b) {
   if (a.numNodes() != b.numNodes() || a.numStart() != b.numStart() ||
       a.numAccept() != b.numAccept() || a.numArcs() != b.numArcs()) {
     return false;
@@ -211,11 +211,11 @@ Graph load(std::istream& in) {
   return graph;
 }
 
-void print(Graph graph) {
+void print(const Graph& graph) {
   print(graph, std::cout);
 }
 
-void print(Graph graph, std::ostream& out) {
+void print(const Graph& graph, std::ostream& out) {
   // Print start nodes
   auto& startNodes = graph.start();
   if (startNodes.size() > 0) {
@@ -244,7 +244,7 @@ void print(Graph graph, std::ostream& out) {
 }
 
 void draw(
-    Graph graph,
+    const Graph& graph,
     std::ostream& out,
     const SymbolMap& isymbols /* = SymbolMap() */,
     const SymbolMap& osymbols /* = SymbolMap() */) {
@@ -301,7 +301,7 @@ void draw(
 }
 
 void draw(
-    Graph graph,
+    const Graph& graph,
     const std::string& filename,
     const SymbolMap& isymbols /* = SymbolMap() */,
     const SymbolMap& osymbols /* = SymbolMap() */) {
