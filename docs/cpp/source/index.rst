@@ -7,7 +7,7 @@ differentiation with weighted finite state tranducers
 
 .. toctree::
    :caption: INSTALLATION
-   :maxdepth: 2
+   :maxdepth: 1
 
    install
 
@@ -21,7 +21,7 @@ differentiation with weighted finite state tranducers
 
 .. toctree::
    :caption: C++ API REFERENCE
-   :maxdepth: 2
+   :maxdepth: 1
 
    graph
    autograd

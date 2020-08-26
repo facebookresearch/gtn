@@ -32,9 +32,9 @@ void asgWithTransducers() {
   draw(h, "asg_h_graph.dot", symbols, symbols);
   draw(t, "asg_t_graph.dot", symbols, symbols);
 
-  // The closure of the sum (union) of the individual token graphs encodes the
+  // The closure of the union of the individual token graphs encodes the
   // fact that we can emit any sequence of zero or more tokens.
-  auto tokens = closure(sum({e, h, t}));
+  auto tokens = closure(union_({e, h, t}));
   draw(tokens, "asg_tokens.dot", symbols, symbols);
 
   // The "the" graph can be simplified to just accepting the token sequence:
@@ -98,7 +98,7 @@ void ctcWithTransducers() {
   draw(blank, "ctc_blank.dot", symbols, symbols);
 
   // Everything else is the same as in ASG!
-  auto tokens = closure(sum({e, h, t, blank}));
+  auto tokens = closure(union_({e, h, t, blank}));
   draw(tokens, "ctc_tokens.dot", symbols, symbols);
 
   // The "the" graph can be simplified to just accepting the token sequence:
@@ -137,7 +137,7 @@ void wordDecompositions() {
     g.addArc(1, 1, kv.first, Graph::epsilon);
     tokens_vec.push_back(g);
   }
-  auto tokens = closure(sum(tokens_vec));
+  auto tokens = closure(union_(tokens_vec));
 
   // The graph for "the" encodes the fact that multiple decompositions are
   // allowed and is the only change needed (other than augmenting the token
@@ -171,7 +171,7 @@ void wordDecompositions() {
   blank.addArc(0, 0, 6, Graph::epsilon);
   tokens_vec.push_back(blank);
 
-  tokens = closure(sum(tokens_vec));
+  tokens = closure(union_(tokens_vec));
   auto ctc_the = remove(compose(tokens, the), Graph::epsilon);
   draw(ctc_the, "ctc_word_decomps_the.dot", symbols, symbols);
 }

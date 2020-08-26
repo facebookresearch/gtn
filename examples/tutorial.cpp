@@ -124,7 +124,7 @@ void interestingAcceptors() {
 
 // Simple operations on WFSAs (and WFSTs)
 void simpleOps() {
-  // The sum (union) of a set of graphs accepts any sequence accepted by any
+  // The union of a set of graphs accepts any sequence accepted by any
   // input graph.
   {
     // Recognizes "aba*"
@@ -152,11 +152,11 @@ void simpleOps() {
     g3.addArc(0, 1, 0);
     g3.addArc(1, 2, 2);
 
-    draw(g1, "sum_g1.dot", symbols);
-    draw(g2, "sum_g2.dot", symbols);
-    draw(g3, "sum_g3.dot", symbols);
-    auto graph = sum({g1, g2, g3});
-    draw(graph, "sum_graph.dot", symbols);
+    draw(g1, "union_g1.dot", symbols);
+    draw(g2, "union_g2.dot", symbols);
+    draw(g3, "union_g3.dot", symbols);
+    auto graph = union_({g1, g2, g3});
+    draw(graph, "union_graph.dot", symbols);
   }
 
   // The concatenation of two graphs accepts any sequence xy such that x is
@@ -264,6 +264,14 @@ void forwardingAcceptors() {
   std::cout << "The forward score is: " << score << std::endl;
 
   draw(graph, "simple_forward.dot", symbols);
+
+  // The Viterbi algorithm can be used to compute the highest scoring path and
+  // it's score in the graph.
+  auto vscore = viterbiScore(graph);
+  std::cout << "The Viterbi score is: " << vscore.item() << std::endl;
+
+  auto vpath = viterbiPath(graph);
+  draw(graph, "simple_viterbi_path.dot", symbols);
 }
 
 // Differentiable WFSAs

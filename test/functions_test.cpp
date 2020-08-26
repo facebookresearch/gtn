@@ -827,10 +827,10 @@ TEST_CASE("Test Closure", "[functions.closure]") {
   }
 }
 
-TEST_CASE("Test Sum", "[functions.sum]") {
+TEST_CASE("Test Sum", "[functions.union_]") {
   {
     // Empty graph
-    CHECK(equal(sum({}), Graph{}));
+    CHECK(equal(union_({}), Graph{}));
   }
 
   {
@@ -839,11 +839,11 @@ TEST_CASE("Test Sum", "[functions.sum]") {
     g1.addNode(true);
     g1.addNode(false, true);
     g1.addArc(0, 1, 1);
-    CHECK(equal(sum({g1}), g1));
+    CHECK(equal(union_({g1}), g1));
   }
 
   {
-    // Simple sum
+    // Simple union
     Graph g1;
     g1.addNode(true);
     g1.addNode(false, true);
@@ -861,7 +861,7 @@ TEST_CASE("Test Sum", "[functions.sum]") {
     expected.addNode(false, true);
     expected.addArc(0, 2, 1);
     expected.addArc(1, 3, 0);
-    CHECK(isomorphic(sum({g1, g2}), expected));
+    CHECK(isomorphic(union_({g1, g2}), expected));
   }
 
   {
@@ -883,7 +883,7 @@ TEST_CASE("Test Sum", "[functions.sum]") {
     expected.addNode(true, true);
     expected.addArc(0, 1, 1);
     expected.addArc(2, 2, 2);
-    CHECK(isomorphic(sum({g1, g2, g3}), expected));
+    CHECK(isomorphic(union_({g1, g2, g3}), expected));
   }
 }
 

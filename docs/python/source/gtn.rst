@@ -122,9 +122,9 @@ gtn
 
    Subtract one scalar graph from another.
 
-.. py:function:: sum(graphs)
+.. py:function:: union(graphs)
 
-   Construct the sum (union) of a list of graphs.
+   Construct the union of a list of graphs.
 
 .. py:function:: viterbi_score(graph)
 

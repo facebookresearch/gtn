@@ -32,7 +32,7 @@ PYBIND11_MODULE(_functions, m) {
       "other"_a,
       "label"_a = Graph::epsilon);
   m.def("subtract", subtract, "lhs"_a, "rhs"_a);
-  m.def("sum", sum, "graphs"_a);
+  m.def("union", union_, "graphs"_a);
   m.def("viterbi_score", viterbiScore, "graph"_a);
   m.def("viterbi_path", viterbiPath, "graph"_a);
 }

@@ -77,8 +77,8 @@ Graph concat(const std::vector<Graph>& graphs);
 /** Create the (Kleene) closure of the graph. */
 Graph closure(const Graph& graph);
 
-/** Create the sum (union) of a vector of graphs. */
-Graph sum(const std::vector<Graph>& graphs);
+/** Create the union of a vector of graphs. */
+Graph union_(const std::vector<Graph>& graphs);
 
 /**
  * Create the equivalent graph without epsilon transitions. If label is

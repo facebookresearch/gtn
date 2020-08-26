@@ -25,22 +25,22 @@ void timeSimpleOps() {
   };
   TIME(closureBackward);
 
-  // time sum (union)
+  // time union_
   std::vector<Graph> graphs;
   for (int i = 0; i < 100; i++) {
     graphs.push_back(makeLinear(1000, 1));
   }
 
-  auto sumForward = [&graphs]() { auto summed = sum(graphs); };
-  TIME(sumForward);
+  auto unionForward = [&graphs]() { auto out = union_(graphs); };
+  TIME(unionForward);
 
-  auto sumBackward = [&graphs, out = sum(graphs)]() {
+  auto unionBackward = [&graphs, out = union_(graphs)]() {
     for (auto& g : graphs) {
       g.zeroGrad();
     }
     backward(out, true);
   };
-  TIME(sumBackward);
+  TIME(unionBackward);
 
   // time concatenate
   auto concatForward = [&graphs]() { auto closed = concat(graphs); };

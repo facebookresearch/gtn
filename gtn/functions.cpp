@@ -180,7 +180,7 @@ Graph closure(const Graph& graph) {
   return closed;
 }
 
-Graph sum(const std::vector<Graph>& graphs) {
+Graph union_(const std::vector<Graph>& graphs) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     auto grad = deltas.weights();
     for (auto& graph : inputs) {
@@ -195,16 +195,16 @@ Graph sum(const std::vector<Graph>& graphs) {
   for (auto& g : graphs) {
     inputs.push_back(g.withoutWeights());
   }
-  Graph summed(gradFunc, std::move(inputs));
+  Graph out(gradFunc, std::move(inputs));
 
   // Add all the nodes in a predictable order
   int nodeOffset = 0;
   for (auto& graph : graphs) {
     for (auto n = 0; n < graph.numNodes(); ++n) {
-      summed.addNode(graph.start(n), graph.accept(n));
+      out.addNode(graph.start(n), graph.accept(n));
     }
     for (auto a = 0; a < graph.numArcs(); ++a) {
-      summed.addArc(
+      out.addArc(
           nodeOffset + graph.srcNode(a),
           nodeOffset + graph.dstNode(a),
           graph.ilabel(a),
@@ -214,7 +214,7 @@ Graph sum(const std::vector<Graph>& graphs) {
     nodeOffset += graph.numNodes();
   }
 
-  return summed;
+  return out;
 }
 
 Graph compose(const Graph& lhs, const Graph& rhs) {

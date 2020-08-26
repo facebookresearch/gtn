@@ -19,7 +19,7 @@ def lexicon_graph(word_pieces, letters_to_idx):
                 graph.add_node()
                 graph.add_arc(e, e + 1, letters_to_idx[l], gtn.epsilon)
         lex.append(graph)
-    return gtn.closure(gtn.sum(lex))
+    return gtn.closure(gtn.union(lex))
 
 
 def token_graph(token_list):
@@ -38,7 +38,7 @@ def token_graph(token_list):
         graph.add_arc(0, 1, i, i)
         graph.add_arc(1, 1, i, gtn.epsilon)
         tokens.append(graph)
-    return gtn.closure(gtn.sum(tokens))
+    return gtn.closure(gtn.union(tokens))
 
 
 if __name__ == "__main__":

@@ -298,7 +298,7 @@ TEST_CASE("Test forwardScore Grad", "[functions.forwardScore (grad)]") {
     g.addArc(0, 1, 0, 0, -inf);
     g.addArc(0, 1, 1, 1, -inf);
     backward(forwardScore(g));
-    
+
     auto& grad = g.grad();
     CHECK(std::isnan(grad.weight(0)));
     CHECK(std::isnan(grad.weight(1)));
@@ -410,7 +410,7 @@ TEST_CASE("Test viterbiScore Grad", "[functions.viterbiScore (grad)]") {
     std::vector<float> expected = {1.0, 0.0, 1.0};
     CHECK(gradsToVec(g) == expected);
   }
-  
+
   {
     // A more complex test case
     std::stringstream in(
@@ -460,7 +460,7 @@ TEST_CASE("Test viterbiPath Grad", "[functions.viterbiPath (grad)]") {
 
     auto forwardFn = [](Graph g) {
       auto paths = {viterbiPath(g), viterbiPath(g), viterbiPath(g)};
-      return forwardScore(sum(paths));
+      return forwardScore(union_(paths));
     };
     backward(forwardFn(g));
 
@@ -493,7 +493,7 @@ TEST_CASE("Test Sample Grad", "[rand.sample (grad)]") {
   }
 }
 
-TEST_CASE("Test Sum Grad", "[functions.sum (grad)]") {
+TEST_CASE("Test Sum Grad", "[functions.union_ (grad)]") {
   Graph g1;
   g1.addNode(true);
   g1.addNode();
@@ -516,15 +516,15 @@ TEST_CASE("Test Sum Grad", "[functions.sum (grad)]") {
   g3.addArc(0, 1, 0);
   g3.addArc(1, 2, 1);
 
-  backward(forwardScore(sum({g1, g2, g3})));
+  backward(forwardScore(union_({g1, g2, g3})));
 
   auto forwardFn1 = [g2, g3](Graph g) {
-    return forwardScore(sum({g, g2, g3}));
+    return forwardScore(union_({g, g2, g3}));
   };
   CHECK(numericalGradCheck(forwardFn1, g1, 1e-4, 1e-3));
 
   auto forwardFn2 = [g1, g2](Graph g) {
-    return forwardScore(sum({g1, g2, g}));
+    return forwardScore(union_({g1, g2, g}));
   };
   CHECK(numericalGradCheck(forwardFn2, g3, 1e-4, 1e-3));
 
