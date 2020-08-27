@@ -56,11 +56,6 @@ TEST_CASE("Test Graph", "[graph]") {
   CHECK(g_copy.numIn(1) == 2);
   CHECK(g_copy.weight(3) == 2.1f);
 
-  // If we construct a graph from another graph it should also have the same
-  // structure.
-  Graph g_copy2 = Graph(g, nullptr, {});
-  CHECK(equal(g_copy2, g));
-
   // Modifying g should modify g_copy and g_copy2
   g.addNode();
   g.addNode();
@@ -73,7 +68,6 @@ TEST_CASE("Test Graph", "[graph]") {
     g.addArc(i, i + 1, i + 1);
   }
   CHECK(equal(g, g_copy));
-  CHECK(equal(g, g_copy2));
 
   // Check that we can copy a graph and the destination still
   // works when the source graph is out of scope
@@ -149,9 +143,6 @@ TEST_CASE("Test id", "[Graph::id]") {
 
   Graph g2(g);
   CHECK(g2.id() == g.id());
-
-  Graph g3(g, nullptr, {});
-  CHECK(g3.id() == g.id());
 
   auto g4 = Graph::deepCopy(g);
   CHECK(g4.id() != g.id());

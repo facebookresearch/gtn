@@ -263,7 +263,7 @@ Graph compose(
   auto reachable = findReachable(first, second, matcher);
 
   // Compose the graphs
-  Graph ngraph;
+  Graph ngraph(nullptr, {first, second});
   std::vector<int> newNodes(first.numNodes() * second.numNodes(), -1);
   std::queue<std::pair<int, int>> toExplore;
   for (auto s1 : first.start()) {
@@ -391,7 +391,9 @@ Graph compose(
     inputs[0].addGrad(std::move(grad1));
     inputs[1].addGrad(std::move(grad2));
   };
-  return Graph(ngraph, gradFunc, {first, second});
+
+  ngraph.setGradFunc(std::move(gradFunc));
+  return ngraph;
 }
 
 } // namespace detail

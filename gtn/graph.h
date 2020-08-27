@@ -67,7 +67,6 @@ class Graph {
   using GradFunc =
       std::function<void(std::vector<Graph>& inputs, Graph& deltas)>;
   Graph(GradFunc gradFunc, std::vector<Graph> inputs);
-  Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs);
 
   /**
    * \defgroup graphMethods Graph-level methods
@@ -281,6 +280,13 @@ class Graph {
   GradFunc gradFunc() {
     return sharedGrad_->gradFunc;
   };
+
+  /**
+   * Set the gradient function of a graph. Intended for use by the autograd.
+   */
+  void setGradFunc(GradFunc gradFunc) {
+    sharedGrad_->gradFunc = gradFunc;
+  }
 
   /**
    * Get the vector of inputs used to compute the graph. Intended for use by

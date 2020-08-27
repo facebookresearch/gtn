@@ -20,25 +20,6 @@ Graph::Graph(GradFunc gradFunc, std::vector<Graph> inputs) {
   }
 }
 
-Graph::Graph(Graph& data, GradFunc gradFunc, std::vector<Graph> inputs)
-    : sharedGraph_(data.sharedGraph_),
-      sharedWeights_(data.sharedWeights_),
-      sharedGrad_(data.sharedGrad_) {
-  sharedGrad_->calcGrad = false;
-  // If any inputs require a gradient, then this should
-  // also compute a gradient.
-  for (auto& g : inputs) {
-    sharedGrad_->calcGrad |= g.calcGrad();
-  }
-  if (calcGrad()) {
-    sharedGrad_->gradFunc = std::move(gradFunc);
-    sharedGrad_->inputs = std::move(inputs);
-  } else {
-    // clears the gradient data in case it was set in `data`
-    setCalcGrad(false);
-  }
-}
-
 Graph::Graph(bool calcGrad /* = true */) {
   sharedGrad_->calcGrad = calcGrad;
 }

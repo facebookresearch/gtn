@@ -241,7 +241,7 @@ Graph shortestPath(const Graph& graph) {
   }
 
   // Build the best path
-  Graph out;
+  Graph out(nullptr, {graph});
   if (best != -1) {
     out.addNode(true, arcs.size() == 0);
   }
@@ -263,7 +263,8 @@ Graph shortestPath(const Graph& graph) {
     }
     inputs[0].addGrad(grad);
   };
-  return Graph(out, gradFunc, {graph.withoutWeights()});
+  out.setGradFunc(std::move(gradFunc));
+  return out;
 }
 
 } // namespace detail
