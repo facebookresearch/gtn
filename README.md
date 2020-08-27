@@ -1,6 +1,6 @@
 # gtn
 
-`gtn` is a framework with which to build differentiable weighted finite-state transducers (WFSTs). The framework is written in C++ and has bindings to Python.
+`gtn` is a framework for automatic differentiation wth weighted finite-state transducers (WFSTs). The framework is written in C++ and has bindings to Python.
 
 ## Getting Started
 
@@ -74,33 +74,5 @@ python bindings/python/examples/simple_graph.py
 ### Building Python Bindings from Scratch
 To develop on Python bindings, follow the steps above to create your environment and install dependencies, then run:
 ```
-python setup.py install
-pip install -e .
+python setup.py develop
 ```
-
-### Building the Documentation
-#### Environment and Dependencies
-Setup a Python environment:
-```
-conda create -n docs
-conda activate docs
-```
-Install dependencies:
-```
-pip install sphinx
-pip install breathe
-pip install sphinx_rtd_theme
-```
-
-#### Building
-Depending on which docs you'd like to build, navigate to the `docs/cpp` or `docs/python` directory in the project root. Then run:
-```
-doxygen && make html -j$(nproc)
-```
-
-Navigate into the resulting `build/html` directory, then run:
-```
-python -m http.server <port>
-```
-
-The generated docs can be viewed at `localhost:<port>` in your browser.
