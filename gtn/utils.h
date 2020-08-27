@@ -90,7 +90,7 @@ void print(const Graph& graph, std::ostream& out);
 using SymbolMap = std::unordered_map<int, std::string>;
 
 /**
- * Write a graph in the [Graphviz](https://graphviz.org/) dot format to a file.
+ * Write a graph in the [Graphviz](https://graphviz.org/) DOT format to a file.
  * Arc labels are of the format `ilabel/olabel:weight`. If the output symbols
  * are not specified then the `olabel` is omitted and arc labels are of the
  * format `ilabel:weight`. If the input symbols are not specified then integer

@@ -1,19 +1,18 @@
 gtn
 ===
 
-.. py:function:: add(lhs, rhs)
-
-  Add two scalar graphs.
+Autograd
+--------
 
 .. py:function:: backward(graph, grad, retain_graph=False)
 
-  Compute the gradients of any inputs w.r.t ``grap``.
+  Compute the gradients of any inputs w.r.t ``graph``.
 
-  :param graph gtn.Graph: The graph to compute gradients with respect to.
-  :param grad gtn.Graph: A seed gradient, typically set to be a gradient of
+  :param gtn.Graph graph: The graph to compute gradients with respect to.
+  :param gtn.Graph grad: A seed gradient, typically set to be a gradient of
     another function with respect to ``graph``.
   :param bool retain_graph: Whether or not to save the autograd graph. Setting
-    this to False is more memory efficient as temporary Graphs created during
+    this to False is more memory efficient as temporary graphs created during
     the forward computation may be destroyed.
 
 .. py:function:: backward(graph, retain_graph=False)
@@ -21,7 +20,13 @@ gtn
 
   Same as :func:`backward` but with the initial ``grad`` set to be ones.
 
-.. py:function:: draw(graph, file_name, isymbols={}, osymbols={})
+
+Functions
+---------
+
+.. py:function:: add(lhs, rhs)
+
+  Add two scalar graphs.
 
 .. py:function:: closure(graph)
 
@@ -43,25 +48,24 @@ gtn
    Concatenate a list of graphs. This operation is recorded
    in the autograd tape.
 
-   If ``x_i`` is a sequence accepted (or ``x_i:y_i`` is transduced) by ``graphs[i]``
-   then the concatenated graph accepts the sequence ``x_1x_2...x_n`` if ``graphs``
-   contains ``n`` graphs. The score of the path ``x_1...x_n`` is the sum of the
-   scores of the individual ``x_i`` in ``graphs[i]``. The concatenated graph is
-   constructuted by connecting every accepting state of ``graphs[i-1]`` to every
-   starting state of ``graphs[i]`` with an epsilon transition. The starting state
-   of the concatenated graphs are starting states of ``graphs[0]`` and the
-   accepting states are accepting states of ``graphs[-1]``.
+   If ``x_i`` is a sequence accepted (or ``x_i:y_i`` is transduced) by
+   ``graphs[i]`` then the concatenated graph accepts the sequence
+   ``x_1x_2...x_n`` if ``graphs`` contains ``n`` graphs. The score of the path
+   ``x_1...x_n`` is the sum of the scores of the individual ``x_i`` in
+   ``graphs[i]``. The concatenated graph is constructuted by connecting every
+   accepting state of ``graphs[i-1]`` to every starting state of ``graphs[i]``
+   with an :math:`\epsilon` transition. The starting state of the concatenated
+   graphs are starting states of ``graphs[0]`` and the accepting states are
+   accepting states of ``graphs[-1]``.
 
    Note the concatenation of 0 graphs ``gtn::concat([])`` is the graph which accepts
-   the empty string (epsilon). The concatentation of a single graph is
+   the empty string (:math:`\epsilon`). The concatentation of a single graph is
    equivalent to a clone.
 
 .. py:function:: concat(lhs, rhs)
   :noindex:
 
   Equivalent to ``concat([lhs, rhs])``, see :func:`concat`.
-
-.. py:function:: equal(first, second)
 
 .. py:function:: forward_score(graph)
 
@@ -89,14 +93,6 @@ gtn
    Both :func:`compose` and :func:`intersect` can be much faster when operating
    on graphs with sorted arcs. See :meth:`Graph.arc_sort`.
 
-.. py:function:: isomorphic(first, second)
-
-.. py:function:: scalar_graph(weight = gtn.epsilon, calc_grad = True)
-
-.. py:function:: linear_graph(M, N, calc_grad = True)
-
-.. py:function:: load(file_name)
-
 .. py:function:: negate(input)
 
    Negate a scalar graph.
@@ -113,12 +109,12 @@ gtn
 
 .. py:function:: remove(other, label=gtn.epsilon)
 
-   Construct the equivalent graph without epsilon transitions. The epsilon
-   closure of each node in the graph is computed and the required transitions
-   are added to yield the epsilon-free equivalen graph. If ``label`` is
-   specified then instead of removing epsilon transitions, arcs with the
-   matching label are removed. The removed arc labels are treated as if they
-   were epsilon transitions.
+   Construct the equivalent graph without :math:`\epsilon` transitions. The
+   :math:`\epsilon` closure of each node in the graph is computed and the
+   required transitions are added to yield the :math:`\epsilon`-free equivalent
+   graph. If ``label`` is specified then instead of removing epsilon
+   transitions, arcs with the matching label are removed. The removed arc
+   labels are treated as if they were :math:`\epsilon` transitions.
 
 .. py:function:: subtract(lhs, rhs)
 
@@ -150,4 +146,54 @@ gtn
 
    **NB:** ``graph`` must be acyclic.
 
+
+Creations
+---------
+
+.. py:function:: scalar_graph(weight, calc_grad = True)
+
+  Creates a scalar graph - a graph with a single arc between two nodes with a
+  given weight value and an :math:`\epsilon` label (:data:`epsilon`).
+
+.. py:function:: linear_graph(M, N, calc_grad = True)
+
+  Create a linear chain graph with ``M + 1`` nodes and ``N`` edges between each node.
+  The labels of the edges between each node are the integers ``[0, ..., N - 1]``.
+
+Comparisons
+-----------
+
+.. py:function:: equal(first, second)
+
+.. py:function:: isomorphic(first, second)
+
+
+Input and Output
+----------------
+
+.. py:function:: draw(graph, file_name, isymbols={}, osymbols={})
+
+  Draw a graph to an image. This function requires a working installation of
+  `Graphviz <https://graphviz.org/>`_. Arc labels are of the format
+  ``ilabel/olabel:weight``. If the output symbols are not specified then the
+  ``olabel`` is omitted and arc labels are of the format ``ilabel:weight``. If
+  the input symbols are not specified then integer ids are used as the label.
+
+  The format of the image is determined by the `file_name` extension and can be
+  any dot supported extension (check with ``dot -T?``).
+
+  :param gtn.Graph graph: The graph to draw
+  :param str file_name: The name of the file to write to
+  :param dict isymbols: A map of integer ids to strings used for arc input labels
+  :param dict osymbols: A map of integer ids to strings used for arc output labels
+
+.. py:function:: load(file_name)
+
 .. py:function:: write_dot(graph, file_name, isymbbols={}, osymbols={})
+
+.. py:data:: epsilon
+  :type: int
+
+  Use the :data:`epsilon` constant to refer to :math:`\epsilon`
+  transitions.
+

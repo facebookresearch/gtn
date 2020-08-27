@@ -6,7 +6,7 @@ Graph scalarGraph(float val, bool calcGrad) {
   Graph g1(calcGrad);
   g1.addNode(true);
   g1.addNode(false, true);
-  g1.addArc(0, 1, 0, 0, val);
+  g1.addArc(0, 1, Graph::epsilon, Graph::epsilon, val);
   return g1;
 }
 

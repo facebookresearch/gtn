@@ -1,7 +1,7 @@
 .. _creations:
 
-Creation Functions
-=================
+Creations
+=========
 
 Creation functions facilitate making graphs with common predetermined structure.
 
