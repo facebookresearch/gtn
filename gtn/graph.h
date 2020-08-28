@@ -11,8 +11,8 @@
 namespace gtn {
 
 /**
- * A `Graph` class to perform automatic differentiation with weighted finite
- * state acceptors (WFSAs) and transducers (WFSTs).
+ * A `Graph` class to perform automatic differentiation with weighted
+ * finite-state acceptors (WFSAs) and transducers (WFSTs).
  *
  * Example:
  *

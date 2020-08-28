@@ -1,9 +1,8 @@
 GTN
 ===
 
-Documentation for GTN, a library for automatic
-differentiation with weighted finite state tranducers
-(WFSTs).
+Documentation for GTN, a library for automatic differentiation with weighted
+finite-state tranducers (WFSTs).
 
 .. toctree::
    :caption: INSTALLATION

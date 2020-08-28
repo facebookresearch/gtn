@@ -6,10 +6,10 @@ Autograd
 
 .. py:function:: backward(graph, grad, retain_graph=False)
 
-  Compute the gradients of any inputs w.r.t ``graph``.
+  Compute the gradients of any inputs with respect to ``graph``.
 
-  :param gtn.Graph graph: The graph to compute gradients with respect to.
-  :param gtn.Graph grad: A seed gradient, typically set to be a gradient of
+  :param Graph graph: The graph to compute gradients with respect to.
+  :param Graph grad: A seed gradient, typically set to be a gradient of
     another function with respect to ``graph``.
   :param bool retain_graph: Whether or not to save the autograd graph. Setting
     this to False is more memory efficient as temporary graphs created during
@@ -52,14 +52,14 @@ Functions
    ``graphs[i]`` then the concatenated graph accepts the sequence
    ``x_1x_2...x_n`` if ``graphs`` contains ``n`` graphs. The score of the path
    ``x_1...x_n`` is the sum of the scores of the individual ``x_i`` in
-   ``graphs[i]``. The concatenated graph is constructuted by connecting every
+   ``graphs[i]``. The concatenated graph is constructed by connecting every
    accepting state of ``graphs[i-1]`` to every starting state of ``graphs[i]``
    with an :math:`\epsilon` transition. The starting state of the concatenated
    graphs are starting states of ``graphs[0]`` and the accepting states are
    accepting states of ``graphs[-1]``.
 
    Note the concatenation of 0 graphs ``gtn::concat([])`` is the graph which accepts
-   the empty string (:math:`\epsilon`). The concatentation of a single graph is
+   the empty string (:math:`\epsilon`). The concatenation of a single graph is
    equivalent to a clone.
 
 .. py:function:: concat(lhs, rhs)
@@ -157,15 +157,22 @@ Creations
 
 .. py:function:: linear_graph(M, N, calc_grad = True)
 
-  Create a linear chain graph with ``M + 1`` nodes and ``N`` edges between each node.
-  The labels of the edges between each node are the integers ``[0, ..., N - 1]``.
+  Create a linear chain graph with ``M + 1`` nodes and ``N`` edges between each
+  node.  The labels of the edges between each node are the integers ``[0, ...,
+  N - 1]``.
+
 
 Comparisons
 -----------
 
 .. py:function:: equal(first, second)
 
+  Checks if two graphs are exactly equal (not isomorphic).
+
 .. py:function:: isomorphic(first, second)
+
+  Checks if two graphs are isomorphic. This function will be extremely slow for
+  large graphs.
 
 
 Input and Output
@@ -182,14 +189,53 @@ Input and Output
   The format of the image is determined by the `file_name` extension and can be
   any dot supported extension (check with ``dot -T?``).
 
-  :param gtn.Graph graph: The graph to draw
+  :param Graph graph: The graph to draw
   :param str file_name: The name of the file to write to
   :param dict isymbols: A map of integer ids to strings used for arc input labels
   :param dict osymbols: A map of integer ids to strings used for arc output labels
 
 .. py:function:: load(file_name)
 
+  Load a graph from a file. The first two lines contain the list of space
+  separated start and accept nodes respectively. The following lines contain
+  the arcs in the format:
+  ::
+
+    srcNode dstNode ilabel [olabel=ilabel] [weight=0.0]
+
+  where ``[x=y]`` indicate optional values for ``x`` with a default value of
+  ``y``.
+
+  For example:
+  ::
+
+    0
+    1
+    0 1 1
+
+  is a two node graph with an arc from start node 0 to accept node 1 with
+  input and output label of 1,
+  ::
+
+    0
+    1
+    0 1 1 2
+
+  is a two node graph with an arc from node 0 to node 1 with input label 1
+  and output label 2, and
+  ::
+
+    0
+    1
+    0 1 1 2 3.0
+
+  is a two node graph with an arc from node 0 to node 1 with input label 1,
+  output label 2, and a weight of 3.0.
+
 .. py:function:: write_dot(graph, file_name, isymbbols={}, osymbols={})
+
+  Write the graph in `Graphviz <https://graphviz.org/>`_ DOT format. See
+  :func:`draw`.
 
 .. py:data:: epsilon
   :type: int

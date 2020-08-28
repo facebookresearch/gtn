@@ -16,8 +16,13 @@ version = '0.0'
 # -- General configuration ---------------------------------------------------
 
 extensions = [
+    'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
 ]
+intersphinx_mapping = {
+    'https://docs.python.org/3': None,
+    'https://numpy.org/doc/stable/': None,
+}
 
 templates_path = ['_templates']
 source_suffix = '.rst'

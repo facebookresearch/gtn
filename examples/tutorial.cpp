@@ -12,7 +12,7 @@ std::unordered_map<int, std::string> osymbols = {{0, "x"}, {1, "y"}, {2, "z"}};
 
 // Build graph and simple utilities.
 void simpleAcceptors() {
-  // Create a graph, by default a weighted finite state acceptor (WFSA)
+  // Create a graph, by default a weighted finite-state acceptor (WFSA)
   Graph graph;
   // Add start node
   graph.addNode(true);

@@ -83,7 +83,7 @@ PYBIND11_MODULE(_graph, m) {
           [](Graph& g, const py::array_t<float> weights) {
             g.setWeights(reinterpret_cast<float*>(weights.request().ptr));
           })
-      .def("labels_to_list", &Graph::labelsToVector, "inLabel"_a = true)
+      .def("labels_to_list", &Graph::labelsToVector, "ilabel"_a = true)
       .def("__repr__", [](const Graph& a) {
         std::ostringstream ss;
         print(a, ss);
