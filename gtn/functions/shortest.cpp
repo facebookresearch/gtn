@@ -24,22 +24,23 @@ inline float logadd(float a, float b) {
 }
 
 void shortestDistanceGrad(
-    Graph& graph,
+    Graph& g,
     float output,
     const Graph& deltas,
     const std::vector<float>& nodeScores,
     bool tropical) {
   std::queue<int> computed;
-  std::vector<int> degrees(graph.numNodes());
-  std::vector<float> nodeGrads(graph.numNodes(), 0.0);
-  std::vector<float> arcGrads(graph.numArcs(), 0.0);
-  for (auto n = 0; n < graph.numNodes(); ++n) {
-    degrees[n] = graph.numOut(n);
+  std::vector<int> degrees(g.numNodes());
+  std::vector<float> nodeGrads(g.numNodes(), 0.0);
+  std::vector<float> arcGrads(g.numArcs(), 0.0);
+  for (auto n = 0; n < g.numNodes(); ++n) {
+    degrees[n] = g.numOut(n);
   }
   auto updateGrad = [tropical, &nodeGrads, &arcGrads, &deltas](
                         std::vector<std::pair<float, std::pair<int, int>>>& in,
                         float scale) {
-    // NB: Perf could be improved by passing max val, idx to the function directly
+    // NB: Perf could be improved by passing max val, idx to the function
+    // directly
     if (in.empty()) {
       return;
     }
@@ -70,14 +71,13 @@ void shortestDistanceGrad(
         }
       }
     }
-
   };
 
   // {score, {node id, arc id}}
   std::vector<std::pair<float, std::pair<int, int>>> inGrads;
-  for (auto n : graph.accept()) {
+  for (auto n : g.accept()) {
     inGrads.emplace_back(nodeScores[n], std::make_pair(n, -1));
-    if (graph.numOut(n) == 0) {
+    if (g.numOut(n) == 0) {
       computed.push(n);
     }
   }
@@ -87,41 +87,38 @@ void shortestDistanceGrad(
   while (!computed.empty()) {
     auto n = computed.front();
     computed.pop();
-    for (auto a : graph.in(n)) {
-      auto un = graph.srcNode(a);
-      inGrads.emplace_back(
-          nodeScores[un] + graph.weight(a), std::make_pair(un, a));
+    for (auto a : g.in(n)) {
+      auto un = g.srcNode(a);
+      inGrads.emplace_back(nodeScores[un] + g.weight(a), std::make_pair(un, a));
       if ((--degrees[un]) == 0) {
         computed.push(un);
       }
     }
-    if (graph.start(n)) {
+    if (g.start(n)) {
       inGrads.emplace_back(0.0, std::make_pair(-1, -1));
     }
     updateGrad(inGrads, nodeGrads[n]);
     inGrads.clear();
   }
-  graph.addGrad(std::move(arcGrads));
+  g.addGrad(std::move(arcGrads));
 }
-
 
 } // namespace
 
-Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
+Graph shortestDistance(const Graph& g, bool tropical /* = false */) {
   std::queue<int> computed;
   // List of scores and list of in degrees for each node
-  std::vector<float> scores(graph.numNodes());
+  std::vector<float> scores(g.numNodes());
   std::vector<int> degrees;
-  degrees.reserve(graph.numNodes());
-  for (auto n = 0; n < graph.numNodes(); ++n) {
-    degrees[n] = graph.numIn(n);
+  degrees.reserve(g.numNodes());
+  for (auto n = 0; n < g.numNodes(); ++n) {
+    degrees[n] = g.numIn(n);
   }
-  for (auto n : graph.start()) {
-    if (graph.numIn(n) == 0) {
+  for (auto n : g.start()) {
+    if (g.numIn(n) == 0) {
       computed.push(n);
     }
   }
-
 
   auto getScore = [tropical](const std::vector<float>& in) {
     // NB: Perf could be improved by passing max val to the function directly
@@ -143,17 +140,17 @@ Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
   while (!computed.empty()) {
     auto n = computed.front();
     computed.pop();
-    for (auto a : graph.in(n)) {
-      auto un = graph.srcNode(a);
-      inScores.push_back(scores[un] + graph.weight(a));
+    for (auto a : g.in(n)) {
+      auto un = g.srcNode(a);
+      inScores.push_back(scores[un] + g.weight(a));
     }
-    if (graph.start(n)) {
+    if (g.start(n)) {
       inScores.push_back(0.0);
     }
     scores[n] = getScore(inScores);
     inScores.clear();
-    for (auto a : graph.out(n)) {
-      auto dn = graph.dstNode(a);
+    for (auto a : g.out(n)) {
+      auto dn = g.dstNode(a);
       if ((--degrees[dn]) == 0) {
         computed.push(dn);
       }
@@ -161,7 +158,7 @@ Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
   }
 
   // Accumulate scores at all the accept nodes.
-  for (auto a : graph.accept()) {
+  for (auto a : g.accept()) {
     if (degrees[a] > 0) {
       throw std::invalid_argument(
           "Graph has a cycle, self-loop or is disconnected!");
@@ -175,28 +172,28 @@ Graph shortestDistance(const Graph& graph, bool tropical /* = false */) {
     shortestDistanceGrad(inputs[0], output, deltas, scores, tropical);
   };
 
-  Graph result(gradFunc, {graph});
+  Graph result(gradFunc, {g});
   result.addNode(true);
   result.addNode(false, true);
   result.addArc(0, 1, 0, 0, score);
   return result;
 }
 
-Graph shortestPath(const Graph& graph) {
+Graph shortestPath(const Graph& g) {
   std::queue<int> computed;
   // List of in degrees for each node
   std::vector<int> degrees;
-  degrees.reserve(graph.numNodes());
+  degrees.reserve(g.numNodes());
   // List of scores and backpointers for each node
-  std::vector<int> backPointers(graph.numNodes());
-  std::vector<float> scores(graph.numNodes(), neginf);
-  for (auto n = 0; n < graph.numNodes(); ++n) {
-    degrees[n] = graph.numIn(n);
+  std::vector<int> backPointers(g.numNodes());
+  std::vector<float> scores(g.numNodes(), neginf);
+  for (auto n = 0; n < g.numNodes(); ++n) {
+    degrees[n] = g.numIn(n);
   }
-  for (auto n : graph.start()) {
+  for (auto n : g.start()) {
     scores[n] = 0.0;
     backPointers[n] = -1;
-    if (graph.numIn(n) == 0) {
+    if (g.numIn(n) == 0) {
       computed.push(n);
     }
   }
@@ -205,9 +202,9 @@ Graph shortestPath(const Graph& graph) {
     auto n = computed.front();
     computed.pop();
     auto score = scores[n];
-    for (auto a : graph.out(n)) {
-      auto dn = graph.dstNode(a);
-      auto nScore = score + graph.weight(a);
+    for (auto a : g.out(n)) {
+      auto dn = g.dstNode(a);
+      auto nScore = score + g.weight(a);
       if (nScore > scores[dn]) {
         scores[dn] = nScore;
         backPointers[dn] = a;
@@ -221,7 +218,7 @@ Graph shortestPath(const Graph& graph) {
   // Accumulate scores at all the accept nodes.
   float score = neginf;
   int best = -1;
-  for (auto a : graph.accept()) {
+  for (auto a : g.accept()) {
     if (degrees[a] > 0) {
       throw std::invalid_argument(
           "Graph has a cycle, self-loop or is disconnected!");
@@ -236,12 +233,12 @@ Graph shortestPath(const Graph& graph) {
   std::vector<int> arcs;
   while (best != -1 && backPointers[best] != -1) {
     auto arc = backPointers[best];
-    best = graph.srcNode(arc);
+    best = g.srcNode(arc);
     arcs.push_back(arc);
   }
 
   // Build the best path
-  Graph out(nullptr, {graph});
+  Graph out(nullptr, {g});
   if (best != -1) {
     out.addNode(true, arcs.size() == 0);
   }
@@ -250,9 +247,9 @@ Graph shortestPath(const Graph& graph) {
     out.addArc(
         arcs.size() - i,
         arcs.size() - i + 1,
-        graph.ilabel(arcs[i - 1]),
-        graph.olabel(arcs[i - 1]),
-        graph.weight(arcs[i - 1]));
+        g.ilabel(arcs[i - 1]),
+        g.olabel(arcs[i - 1]),
+        g.weight(arcs[i - 1]));
   }
 
   auto gradFunc = [arcs = std::move(arcs)](

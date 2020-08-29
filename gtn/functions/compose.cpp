@@ -90,8 +90,8 @@ auto findReachable(
 } // namespace
 
 void UnsortedMatcher::match(int lnode, int rnode, bool matchIn /* = false*/) {
-  auto& lv = matchIn ? lhs_.in(lnode) : lhs_.out(lnode);
-  auto& rv = matchIn ? rhs_.in(rnode) : rhs_.out(rnode);
+  auto& lv = matchIn ? g1_.in(lnode) : g1_.out(lnode);
+  auto& rv = matchIn ? g2_.in(rnode) : g2_.out(rnode);
   lIt_ = lv.begin();
   lItEnd_ = lv.end();
   rItBegin_ = rIt_ = rv.begin();
@@ -101,7 +101,7 @@ void UnsortedMatcher::match(int lnode, int rnode, bool matchIn /* = false*/) {
 bool UnsortedMatcher::hasNext() {
   for (; lIt_ != lItEnd_; ++lIt_) {
     for (; rIt_ != rItEnd_; ++rIt_) {
-      if (lhs_.olabel(*lIt_) == rhs_.ilabel(*rIt_)) {
+      if (g1_.olabel(*lIt_) == g2_.ilabel(*rIt_)) {
         return true;
       }
     }
@@ -115,24 +115,24 @@ std::pair<int, int> UnsortedMatcher::next() {
 }
 
 SinglySortedMatcher::SinglySortedMatcher(
-    const Graph& lhs,
-    const Graph& rhs,
-    bool searchLhs /* = false */)
-    : lhs_(lhs), rhs_(rhs), searchLhs_(searchLhs) {}
+    const Graph& g1,
+    const Graph& g2,
+    bool searchG1 /* = false */)
+    : g1_(g1), g2_(g2), searchG1_(searchG1) {}
 
 void SinglySortedMatcher::match(
     int lnode,
     int rnode,
     bool matchIn /* = false */) {
-  auto& lv = matchIn ? lhs_.in(lnode) : lhs_.out(lnode);
-  auto& rv = matchIn ? rhs_.in(rnode) : rhs_.out(rnode);
+  auto& lv = matchIn ? g1_.in(lnode) : g1_.out(lnode);
+  auto& rv = matchIn ? g2_.in(rnode) : g2_.out(rnode);
 
   searchItBegin_ = searchIt_ = lv.begin();
   searchItEnd_ = lv.end();
   queryIt_ = rv.begin();
   queryItEnd_ = rv.end();
 
-  if (!searchLhs_) {
+  if (!searchG1_) {
     searchItBegin_ = queryIt_;
     std::swap(queryIt_, searchIt_);
     std::swap(queryItEnd_, searchItEnd_);
@@ -144,8 +144,8 @@ bool SinglySortedMatcher::hasNext() {
     return false;
   }
   if (searchIt_ != searchItEnd_) {
-    auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
-    auto sl = searchLhs_ ? lhs_.olabel(*searchIt_) : rhs_.ilabel(*searchIt_);
+    auto ql = searchG1_ ? g2_.ilabel(*queryIt_) : g1_.olabel(*queryIt_);
+    auto sl = searchG1_ ? g1_.olabel(*searchIt_) : g2_.ilabel(*searchIt_);
     if (ql == sl) {
       return true;
     }
@@ -157,10 +157,10 @@ bool SinglySortedMatcher::hasNext() {
 
   // Update the query pointer and the start of the search range pointer
   for (; queryIt_ != queryItEnd_; ++queryIt_) {
-    auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
+    auto ql = searchG1_ ? g2_.ilabel(*queryIt_) : g1_.olabel(*queryIt_);
     // Set the comparison function appropriately
     auto comparisonFn = [this](int arc, int val) {
-      return searchLhs_ ? lhs_.olabel(arc) < val : rhs_.ilabel(arc) < val;
+      return searchG1_ ? g1_.olabel(arc) < val : g2_.ilabel(arc) < val;
     };
     searchIt_ =
         std::lower_bound(searchItBegin_, searchItEnd_, ql, comparisonFn);
@@ -169,7 +169,7 @@ bool SinglySortedMatcher::hasNext() {
       continue;
     }
 
-    auto sl = searchLhs_ ? lhs_.olabel(*searchIt_) : rhs_.ilabel(*searchIt_);
+    auto sl = searchG1_ ? g1_.olabel(*searchIt_) : g2_.ilabel(*searchIt_);
     if (sl == ql) {
       return true;
     }
@@ -178,7 +178,7 @@ bool SinglySortedMatcher::hasNext() {
 }
 
 std::pair<int, int> SinglySortedMatcher::next() {
-  if (searchLhs_) {
+  if (searchG1_) {
     return std::make_pair(*searchIt_++, *queryIt_);
   } else {
     return std::make_pair(*queryIt_, *searchIt_++);
@@ -189,16 +189,16 @@ void DoublySortedMatcher::match(
     int lnode,
     int rnode,
     bool matchIn /* = false */) {
-  auto& lv = matchIn ? lhs_.in(lnode) : lhs_.out(lnode);
-  auto& rv = matchIn ? rhs_.in(rnode) : rhs_.out(rnode);
+  auto& lv = matchIn ? g1_.in(lnode) : g1_.out(lnode);
+  auto& rv = matchIn ? g2_.in(rnode) : g2_.out(rnode);
 
   searchItBegin_ = searchIt_ = lv.begin();
   searchItEnd_ = lv.end();
   queryIt_ = rv.begin();
   queryItEnd_ = rv.end();
 
-  searchLhs_ = lv.size() > rv.size();
-  if (!searchLhs_) {
+  searchG1_ = lv.size() > rv.size();
+  if (!searchG1_) {
     searchItBegin_ = queryIt_;
     std::swap(queryIt_, searchIt_);
     std::swap(queryItEnd_, searchItEnd_);
@@ -210,8 +210,8 @@ bool DoublySortedMatcher::hasNext() {
     return false;
   }
   if (searchIt_ != searchItEnd_) {
-    auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
-    auto sl = searchLhs_ ? lhs_.olabel(*searchIt_) : rhs_.ilabel(*searchIt_);
+    auto ql = searchG1_ ? g2_.ilabel(*queryIt_) : g1_.olabel(*queryIt_);
+    auto sl = searchG1_ ? g1_.olabel(*searchIt_) : g2_.ilabel(*searchIt_);
     if (ql == sl) {
       return true;
     }
@@ -223,11 +223,11 @@ bool DoublySortedMatcher::hasNext() {
 
   // Update the query pointer and the start of the search range pointer
   for (; queryIt_ != queryItEnd_; ++queryIt_) {
-    auto ql = searchLhs_ ? rhs_.ilabel(*queryIt_) : lhs_.olabel(*queryIt_);
+    auto ql = searchG1_ ? g2_.ilabel(*queryIt_) : g1_.olabel(*queryIt_);
 
     // Set the comparison function appropriately
     auto comparisonFn = [this](int arc, int val) {
-      return searchLhs_ ? lhs_.olabel(arc) < val : rhs_.ilabel(arc) < val;
+      return searchG1_ ? g1_.olabel(arc) < val : g2_.ilabel(arc) < val;
     };
     // Allowed because the query vector is sorted.
     searchItBegin_ =
@@ -236,8 +236,8 @@ bool DoublySortedMatcher::hasNext() {
       return false;
     }
 
-    auto sl = searchLhs_ ? lhs_.olabel(*searchItBegin_)
-                         : rhs_.ilabel(*searchItBegin_);
+    auto sl =
+        searchG1_ ? g1_.olabel(*searchItBegin_) : g2_.ilabel(*searchItBegin_);
     if (sl == ql) {
       searchIt_ = searchItBegin_;
       return true;
@@ -247,7 +247,7 @@ bool DoublySortedMatcher::hasNext() {
 }
 
 std::pair<int, int> DoublySortedMatcher::next() {
-  if (searchLhs_) {
+  if (searchG1_) {
     return std::make_pair(*searchIt_++, *queryIt_);
   } else {
     return std::make_pair(*queryIt_, *searchIt_++);

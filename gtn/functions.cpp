@@ -8,85 +8,83 @@
 
 namespace gtn {
 
-Graph negate(const Graph& other) {
-  if (other.numArcs() != 1) {
+Graph negate(const Graph& g) {
+  if (g.numArcs() != 1) {
     throw std::logic_error("[gtn::negate] input must have only one arc");
   }
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(negate(deltas));
   };
-  Graph result(gradFunc, {other});
+  Graph result(gradFunc, {g});
   result.addNode(true);
   result.addNode(false, true);
-  result.addArc(0, 1, 0, 0, -other.item());
+  result.addArc(0, 1, 0, 0, -g.item());
   return result;
 }
 
-Graph add(const Graph& lhs, const Graph& rhs) {
-  if (lhs.numArcs() != 1 || rhs.numArcs() != 1) {
+Graph add(const Graph& g1, const Graph& g2) {
+  if (g1.numArcs() != 1 || g2.numArcs() != 1) {
     throw std::logic_error("[gtn::add] inputs must have only one arc");
   }
-  float weight = lhs.item() + rhs.item();
+  float weight = g1.item() + g2.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
     inputs[1].addGrad(deltas);
   };
-  Graph result(gradFunc, {lhs, rhs});
+  Graph result(gradFunc, {g1, g2});
   result.addNode(true);
   result.addNode(false, true);
   result.addArc(0, 1, 0, 0, weight);
   return result;
 }
 
-Graph subtract(const Graph& lhs, const Graph& rhs) {
-  if (lhs.numArcs() != 1 || rhs.numArcs() != 1) {
+Graph subtract(const Graph& g1, const Graph& g2) {
+  if (g1.numArcs() != 1 || g2.numArcs() != 1) {
     throw std::logic_error("[gtn::subtract] inputs must have only one arc");
   }
-  float weight = lhs.item() - rhs.item();
+  float weight = g1.item() - g2.item();
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
     if (inputs[1].calcGrad()) {
       inputs[1].addGrad(negate(deltas));
     }
   };
-  Graph result(gradFunc, {lhs, rhs});
+  Graph result(gradFunc, {g1, g2});
   result.addNode(true);
   result.addNode(false, true);
   result.addArc(0, 1, 0, 0, weight);
   return result;
 }
 
-Graph clone(
-    const Graph& other,
-    Projection projection /* = Projection::NONE */) {
+Graph clone(const Graph& g, Projection projection /* = Projection::NONE */) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     inputs[0].addGrad(deltas);
   };
-  Graph out(gradFunc, {other.withoutWeights()});
-  for (auto n = 0; n < other.numNodes(); ++n) {
-    out.addNode(other.start(n), other.accept(n));
+  Graph out(gradFunc, {g.withoutWeights()});
+  for (auto n = 0; n < g.numNodes(); ++n) {
+    out.addNode(g.start(n), g.accept(n));
   }
-  for (auto a = 0; a < other.numArcs(); ++a) {
+  for (auto a = 0; a < g.numArcs(); ++a) {
     out.addArc(
-        other.srcNode(a),
-        other.dstNode(a),
-        projection == Projection::OUTPUT ? other.olabel(a) : other.ilabel(a),
-        projection == Projection::INPUT ? other.ilabel(a) : other.olabel(a),
-        other.weight(a));
+        g.srcNode(a),
+        g.dstNode(a),
+        projection == Projection::OUTPUT ? g.olabel(a) : g.ilabel(a),
+        projection == Projection::INPUT ? g.ilabel(a) : g.olabel(a),
+        g.weight(a));
   }
   return out;
 }
 
-Graph projectInput(const Graph& other) {
-  return clone(other, Projection::INPUT);
+Graph projectInput(const Graph& g) {
+  return clone(g, Projection::INPUT);
 }
 
-Graph projectOutput(const Graph& other) {
-  return clone(other, Projection::OUTPUT);
+Graph projectOutput(const Graph& g) {
+  return clone(g, Projection::OUTPUT);
 }
 
-Graph concat(const Graph& lhs, const Graph& rhs) {
-  return concat({lhs, rhs});
+Graph concat(const Graph& g1, const Graph& g2) {
+  return concat({g1, g2});
 }
 
 Graph concat(const std::vector<Graph>& graphs) {
@@ -147,7 +145,7 @@ Graph concat(const std::vector<Graph>& graphs) {
   return out;
 }
 
-Graph closure(const Graph& graph) {
+Graph closure(const Graph& g) {
   auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
     auto grad = deltas.weights();
     // *NB* this assumes arcs in the new graph are the same order
@@ -155,26 +153,26 @@ Graph closure(const Graph& graph) {
     inputs[0].addGrad(std::vector<float>(grad, grad + inputs[0].numArcs()));
   };
 
-  Graph closed(gradFunc, {graph.withoutWeights()});
+  Graph closed(gradFunc, {g.withoutWeights()});
   closed.addNode(true, true);
-  for (auto n = 0; n < graph.numNodes(); ++n) {
+  for (auto n = 0; n < g.numNodes(); ++n) {
     closed.addNode();
   }
-  for (auto a = 0; a < graph.numArcs(); ++a) {
+  for (auto a = 0; a < g.numArcs(); ++a) {
     closed.addArc(
-        graph.srcNode(a) + 1,
-        graph.dstNode(a) + 1,
-        graph.ilabel(a),
-        graph.olabel(a),
-        graph.weight(a));
+        g.srcNode(a) + 1,
+        g.dstNode(a) + 1,
+        g.ilabel(a),
+        g.olabel(a),
+        g.weight(a));
   }
 
   // Epsilon from new start to old accepts
-  for (auto s : graph.start()) {
+  for (auto s : g.start()) {
     closed.addArc(0, s + 1, Graph::epsilon);
   }
   // Epsilon from old accepts to new start
-  for (auto a : graph.accept()) {
+  for (auto a : g.accept()) {
     closed.addArc(a + 1, 0, Graph::epsilon);
   }
   return closed;
@@ -217,41 +215,39 @@ Graph union_(const std::vector<Graph>& graphs) {
   return out;
 }
 
-Graph compose(const Graph& lhs, const Graph& rhs) {
+Graph compose(const Graph& g1, const Graph& g2) {
   std::shared_ptr<detail::ArcMatcher> matcher;
-  bool lhsSorted = lhs.olabelSorted();
-  bool rhsSorted = rhs.ilabelSorted();
-  if (lhsSorted && rhsSorted) {
-    matcher = std::make_shared<detail::DoublySortedMatcher>(lhs, rhs);
-  } else if (lhsSorted || rhsSorted) {
-    matcher =
-        std::make_shared<detail::SinglySortedMatcher>(lhs, rhs, lhsSorted);
+  bool g1Sorted = g1.olabelSorted();
+  bool g2Sorted = g2.ilabelSorted();
+  if (g1Sorted && g2Sorted) {
+    matcher = std::make_shared<detail::DoublySortedMatcher>(g1, g2);
+  } else if (g1Sorted || g2Sorted) {
+    matcher = std::make_shared<detail::SinglySortedMatcher>(g1, g2, g1Sorted);
   } else {
-    matcher = std::make_shared<detail::UnsortedMatcher>(lhs, rhs);
+    matcher = std::make_shared<detail::UnsortedMatcher>(g1, g2);
   }
-  return detail::compose(lhs, rhs, matcher);
+  return detail::compose(g1, g2, matcher);
 }
 
-Graph intersect(const Graph& lhs, const Graph& rhs) {
+Graph intersect(const Graph& g1, const Graph& g2) {
   std::shared_ptr<detail::ArcMatcher> matcher;
-  bool lhsSorted = lhs.ilabelSorted() || lhs.olabelSorted();
-  bool rhsSorted = rhs.ilabelSorted() || rhs.olabelSorted();
-  if (lhsSorted && rhsSorted) {
-    matcher = std::make_shared<detail::DoublySortedMatcher>(lhs, rhs);
-  } else if (lhsSorted || rhsSorted) {
-    matcher =
-        std::make_shared<detail::SinglySortedMatcher>(lhs, rhs, lhsSorted);
+  bool g1Sorted = g1.ilabelSorted() || g1.olabelSorted();
+  bool g2Sorted = g2.ilabelSorted() || g2.olabelSorted();
+  if (g1Sorted && g2Sorted) {
+    matcher = std::make_shared<detail::DoublySortedMatcher>(g1, g2);
+  } else if (g1Sorted || g2Sorted) {
+    matcher = std::make_shared<detail::SinglySortedMatcher>(g1, g2, g1Sorted);
   } else {
-    matcher = std::make_shared<detail::UnsortedMatcher>(lhs, rhs);
+    matcher = std::make_shared<detail::UnsortedMatcher>(g1, g2);
   }
-  return detail::compose(lhs, rhs, matcher);
+  return detail::compose(g1, g2, matcher);
 }
 
-Graph remove(const Graph& other, int label /* = Graph::epsilon */) {
-  return remove(other, label, label);
+Graph remove(const Graph& g, int label /* = Graph::epsilon */) {
+  return remove(g, label, label);
 }
 
-Graph remove(const Graph& other, int ilabel, int olabel) {
+Graph remove(const Graph& g, int ilabel, int olabel) {
   /* TODO we may want to make this function work appropriately with weights.
    * In order to do so for DAGs, we can modify the routine to accumulate scores
    * of epsilon transitions appropriately. Every time we add a node to the
@@ -265,22 +261,22 @@ Graph remove(const Graph& other, int ilabel, int olabel) {
    * scores?
    * c) gradient computation may be more complex
    */
-  auto label_match = [&other, ilabel, olabel](auto a) {
-    return other.ilabel(a) == ilabel && other.olabel(a) == olabel;
+  auto label_match = [&g, ilabel, olabel](auto a) {
+    return g.ilabel(a) == ilabel && g.olabel(a) == olabel;
   };
 
-  std::vector<int> nodes(other.numNodes(), -1);
+  std::vector<int> nodes(g.numNodes(), -1);
   Graph graph;
-  for (auto n = 0; n < other.numNodes(); ++n) {
-    if (other.start(n) ||
-        !std::all_of(other.in(n).begin(), other.in(n).end(), label_match)) {
-      nodes[n] = graph.addNode(other.start(n));
+  for (auto n = 0; n < g.numNodes(); ++n) {
+    if (g.start(n) ||
+        !std::all_of(g.in(n).begin(), g.in(n).end(), label_match)) {
+      nodes[n] = graph.addNode(g.start(n));
     }
   }
 
   std::queue<int> toExplore; // Keep track of where we need to go
   std::set<int> reachable; // Keep track of where we've been
-  for (auto n = 0; n < other.numNodes(); ++n) {
+  for (auto n = 0; n < g.numNodes(); ++n) {
     auto curr = nodes[n];
     if (curr >= 0) {
       toExplore.push(n);
@@ -289,11 +285,11 @@ Graph remove(const Graph& other, int ilabel, int olabel) {
     while (!toExplore.empty()) {
       auto next = toExplore.front();
       toExplore.pop();
-      if (other.accept(next)) {
+      if (g.accept(next)) {
         graph.makeAccept(curr);
       }
-      for (auto a : other.out(next)) {
-        auto dn = other.dstNode(a);
+      for (auto a : g.out(next)) {
+        auto dn = g.dstNode(a);
         if (label_match(a)) {
           if (!reachable.count(dn)) {
             toExplore.push(dn);
@@ -301,7 +297,7 @@ Graph remove(const Graph& other, int ilabel, int olabel) {
           }
         } else {
           // Add the arc
-          graph.addArc(curr, nodes[dn], other.ilabel(a), other.olabel(a));
+          graph.addArc(curr, nodes[dn], g.ilabel(a), g.olabel(a));
         }
       }
     }
@@ -310,16 +306,16 @@ Graph remove(const Graph& other, int ilabel, int olabel) {
   return graph;
 }
 
-Graph forwardScore(const Graph& graph) {
-  return detail::shortestDistance(graph);
+Graph forwardScore(const Graph& g) {
+  return detail::shortestDistance(g);
 }
 
-Graph viterbiScore(const Graph& graph) {
-  return detail::shortestDistance(graph, true);
+Graph viterbiScore(const Graph& g) {
+  return detail::shortestDistance(g, true);
 }
 
-Graph viterbiPath(const Graph& graph) {
-  return detail::shortestPath(graph);
+Graph viterbiPath(const Graph& g) {
+  return detail::shortestPath(g);
 }
 
 } // namespace gtn

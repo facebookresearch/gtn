@@ -17,7 +17,7 @@ class ArcMatcher {
 
 class UnsortedMatcher : public ArcMatcher {
  public:
-  UnsortedMatcher(const Graph& lhs, const Graph& rhs) : lhs_(lhs), rhs_(rhs){};
+  UnsortedMatcher(const Graph& g1, const Graph& g2) : g1_(g1), g2_(g2){};
 
   /* Match the arcs on the left node `lnode` and the right node `rnode`. If
    * `matchIn = false` (default) then arcs will be matched by `olabel`
@@ -28,8 +28,8 @@ class UnsortedMatcher : public ArcMatcher {
   std::pair<int, int> next() override;
 
  private:
-  const Graph& lhs_;
-  const Graph& rhs_;
+  const Graph& g1_;
+  const Graph& g2_;
   std::vector<int>::const_iterator lIt_;
   std::vector<int>::const_iterator lItEnd_;
   std::vector<int>::const_iterator rItBegin_;
@@ -39,10 +39,7 @@ class UnsortedMatcher : public ArcMatcher {
 
 class SinglySortedMatcher : public ArcMatcher {
  public:
-  SinglySortedMatcher(
-      const Graph& lhs,
-      const Graph& rhs,
-      bool searchLhs = false);
+  SinglySortedMatcher(const Graph& g1, const Graph& g2, bool searchG1 = false);
 
   void match(int lnode, int rnode, bool matchIn /* = false */) override;
 
@@ -51,9 +48,9 @@ class SinglySortedMatcher : public ArcMatcher {
   std::pair<int, int> next() override;
 
  private:
-  const Graph& lhs_;
-  const Graph& rhs_;
-  bool searchLhs_;
+  const Graph& g1_;
+  const Graph& g2_;
+  bool searchG1_;
   std::vector<int>::const_iterator searchIt_;
   std::vector<int>::const_iterator searchItBegin_;
   std::vector<int>::const_iterator searchItEnd_;
@@ -63,8 +60,7 @@ class SinglySortedMatcher : public ArcMatcher {
 
 class DoublySortedMatcher : public ArcMatcher {
  public:
-  DoublySortedMatcher(const Graph& lhs, const Graph& rhs)
-      : lhs_(lhs), rhs_(rhs){};
+  DoublySortedMatcher(const Graph& g1, const Graph& g2) : g1_(g1), g2_(g2){};
 
   void match(int lnode, int rnode, bool matchIn /* = false */) override;
 
@@ -73,9 +69,9 @@ class DoublySortedMatcher : public ArcMatcher {
   std::pair<int, int> next() override;
 
  private:
-  const Graph& lhs_;
-  const Graph& rhs_;
-  bool searchLhs_;
+  const Graph& g1_;
+  const Graph& g2_;
+  bool searchG1_;
   std::vector<int>::const_iterator searchIt_;
   std::vector<int>::const_iterator searchItBegin_;
   std::vector<int>::const_iterator searchItEnd_;
@@ -85,8 +81,8 @@ class DoublySortedMatcher : public ArcMatcher {
 
 /* Composes two transducers. */
 Graph compose(
-    const Graph& lhs,
-    const Graph& rhs,
+    const Graph& g1,
+    const Graph& g2,
     std::shared_ptr<ArcMatcher> matcher);
 
 } // namespace detail
