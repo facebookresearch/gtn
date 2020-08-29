@@ -9,18 +9,18 @@ namespace py = pybind11;
 using namespace py::literals;
 
 PYBIND11_MODULE(_utils, m) {
-  m.def("equal", equal, "first"_a, "second"_a);
-  m.def("isomorphic", isomorphic, "first"_a, "second"_a);
+  m.def("equal", equal, "g1"_a, "g2"_a);
+  m.def("isomorphic", isomorphic, "g1"_a, "g2"_a);
 
   m.def(
       "write_dot",
-      [](Graph graph,
+      [](Graph g,
          const std::string& filename,
          const SymbolMap& isymbols = SymbolMap(),
          const SymbolMap& osymbols = SymbolMap()) {
-        draw(graph, filename, isymbols, osymbols);
+        draw(g, filename, isymbols, osymbols);
       },
-      "graph"_a,
+      "g"_a,
       "file_name"_a,
       "isymbols"_a = SymbolMap(),
       "osymbols"_a = SymbolMap());

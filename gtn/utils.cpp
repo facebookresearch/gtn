@@ -31,28 +31,28 @@ static std::vector<std::string> split(const std::string& input) {
   return result;
 }
 
-bool equal(const Graph& a, const Graph& b) {
-  if (a.numNodes() != b.numNodes() || a.numStart() != b.numStart() ||
-      a.numAccept() != b.numAccept() || a.numArcs() != b.numArcs()) {
+bool equal(const Graph& g1, const Graph& g2) {
+  if (g1.numNodes() != g2.numNodes() || g1.numStart() != g2.numStart() ||
+      g1.numAccept() != g2.numAccept() || g1.numArcs() != g2.numArcs()) {
     return false;
   }
 
-  for (size_t n = 0; n < a.numNodes(); n++) {
-    if (a.numIn(n) != b.numIn(n) || a.numOut(n) != b.numOut(n) ||
-        a.start(n) != b.start(n) || a.accept(n) != b.accept(n)) {
+  for (size_t n = 0; n < g1.numNodes(); n++) {
+    if (g1.numIn(n) != g2.numIn(n) || g1.numOut(n) != g2.numOut(n) ||
+        g1.start(n) != g2.start(n) || g1.accept(n) != g2.accept(n)) {
       return false;
     }
 
-    std::list<int> bOut(b.out(n).begin(), b.out(n).end());
-    for (auto arcA : a.out(n)) {
+    std::list<int> bOut(g2.out(n).begin(), g2.out(n).end());
+    for (auto arcG1 : g1.out(n)) {
       auto it = bOut.begin();
       for (; it != bOut.end(); it++) {
-        auto arcB = *it;
-        if (a.dstNode(arcA) == b.dstNode(arcB) &&
-            a.srcNode(arcA) == b.srcNode(arcB) &&
-            a.ilabel(arcA) == b.ilabel(arcB) &&
-            a.olabel(arcA) == b.olabel(arcB) &&
-            a.weight(arcA) == b.weight(arcB)) {
+        auto arcG2 = *it;
+        if (g1.dstNode(arcG1) == g2.dstNode(arcG2) &&
+            g1.srcNode(arcG1) == g2.srcNode(arcG2) &&
+            g1.ilabel(arcG1) == g2.ilabel(arcG2) &&
+            g1.olabel(arcG1) == g2.olabel(arcG2) &&
+            g1.weight(arcG1) == g2.weight(arcG2)) {
           break;
         }
       }
@@ -65,32 +65,39 @@ bool equal(const Graph& a, const Graph& b) {
   return true;
 }
 
-bool isomorphic(const Graph& a, const Graph& b, int aNode, int bNode, NodeMap& visited) {
-  auto state = std::make_pair(aNode, bNode);
+bool isomorphic(
+    const Graph& g1,
+    const Graph& g2,
+    int g1Node,
+    int g2Node,
+    NodeMap& visited) {
+  auto state = std::make_pair(g1Node, g2Node);
   // We assume a state is good unless found to be otherwise
-  auto item = visited.insert({state, aNode});
+  auto item = visited.insert({state, g1Node});
   if (!item.second) {
     return item.first->second >= 0;
   }
 
-  if (a.numIn(aNode) != b.numIn(bNode) || a.numOut(aNode) != b.numOut(bNode) ||
-      a.start(aNode) != b.start(bNode) || a.accept(aNode) != b.accept(bNode)) {
+  if (g1.numIn(g1Node) != g2.numIn(g2Node) ||
+      g1.numOut(g1Node) != g2.numOut(g2Node) ||
+      g1.start(g1Node) != g2.start(g2Node) ||
+      g1.accept(g1Node) != g2.accept(g2Node)) {
     item.first->second = -1;
     return false;
   }
 
   // Each arc in a has to match with an arc in b
-  std::list<int> bOut(b.out(bNode).begin(), b.out(bNode).end());
-  for (auto aArc : a.out(aNode)) {
+  std::list<int> bOut(g2.out(g2Node).begin(), g2.out(g2Node).end());
+  for (auto aArc : g1.out(g1Node)) {
     auto it = bOut.begin();
     for (; it != bOut.end(); it++) {
       auto bArc = *it;
-      if (a.ilabel(aArc) != b.ilabel(bArc) ||
-          a.olabel(aArc) != b.olabel(bArc) ||
-          a.weight(aArc) != b.weight(bArc)) {
+      if (g1.ilabel(aArc) != g2.ilabel(bArc) ||
+          g1.olabel(aArc) != g2.olabel(bArc) ||
+          g1.weight(aArc) != g2.weight(bArc)) {
         continue;
       }
-      if (isomorphic(a, b, a.dstNode(aArc), b.dstNode(bArc), visited)) {
+      if (isomorphic(g1, g2, g1.dstNode(aArc), g2.dstNode(bArc), visited)) {
         break;
       }
     }
@@ -105,17 +112,17 @@ bool isomorphic(const Graph& a, const Graph& b, int aNode, int bNode, NodeMap& v
   return true;
 }
 
-bool isomorphic(const Graph& a, const Graph& b) {
-  if (a.numNodes() != b.numNodes() || a.numStart() != b.numStart() ||
-      a.numAccept() != b.numAccept() || a.numArcs() != b.numArcs()) {
+bool isomorphic(const Graph& g1, const Graph& g2) {
+  if (g1.numNodes() != g2.numNodes() || g1.numStart() != g2.numStart() ||
+      g1.numAccept() != g2.numAccept() || g1.numArcs() != g2.numArcs()) {
     return false;
   }
 
   bool isIsomorphic = false;
   NodeMap visited;
-  for (auto s1 : a.start()) {
-    for (auto s2 : b.start()) {
-      isIsomorphic |= isomorphic(a, b, s1, s2, visited);
+  for (auto s1 : g1.start()) {
+    for (auto s2 : g2.start()) {
+      isIsomorphic |= isomorphic(g1, g2, s1, s2, visited);
     }
   }
   return isIsomorphic;
@@ -211,13 +218,13 @@ Graph load(std::istream& in) {
   return graph;
 }
 
-void print(const Graph& graph) {
-  print(graph, std::cout);
+void print(const Graph& g) {
+  print(g, std::cout);
 }
 
-void print(const Graph& graph, std::ostream& out) {
+void print(const Graph& g, std::ostream& out) {
   // Print start nodes
-  auto& startNodes = graph.start();
+  auto& startNodes = g.start();
   if (startNodes.size() > 0) {
     out << startNodes[0];
     for (size_t i = 1; i < startNodes.size(); i++) {
@@ -227,7 +234,7 @@ void print(const Graph& graph, std::ostream& out) {
   }
 
   // Print accept nodes
-  auto& acceptNodes = graph.accept();
+  auto& acceptNodes = g.accept();
   if (acceptNodes.size() > 0) {
     out << acceptNodes[0];
     for (size_t i = 1; i < acceptNodes.size(); i++) {
@@ -237,14 +244,14 @@ void print(const Graph& graph, std::ostream& out) {
   }
 
   // Print arcs
-  for (int i = 0; i < graph.numArcs(); i++) {
-    out << graph.srcNode(i) << " " << graph.dstNode(i) << " " << graph.ilabel(i)
-        << " " << graph.olabel(i) << " " << graph.weight(i) << std::endl;
+  for (int i = 0; i < g.numArcs(); i++) {
+    out << g.srcNode(i) << " " << g.dstNode(i) << " " << g.ilabel(i) << " "
+        << g.olabel(i) << " " << g.weight(i) << std::endl;
   }
 }
 
 void draw(
-    const Graph& graph,
+    const Graph& g,
     std::ostream& out,
     const SymbolMap& isymbols /* = SymbolMap() */,
     const SymbolMap& osymbols /* = SymbolMap() */) {
@@ -261,37 +268,36 @@ void draw(
     return symbols.at(label);
   };
 
-  auto drawNode = [&graph, &out, &isymbols, &osymbols, &label_to_string](
-                      auto n) {
-    std::string penwidth = graph.start(n) ? "2.0" : "1.0";
-    std::string shape = graph.accept(n) ? "doublecircle" : "circle";
+  auto drawNode = [&g, &out, &isymbols, &osymbols, &label_to_string](auto n) {
+    std::string penwidth = g.start(n) ? "2.0" : "1.0";
+    std::string shape = g.accept(n) ? "doublecircle" : "circle";
     out << "  " << n << " [label = \"" << n << "\", shape = " << shape
         << ", penwidth = " << penwidth << ", fontsize = 14];\n";
-    for (auto a : graph.out(n)) {
-      auto ilabel = label_to_string(isymbols, graph.ilabel(a));
-      out << "  " << graph.srcNode(a) << " -> " << graph.dstNode(a)
-          << " [label = \"" << ilabel;
+    for (auto a : g.out(n)) {
+      auto ilabel = label_to_string(isymbols, g.ilabel(a));
+      out << "  " << g.srcNode(a) << " -> " << g.dstNode(a) << " [label = \""
+          << ilabel;
       if (!osymbols.empty()) {
-        auto olabel = label_to_string(osymbols, graph.olabel(a));
+        auto olabel = label_to_string(osymbols, g.olabel(a));
         out << ":" << olabel;
       }
-      out << "/" << graph.weight(a) << "\", fontsize = 14];\n";
+      out << "/" << g.weight(a) << "\", fontsize = 14];\n";
     }
   };
 
   // Draw start nodes first and accept nodes last to help with layout.
-  for (auto i : graph.start()) {
+  for (auto i : g.start()) {
     drawNode(i);
   }
 
-  for (int i = 0; i < graph.numNodes(); i++) {
-    if (!graph.start(i) && !graph.accept(i)) {
+  for (int i = 0; i < g.numNodes(); i++) {
+    if (!g.start(i) && !g.accept(i)) {
       drawNode(i);
     }
   }
 
-  for (auto i : graph.accept()) {
-    if (graph.start(i)) {
+  for (auto i : g.accept()) {
+    if (g.start(i)) {
       continue;
     }
     drawNode(i);
@@ -301,7 +307,7 @@ void draw(
 }
 
 void draw(
-    const Graph& graph,
+    const Graph& g,
     const std::string& filename,
     const SymbolMap& isymbols /* = SymbolMap() */,
     const SymbolMap& osymbols /* = SymbolMap() */) {
@@ -309,7 +315,7 @@ void draw(
   if (!out.is_open()) {
     throw std::runtime_error("Could not open file [" + filename + "]");
   }
-  draw(graph, out, isymbols, osymbols);
+  draw(g, out, isymbols, osymbols);
 }
 
 } // namespace gtn

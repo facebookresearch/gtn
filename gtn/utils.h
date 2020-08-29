@@ -13,13 +13,13 @@ namespace gtn {
  */
 
 /** Checks if two graphs are exactly equal (not isomorphic). */
-bool equal(const Graph& a, const Graph& b);
+bool equal(const Graph& g1, const Graph& g2);
 
 /**
  * Checks if two graphs are isomorphic. Note this function will be very very
  * slow for large graphs.
  */
-bool isomorphic(const Graph& a, const Graph& b);
+bool isomorphic(const Graph& g1, const Graph& g2);
 
 /** @}*/
 
@@ -100,13 +100,13 @@ using SymbolMap = std::unordered_map<int, std::string>;
  * ```
  * dot -Tpdf graph.dot -o graph.pdf
  * ```
- * @param graph The graph to draw
+ * @param g The graph to draw
  * @param filename The name of the file to write to (e.g. graph.dot).
  * @param isymbols A map of integer ids to strings used for arc input labels
  * @param osymbols A map of integer ids to strings used for arc output labels
  */
 void draw(
-    const Graph& graph,
+    const Graph& g,
     const std::string& filename,
     const SymbolMap& isymbols = SymbolMap(),
     const SymbolMap& osymbols = SymbolMap());
@@ -115,7 +115,7 @@ void draw(
  * Write a graph in graphviz dot format to an output stream. See `gtn::draw`.
  */
 void draw(
-    const Graph& graph,
+    const Graph& g,
     std::ostream& out,
     const SymbolMap& isymbols = SymbolMap(),
     const SymbolMap& osymbols = SymbolMap());

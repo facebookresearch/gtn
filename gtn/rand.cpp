@@ -4,17 +4,17 @@
 
 namespace gtn {
 
-Graph sample(const Graph& graph, size_t maxLength /* = 1000 */) {
-  if (!graph.numStart() || !graph.numAccept()) {
+Graph sample(const Graph& g, size_t maxLength /* = 1000 */) {
+  if (!g.numStart() || !g.numAccept()) {
     return Graph{};
   }
 
   std::vector<int> arcs;
-  auto node = graph.start()[rand() % graph.numStart()];
+  auto node = g.start()[rand() % g.numStart()];
   size_t acceptLength = 0;
   for (size_t length = 0; length < maxLength + 1; length++) {
-    auto mod = graph.numOut(node) + graph.accept(node);
-    acceptLength = graph.accept(node) ? (length + 1) : acceptLength;
+    auto mod = g.numOut(node) + g.accept(node);
+    acceptLength = g.accept(node) ? (length + 1) : acceptLength;
 
     // Dead end
     if (!mod) {
@@ -26,12 +26,12 @@ Graph sample(const Graph& graph, size_t maxLength /* = 1000 */) {
     auto i = rand() % mod;
 
     // Successful and complete
-    if (i == graph.numOut(node)) {
+    if (i == g.numOut(node)) {
       break;
     }
 
-    auto arc = graph.out(node, i);
-    node = graph.dstNode(arc);
+    auto arc = g.out(node, i);
+    node = g.dstNode(arc);
     arcs.push_back(arc);
   }
 
@@ -53,28 +53,28 @@ Graph sample(const Graph& graph, size_t maxLength /* = 1000 */) {
   };
 
   // Build the graph
-  Graph path(gradFunc, {graph});
+  Graph path(gradFunc, {g});
   path.addNode(true, acceptLength == 1);
   for (int i = 1; i < acceptLength; i++) {
     path.addNode(false, (i + 1) == acceptLength);
     path.addArc(
         i - 1,
         i,
-        graph.ilabel(arcs[i - 1]),
-        graph.olabel(arcs[i - 1]),
-        graph.weight(arcs[i - 1]));
+        g.ilabel(arcs[i - 1]),
+        g.olabel(arcs[i - 1]),
+        g.weight(arcs[i - 1]));
   }
   return path;
 }
 
 bool randEquivalent(
-    const Graph& a,
-    const Graph& b,
+    const Graph& g1,
+    const Graph& g2,
     size_t numSamples /* = 100 */,
     double tol /* = 1e-4 */,
     size_t maxLength /* = 1000 */) {
   for (int i = 0; i < numSamples; i++) {
-    auto path = sample(rand() % 2 ? a : b, maxLength);
+    auto path = sample(rand() % 2 ? g1 : g2, maxLength);
     path.setCalcGrad(false);
 
     // Ignore empty paths
@@ -85,32 +85,32 @@ bool randEquivalent(
     auto inp = projectInput(path);
     auto outp = projectOutput(path);
 
-    auto composedA = compose(inp, a);
-    composedA.setCalcGrad(false);
-    composedA = compose(composedA, outp);
+    auto composedG1 = compose(inp, g1);
+    composedG1.setCalcGrad(false);
+    composedG1 = compose(composedG1, outp);
 
-    auto composedB = compose(inp, b);
-    composedB.setCalcGrad(false);
-    composedB = compose(composedB, outp);
+    auto composedG2 = compose(inp, g2);
+    composedG2.setCalcGrad(false);
+    composedG2 = compose(composedG2, outp);
 
-    auto isEmptyA = equal(composedA, Graph{});
-    auto isEmptyB = equal(composedB, Graph{});
+    auto isEmptyG1 = equal(composedG1, Graph{});
+    auto isEmptyG2 = equal(composedG2, Graph{});
 
     // Only one of the graphs is empty
-    if (isEmptyA != isEmptyB) {
+    if (isEmptyG1 != isEmptyG2) {
       return false;
     }
 
     // Both graphs are empty
-    if (isEmptyA && isEmptyB) {
+    if (isEmptyG1 && isEmptyG2) {
       continue;
     }
 
-    auto scoreA = forwardScore(composedA).item();
-    auto scoreB = forwardScore(composedB).item();
+    auto scoreG1 = forwardScore(composedG1).item();
+    auto scoreG2 = forwardScore(composedG2).item();
 
     // Check within tolerance
-    if (abs(scoreA - scoreB) > tol) {
+    if (abs(scoreG1 - scoreG2) > tol) {
       return false;
     }
   }

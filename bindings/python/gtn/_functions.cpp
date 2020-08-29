@@ -19,8 +19,8 @@ PYBIND11_MODULE(_functions, m) {
       "concat",
       py::overload_cast<const std::vector<Graph>&>(&concat),
       "graphs"_a);
-  m.def("intersect", intersect, "first"_a, "second"_a);
-  m.def("compose", compose, "first"_a, "second"_a);
+  m.def("intersect", intersect, "g1"_a, "g2"_a);
+  m.def("compose", compose, "g1"_a, "g2"_a);
   m.def("closure", closure, "g"_a);
   m.def("forward_score", forwardScore, "g"_a);
   m.def("negate", negate, "input"_a);

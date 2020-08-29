@@ -4,7 +4,7 @@ gtn
 Autograd
 --------
 
-.. py:function:: backward(graph, grad, retain_graph=False)
+.. py:function:: backward(g, grad, retain_graph=False)
 
   Compute the gradients of any inputs with respect to ``graph``.
 
@@ -15,7 +15,7 @@ Autograd
     this to False is more memory efficient as temporary graphs created during
     the forward computation may be destroyed.
 
-.. py:function:: backward(graph, retain_graph=False)
+.. py:function:: backward(g, retain_graph=False)
   :noindex:
 
   Same as :func:`backward` but with the initial ``grad`` set to be ones.
@@ -24,20 +24,20 @@ Autograd
 Functions
 ---------
 
-.. py:function:: add(lhs, rhs)
+.. py:function:: add(g1, g2)
 
   Add two scalar graphs.
 
-.. py:function:: closure(graph)
+.. py:function:: closure(g)
 
    Compute the (Kleene) closure of the graph. This operation is recorded in the
    autograd tape.
 
-.. py:function:: compose(first, second)
+.. py:function:: compose(g1, g2)
 
    Compose two transducers. This operation is recorded in the autograd tape.
-   If ``x:y`` is transduced by ``first`` and ``y:z`` is transduced by
-   ``second`` then the composed graph will transduce ``x:z``. The arc scores
+   If ``x:y`` is transduced by ``g1`` and ``y:z`` is transduced by
+   ``g2`` then the composed graph will transduce ``x:z``. The arc scores
    are added in the composed graph.
 
    Both :func:`compose` and :func:`intersect` can be much faster when operating
@@ -62,12 +62,12 @@ Functions
    the empty string (:math:`\epsilon`). The concatenation of a single graph is
    equivalent to a clone.
 
-.. py:function:: concat(lhs, rhs)
+.. py:function:: concat(g1, g2)
   :noindex:
 
-  Equivalent to ``concat([lhs, rhs])``, see :func:`concat`.
+  Equivalent to ``concat([g1, g2])``, see :func:`concat`.
 
-.. py:function:: forward_score(graph)
+.. py:function:: forward_score(g)
 
    Compute the forward score of a graph. Returns the score in a scalar graph
    which can be accessed with :meth:`Graph.item()`. This operation is recorded
@@ -78,13 +78,13 @@ Functions
 
    **NB:** ``graph`` must be acyclic.
 
-.. py:function:: intersect(first, second)
+.. py:function:: intersect(g1, g2)
 
    Intersect two acceptors. This operation is recorded in the autograd tape.
    This function only works on acceptors, calling it on a ``graph`` where
    ``graph.ilabel(a) != graph.olabel(a)`` for some ``a`` is undefined and may yield
    incorrect results. The intersected graph accepts any path ``x`` which is
-   accepted by both ``first`` and ``second``. The arc scores are added in the
+   accepted by both ``g1`` and ``g2``. The arc scores are added in the
    intersected graph.
 
    The result of :func:`compose` will yield an equivalent result, however; this
@@ -93,7 +93,7 @@ Functions
    Both :func:`compose` and :func:`intersect` can be much faster when operating
    on graphs with sorted arcs. See :meth:`Graph.arc_sort`.
 
-.. py:function:: negate(input)
+.. py:function:: negate(g)
 
    Negate a scalar graph.
 
@@ -116,7 +116,7 @@ Functions
    transitions, arcs with the matching label are removed. The removed arc
    labels are treated as if they were :math:`\epsilon` transitions.
 
-.. py:function:: subtract(lhs, rhs)
+.. py:function:: subtract(g1, g2)
 
    Subtract one scalar graph from another.
 
@@ -124,7 +124,7 @@ Functions
 
    Construct the union of a list of graphs.
 
-.. py:function:: viterbi_score(graph)
+.. py:function:: viterbi_score(g)
 
    Compute the Viterbi score of a graph. Returns the score in a scalar graph
    which can be accessed with :meth:`Graph.item()`. This operation is recorded
@@ -135,7 +135,7 @@ Functions
 
    **NB:** ``graph`` must be acyclic.
 
-.. py:function:: viterbi_path(graph)
+.. py:function:: viterbi_path(g)
 
    Compue the Viterbi shortest path of a graph and return it in a single chain
    graph with the labels and weights of the shortest path. This operation is
@@ -165,11 +165,11 @@ Creations
 Comparisons
 -----------
 
-.. py:function:: equal(first, second)
+.. py:function:: equal(g1, g2)
 
   Checks if two graphs are exactly equal (not isomorphic).
 
-.. py:function:: isomorphic(first, second)
+.. py:function:: isomorphic(g1, g2)
 
   Checks if two graphs are isomorphic. This function will be extremely slow for
   large graphs.
@@ -178,7 +178,7 @@ Comparisons
 Input and Output
 ----------------
 
-.. py:function:: draw(graph, file_name, isymbols={}, osymbols={})
+.. py:function:: draw(g1, file_name, isymbols={}, osymbols={})
 
   Draw a graph to an image. This function requires a working installation of
   `Graphviz <https://graphviz.org/>`_. Arc labels are of the format
@@ -232,7 +232,7 @@ Input and Output
   is a two node graph with an arc from node 0 to node 1 with input label 1,
   output label 2, and a weight of 3.0.
 
-.. py:function:: write_dot(graph, file_name, isymbbols={}, osymbols={})
+.. py:function:: write_dot(g, file_name, isymbbols={}, osymbols={})
 
   Write the graph in `Graphviz <https://graphviz.org/>`_ DOT format. See
   :func:`draw`.

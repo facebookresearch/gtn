@@ -7,7 +7,7 @@ namespace gtn {
 
 namespace {
 
-void backwardImpl(Graph graph, bool retainGraph) {
+void backwardImpl(Graph g, bool retainGraph) {
   // Build the tape
   std::unordered_set<std::uintptr_t> cache;
   std::vector<Graph> tape;
@@ -27,7 +27,7 @@ void backwardImpl(Graph graph, bool retainGraph) {
     tape.push_back(g);
   };
 
-  recurse(graph);
+  recurse(g);
 
   // Compute gradients
   for (auto iter = tape.rbegin(); iter != tape.rend(); iter++) {
@@ -47,16 +47,16 @@ void backwardImpl(Graph graph, bool retainGraph) {
 
 } // namespace
 
-void backward(Graph graph, bool retainGraph /* = false */) {
+void backward(Graph g, bool retainGraph /* = false */) {
   // Seed the initial deltas
-  auto deltas = std::vector<float>(graph.numArcs(), 1.0);
-  graph.addGrad(std::move(deltas));
-  backwardImpl(graph, retainGraph);
+  auto deltas = std::vector<float>(g.numArcs(), 1.0);
+  g.addGrad(std::move(deltas));
+  backwardImpl(g, retainGraph);
 }
 
-void backward(Graph graph, const Graph& grad, bool retainGraph /* = false */) {
-  graph.addGrad(grad);
-  backwardImpl(graph, retainGraph);
+void backward(Graph g, const Graph& grad, bool retainGraph /* = false */) {
+  g.addGrad(grad);
+  backwardImpl(g, retainGraph);
 }
 
 } // namespace gtn
