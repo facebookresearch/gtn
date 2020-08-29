@@ -161,6 +161,96 @@ class FunctionsTestCase(GTNModuleTestCase):
         self.assertEqual(g2.grad().item(), -1.0)
 
 
+class ParallelTestCase(GTNModuleTestCase):
+    def test_parallel_map_one_arg(self):
+        inputs = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        outputs = gtn.parallel_map(gtn.negate, inputs)
+
+        expected = []
+        for g in inputs:
+            expected.append(gtn.negate(g))
+
+        self.assertEqual(len(outputs), len(inputs))
+        for i in range(0, len(expected)):
+            self.assertTrue(gtn.equal(outputs[i], expected[i]))
+
+    def test_parallel_map_two_arg(self):
+        inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        outputs = gtn.parallel_map(gtn.add, inputs1, inputs2)
+
+        expected = []
+        for g1, g2 in zip(inputs1, inputs2):
+            expected.append(gtn.add(g1, g2))
+
+        self.assertEqual(len(outputs), len(inputs1), len(inputs2))
+        for i in range(0, len(expected)):
+            self.assertTrue(gtn.equal(outputs[i], expected[i]))
+
+    def test_parallel_map_vector_arg(self):
+        inputList = [
+            gtn.scalar_graph(1.0),
+            gtn.scalar_graph(2.0),
+            gtn.scalar_graph(3.0),
+        ]
+        inputs = [inputList, inputList, inputList]
+        outputs = gtn.parallel_map(gtn.concat, inputs)
+
+        expected = []
+        for gList in inputs:
+            expected.append(gtn.concat(gList))
+
+        self.assertEqual(len(outputs), len(inputs))
+        for i in range(0, len(expected)):
+            self.assertTrue(gtn.equal(outputs[i], expected[i]))
+
+    def test_parallel_map_custom_function(self):
+        def p_add(g1, g2):
+            g1_neg = gtn.negate(g1)
+            return gtn.add(g1, g2)
+
+        inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        outputs = gtn.parallel_map(p_add, inputs1, inputs2)
+
+        expected = []
+        for g1, g2 in zip(inputs1, inputs2):
+            expected.append(p_add(g1, g2))
+
+        self.assertEqual(len(outputs), len(inputs1), len(inputs2))
+        for i in range(0, len(expected)):
+            self.assertTrue(gtn.equal(outputs[i], expected[i]))
+
+    def test_parallel_map_backward(self):
+        inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        outputs = gtn.parallel_map(gtn.add, inputs1, inputs2)
+
+        # Test overloads
+        gtn.parallel_map(gtn.backward, outputs)
+        outputs = gtn.parallel_map(gtn.add, inputs1, inputs2)
+        gtn.parallel_map(gtn.backward, outputs, [False])
+
+        # Test gradients
+        inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        outputs = gtn.parallel_map(gtn.add, inputs1, inputs2)
+        gradIn = gtn.scalar_graph(5.0)
+        gtn.parallel_map(gtn.backward, outputs, [gradIn], [False])
+
+        inputs1Dup = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        inputs2Dup = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        expected = []
+        for g1, g2 in zip(inputs1Dup, inputs2Dup):
+            expected.append(gtn.add(g1, g2))
+        for g in expected:
+            gtn.backward(g, gtn.scalar_graph(5.0))
+
+        for i in range(0, len(expected)):
+            self.assertTrue(gtn.equal(inputs1[i].grad(), inputs1Dup[i].grad()))
+            self.assertTrue(gtn.equal(inputs2[i].grad(), inputs2Dup[i].grad()))
+
+
 class AutogradTestCase(GTNModuleTestCase):
     def test_calc_grad(self):
         g1 = gtn.Graph(False)

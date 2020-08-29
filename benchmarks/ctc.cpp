@@ -139,34 +139,23 @@ void timeBatchedCtc(const int B) {
     emissionsScores.push_back(randVec(T * M));
   }
 
-  auto fwd = [T, U, M, &targets, &emissionsScores](
-                 int b, std::vector<Graph>& vec) {
-    auto ctc = ctcGraph(targets[b]);
+  auto fwd = [T, M, &targets, &emissionsScores](
+                 const std::vector<int>& target,
+                 const std::vector<float>& emissionsScore) {
+    auto ctc = ctcGraph(target);
     auto emissions = linearGraph(T, M);
-    emissions.setWeights(emissionsScores[b].data());
-    vec[b] = subtract(
+    emissions.setWeights(emissionsScore.data());
+    return subtract(
         forwardScore(emissions), forwardScore(intersect(ctc, emissions)));
   };
 
-  auto bwd = [](int b, std::vector<Graph>& vec) { backward(vec[b]); };
+  auto bwd = [](Graph& g) { backward(g); };
 
-  auto ctcBatched = [T, U, M, B, &targets, &emissionsScores, fwd, bwd]() {
-    // Loss graphs
-    std::vector<Graph> vec(B);
-    {
-      ThreadPool threadPool(B);
-      for (int64_t b = 0; b < B; ++b) {
-        threadPool.enqueue(fwd, b, vec);
-      }
-    }
-
-    {
-      ThreadPool threadPool(B);
-      for (int64_t b = 0; b < B; ++b) {
-        threadPool.enqueue(bwd, b, vec);
-      }
-    }
+  auto ctcBatched = [&targets, &emissionsScores, &fwd, &bwd]() {
+    auto lossGraphs = parallelMap(fwd, targets, emissionsScores);
+    parallelMap(bwd, lossGraphs);
   };
+
   TIME(ctcBatched);
 }
 

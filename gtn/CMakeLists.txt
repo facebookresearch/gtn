@@ -8,6 +8,8 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/functions/compose.h
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/creations.h
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/creations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/parallel/parallel_map.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/gtn/parallel/parallel_map.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/functions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/functions.h
   ${CMAKE_CURRENT_SOURCE_DIR}/gtn/graph.cpp
