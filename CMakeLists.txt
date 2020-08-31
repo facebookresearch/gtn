@@ -13,6 +13,7 @@ option(GTN_BUILD_TESTS "Build tests for gtn" ON)
 option(GTN_BUILD_BENCHMARKS "Build benchmarks for gtn" ON)
 option(GTN_BUILD_EXAMPLES "Build examples for gtn" ON)
 option(GTN_BUILD_PYTHON_BINDINGS "Build python bindings for gtn" OFF)
+option(GTN_BUILD_PYTHON_BINDINGS_NO_GIL "Build python bindings with no GIL for gtn" OFF)
 
 # ----------------------------- Dependencies -----------------------------
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -75,6 +76,8 @@ set(GTN_INSTALL_CMAKE_DIR "${GTN_INSTALL_ASSETS_BASE_DIR}/cmake" CACHE PATH "Ins
 install(
   TARGETS gtn
   EXPORT gtnTargets
+  # ARCHIVE DESTINATION ${GTN_INSTALL_LIB_DIR}
+  # INCLUDES DESTINATION ${GTN_INSTALL_INC_DIR}
   COMPONENT gtn
   PUBLIC_HEADER DESTINATION gtn
   RUNTIME DESTINATION ${GTN_INSTALL_BIN_DIR}

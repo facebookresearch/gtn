@@ -1,8 +1,15 @@
 include(ExternalProject)
 
-# pybind11 source
-set(pybind11_URL https://github.com/pybind/pybind11.git)
-set(pybind11_TAG eeb1044818af5b70761deae602c49eba439164dc)
+if (GTN_BUILD_PYTHON_BINDINGS_NO_GIL)
+  message(STATUS "Building pybind11 with no GIL")
+  # GIL-free pybind11
+  set(pybind11_URL https://github.com/colesbury/pybind11.git)
+  set(pybind11_TAG f4e81bfc95e57eb6b4c32698ab5308903c3c2a46)
+else ()
+  # pybind11 source
+  set(pybind11_URL https://github.com/pybind/pybind11.git)
+  set(pybind11_TAG eeb1044818af5b70761deae602c49eba439164dc)
+endif ()
 
 # Download pybind11
 ExternalProject_Add(

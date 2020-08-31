@@ -46,7 +46,7 @@ make test
 ## Python Bindings
 Setting up your environment:
 ```
-conda create -n gtn_env
+conda create -n gtn_env -c nogil python=3.9
 conda activate gtn_env
 ```
 Required dependencies:

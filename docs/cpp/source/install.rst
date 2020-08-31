@@ -85,7 +85,7 @@ Set up your environment:
 
 .. code-block:: shell
 
-    conda create -n gtn_env
+    conda create -n gtn_env -c nogil python=3.9
     conda activate gtn_env
 
 Install required dependencies:
