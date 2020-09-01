@@ -78,7 +78,7 @@ TEST_CASE("Test ParallelMap Broadcast", "[parallel.parallelmap.broadcast]") {
 }
 
 TEST_CASE("Test ParallelMap Lambda", "[parallel.parallelmap.lambda]") {
-  auto function = [](Graph g1, Graph g2, Graph g3) {
+  auto function = [](const Graph& g1, const Graph& g2, const Graph& g3) {
     return subtract(add(g1, g2), g3);
   };
 

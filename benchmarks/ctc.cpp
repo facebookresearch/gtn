@@ -149,7 +149,7 @@ void timeBatchedCtc(const int B) {
         forwardScore(emissions), forwardScore(intersect(ctc, emissions)));
   };
 
-  auto bwd = [](Graph& g) { backward(g); };
+  auto bwd = [](const Graph& g) { backward(g); };
 
   auto ctcBatched = [&targets, &emissionsScores, &fwd, &bwd]() {
     auto lossGraphs = parallelMap(fwd, targets, emissionsScores);

@@ -56,13 +56,13 @@ namespace {
 // fundamental types to their corresponding rvalues
 template <typename T>
 struct ret {
-  using type =
-      typename std::conditional<std::is_fundamental<T>::value, T, T&>::type;
+  using type = typename std::
+      conditional<std::is_fundamental<T>::value, const T, const T&>::type;
 };
 
 template <typename T>
 typename ret<T>::type
-getIdxOrBroadcast(size_t size, size_t idx, std::vector<T>& in) {
+getIdxOrBroadcast(size_t size, size_t idx, const std::vector<T>& in) {
   if (in.size() == size) {
     return in[idx];
   } else if (in.size() == 1) {
