@@ -884,7 +884,7 @@ TEST_CASE("Test Sum", "[functions.union_]") {
 
 TEST_CASE("Test Remove", "[functions.remove]") {
   {
-    Graph g;
+    Graph g(false);
     g.addNode(true);
     g.addNode();
     g.addNode(false, true);
@@ -896,6 +896,9 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     expected.addNode(false, true);
     expected.addArc(0, 1, 0);
     CHECK(equal(remove(g, Graph::epsilon), expected));
+
+    // Check gradient status propagates correctly
+    CHECK(remove(g, Graph::epsilon).calcGrad() == false);
   }
 
   {

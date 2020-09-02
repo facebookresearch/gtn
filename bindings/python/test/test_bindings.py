@@ -204,6 +204,18 @@ class ParallelTestCase(GTNModuleTestCase):
         for i in range(0, len(expected)):
             self.assertTrue(gtn.equal(outputs[i], expected[i]))
 
+    @unittest.skip("Enable when pmap backward is fixed.")
+    def test_backward_calls_once(self):
+        g1 = gtn.scalar_graph(1)
+        g2 = gtn.scalar_graph(1)
+        gout = gtn.add(g1, g2)
+        gtn.parallel_map(gtn.backward, [gout])
+        pmap_grad = gout.grad()
+        gout = gtn.add(g1, g2)
+        gtn.backward(gout)
+        grad = gout.grad()
+        self.assertTrue(gtn.equal(pmap_grad, grad))
+
     def test_parallel_map_backward(self):
         inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
         inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]

@@ -261,12 +261,16 @@ Graph remove(const Graph& g, int ilabel, int olabel) {
    * scores?
    * c) gradient computation may be more complex
    */
+  auto gradFunc = [](std::vector<Graph>& inputs, Graph& deltas) {
+    throw std::logic_error("[gtn::remove] gradient compuation not implemented");
+  };
+
   auto label_match = [&g, ilabel, olabel](auto a) {
     return g.ilabel(a) == ilabel && g.olabel(a) == olabel;
   };
 
   std::vector<int> nodes(g.numNodes(), -1);
-  Graph graph;
+  Graph graph(gradFunc, {g});
   for (auto n = 0; n < g.numNodes(); ++n) {
     if (g.start(n) ||
         !std::all_of(g.in(n).begin(), g.in(n).end(), label_match)) {
