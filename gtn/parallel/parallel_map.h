@@ -89,34 +89,34 @@ max(T0&& val1, T1&& val2, Ts&&... vs) {
 }
 
 template <typename T>
-size_t vecSize(T& in) {
+size_t getSize(const T& in) {
   return in.size();
 }
 
 template <typename T>
 struct OutPayload {
-  std::vector<T> val;
+  std::vector<T> out;
 
-  OutPayload(size_t outSize) : val(outSize) {}
-
-  template <typename F, typename... Args>
-  void compute(size_t idx, F&& f, Args&&... args) {
-    val[idx] = f(std::forward<Args>(args)...);
+  OutPayload(std::vector<std::future<T>>& futures) {
+    const size_t size = futures.size();
+    out.reserve(size);
+    for (size_t i = 0; i < size; ++i) {
+      out.push_back(futures[i].get());
+    }
   }
 
   std::vector<T> value() const {
-    return val;
+    return out;
   }
 };
 
 // A void specialization is required to handle functions that return void
 template <>
 struct OutPayload<void> {
-  OutPayload(size_t) {}
-
-  template <typename F, typename... Args>
-  void compute(size_t, F&& f, Args&&... args) {
-    f(std::forward<Args>(args)...);
+  OutPayload(std::vector<std::future<void>>& futures) {
+    for (size_t i = 0; i < futures.size(); ++i) {
+      futures[i].wait();
+    }
   }
 
   void value() const {}
@@ -127,30 +127,25 @@ struct OutPayload<void> {
 template <typename FuncType, typename... Args>
 auto parallelMap(FuncType&& function, Args&&... inputs) {
   // Maximum input size in number of elements
-  const auto size = max(vecSize(inputs)...);
+  const auto size = max(getSize(inputs)...);
 
   using OutType =
       decltype(std::declval<FuncType&&>()(getIdxOrBroadcast(1, 0, inputs)...));
-
-  OutPayload<OutType> out(size);
-  std::vector<std::future<void>> futures(size);
+  std::vector<std::future<OutType>> futures(size);
 
   auto& threadPool = detail::ThreadPoolSingleton::getInstance();
   threadPool.setPoolSize(detail::getNumViableThreads(size));
 
   for (size_t i = 0; i < size; ++i) {
     futures[i] = threadPool.get().enqueue(
-        [size, i, &out, &function](Args&&... inputs) {
-          out.compute(i, function, getIdxOrBroadcast(size, i, inputs)...);
+        [size, i, &function](Args&&... inputs) -> OutType {
+          return function(getIdxOrBroadcast(size, i, inputs)...);
         },
         std::forward<Args>(inputs)...);
   }
 
-  // Wait on all work to be done before returning
-  for (auto& future : futures) {
-    future.wait();
-  }
-  return out.value();
+  // Waits until work is done
+  return OutPayload<OutType>(futures).value();
 }
 
 } // namespace gtn

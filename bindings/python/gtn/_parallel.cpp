@@ -37,11 +37,28 @@ PYBIND11_MODULE(_parallel, m) {
 
   m.def(
       "parallel_map",
+      [](const std::function<void(const Graph&)>& function,
+         const std::vector<Graph>& graphs) {
+        py::gil_scoped_release release;
+        return parallelMap(function, graphs);
+      });
+
+  m.def(
+      "parallel_map",
       [](const std::function<void(const Graph&, bool)>& function,
          const std::vector<Graph>& graphs,
-         std::vector<bool>& bools) {
+         const std::vector<bool>& bools) {
         py::gil_scoped_release release;
         return parallelMap(function, graphs, bools);
+      });
+
+  m.def(
+      "parallel_map",
+      [](const std::function<void(const Graph&, const Graph&)>& function,
+         const std::vector<Graph>& graphs1,
+         const std::vector<Graph>& graphs2) {
+        py::gil_scoped_release release;
+        return parallelMap(function, graphs1, graphs2);
       });
 
   m.def(
@@ -49,16 +66,8 @@ PYBIND11_MODULE(_parallel, m) {
       [](const std::function<void(const Graph&, const Graph&, bool)>& function,
          const std::vector<Graph>& graphs1,
          const std::vector<Graph>& graphs2,
-         std::vector<bool>& bools) {
+         const std::vector<bool>& bools) {
         py::gil_scoped_release release;
         parallelMap(function, graphs1, graphs2, bools);
-      });
-
-  m.def(
-      "parallel_map",
-      [](const std::function<void(int)>& function,
-         const std::vector<int>& ints) {
-        py::gil_scoped_release release;
-        parallelMap(function, ints);
       });
 }

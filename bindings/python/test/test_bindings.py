@@ -204,23 +204,6 @@ class ParallelTestCase(GTNModuleTestCase):
         for i in range(0, len(expected)):
             self.assertTrue(gtn.equal(outputs[i], expected[i]))
 
-    def test_parallel_map_custom_function(self):
-        def p_add(g1, g2):
-            g1_neg = gtn.negate(g1)
-            return gtn.add(g1, g2)
-
-        inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
-        inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
-        outputs = gtn.parallel_map(p_add, inputs1, inputs2)
-
-        expected = []
-        for g1, g2 in zip(inputs1, inputs2):
-            expected.append(p_add(g1, g2))
-
-        self.assertEqual(len(outputs), len(inputs1), len(inputs2))
-        for i in range(0, len(expected)):
-            self.assertTrue(gtn.equal(outputs[i], expected[i]))
-
     def test_parallel_map_backward(self):
         inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
         inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
