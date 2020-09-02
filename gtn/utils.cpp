@@ -243,10 +243,17 @@ void print(const Graph& g, std::ostream& out) {
     out << std::endl;
   }
 
+  auto label_to_string = [](int idx) {
+    if (idx == Graph::epsilon) {
+      return epsilonSymbol;
+    }    
+    return std::to_string(idx);
+  };
+
   // Print arcs
   for (int i = 0; i < g.numArcs(); i++) {
-    out << g.srcNode(i) << " " << g.dstNode(i) << " " << g.ilabel(i) << " "
-        << g.olabel(i) << " " << g.weight(i) << std::endl;
+    out << g.srcNode(i) << " " << g.dstNode(i) << " " << label_to_string(g.ilabel(i)) 
+        << " " << label_to_string(g.olabel(i)) << " " << g.weight(i) << std::endl;
   }
 }
 
@@ -259,11 +266,11 @@ void draw(
       << "  center = 1;\n  ranksep = \"0.4\";\n  nodesep = \"0.25\";\n";
 
   auto label_to_string = [](const auto& symbols, const auto label) {
-    if (symbols.empty()) {
-      return std::to_string(label);
-    }
     if (label == Graph::epsilon) {
       return epsilonSymbol;
+    }    
+    if (symbols.empty()) {
+      return std::to_string(label);
     }
     return symbols.at(label);
   };

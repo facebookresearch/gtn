@@ -412,7 +412,7 @@ TEST_CASE("Test Print", "[utils.print]") {
     g.addArc(1, 2, 1, 2, 2.1);
     g.addArc(2, 3, 2, 3, 3.1);
     g.addArc(3, 4, 3, 4, 4.1);
-    g.addArc(4, 5, 4, 5, 5.1);
+    g.addArc(4, 5, 4, Graph::epsilon, 5.1);
 
     std::string graph_string =
         "0 1\n"
@@ -421,7 +421,7 @@ TEST_CASE("Test Print", "[utils.print]") {
         "1 2 1 2 2.1\n"
         "2 3 2 3 3.1\n"
         "3 4 3 4 4.1\n"
-        "4 5 4 5 5.1\n";
+        "4 5 4 ε 5.1\n";
     std::stringstream out;
     print(g, out);
     CHECK(out.str() == graph_string);
