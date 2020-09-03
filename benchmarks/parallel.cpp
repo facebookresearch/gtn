@@ -1,0 +1,45 @@
+#include "benchmarks/time_utils.h"
+#include "gtn/gtn.h"
+
+using namespace gtn;
+
+void timeParallelCompose(const int B) {
+  const int N1 = 100;
+  const int N2 = 50;
+  const int A1 = 20;
+  const int A2 = 500;
+
+  std::vector<Graph> graphs1;
+  std::vector<Graph> graphs2;
+  for (int b = 0; b < B; b++) {
+    auto f = linearGraph(N1, A1);
+    auto s = linearGraph(N2, A2);
+    for (int i = 0; i < N2; i++) {
+      for (int j = 0; j < A2; j++) {
+        // add self loops so composition completes
+        s.addArc(i, i, j);
+      }
+    }
+    graphs1.push_back(f);
+    graphs2.push_back(s);
+  }
+
+  auto composeParallel = [&graphs1, &graphs2]() {
+    return parallelMap(compose, graphs1, graphs2);
+  };
+
+  TIME(composeParallel);
+}
+
+int main(int argc, char** argv) {
+  /**
+   * Usage:
+   *   `./benchmark_parallel <batch_size (default 8)>`
+   */
+
+  int B = 8; // batch size
+  if (argc > 1) {
+    B = std::stoi(argv[1]);
+  }
+  timeParallelCompose(B);
+}
