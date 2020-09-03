@@ -174,6 +174,14 @@ Comparisons
   Checks if two graphs are isomorphic. This function will be extremely slow for
   large graphs.
 
+Parallel
+--------
+
+.. py:function:: parallelMap(function, ...arguments)
+
+   Computes the result of a given function given some inputs.
+
+   The function must be a function in the ``gtn`` module.
 
 Input and Output
 ----------------

@@ -98,6 +98,7 @@ Install required dependencies:
 Install bindings:
 
 .. code-block:: shell
+
     pip install -e .
 
 Running Python Tests

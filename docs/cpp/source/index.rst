@@ -25,6 +25,7 @@ finite-state tranducers (WFSTs).
    graph
    autograd
    functions
+   parallel
    creations
    utils
 

@@ -13,11 +13,18 @@
 #include "gtn/parallel/thread_pool.h"
 
 namespace gtn {
+/**
+ * \addtogroup parallel
+ * @{
+ */
 
 namespace detail {
 
 size_t getNumViableThreads(size_t parallelismSize);
 
+/**
+ * A singleton that stores a globally-accessible thread pool for reuse.
+ */
 class ThreadPoolSingleton {
  public:
   ThreadPoolSingleton(size_t size) : size_(size), pool_(new ThreadPool(size)) {}
@@ -124,6 +131,18 @@ struct OutPayload<void> {
 
 } // namespace
 
+/**
+ * Executes a function in parallel.
+ *
+ * @param[in] function A function pointer to execute in parallel
+ * @param[in] ...inputs variadic arguments of iterable/indexable containers,
+ * such as `std::vector`s, i.e. `vector<T1>, vector<T2>,...`. Types must match
+ * the input types of function exactly, i.e. `function` must take arguments
+ * ``T1, T2,...``.
+ *
+ * @return a vector of type `T` where `T` is the type of the output type of
+ * `function`. If the given function returns `void`, the return type is `void`.
+ */
 template <typename FuncType, typename... Args>
 auto parallelMap(FuncType&& function, Args&&... inputs) {
   // Maximum input size in number of elements
@@ -147,5 +166,9 @@ auto parallelMap(FuncType&& function, Args&&... inputs) {
   // Waits until work is done
   return OutPayload<OutType>(futures).value();
 }
+
+/**
+ * @}
+ */
 
 } // namespace gtn
