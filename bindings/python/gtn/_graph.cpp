@@ -39,7 +39,12 @@ PYBIND11_MODULE(_graph, m) {
       .def("num_start", &Graph::numStart)
       .def("num_accept", &Graph::numAccept)
       .def("item", &Graph::item)
-      .def("arc_sort", &Graph::arcSort, "olabel"_a = false)
+      .def("arc_sort",
+          [](Graph& g, bool olabel) {
+            py::gil_scoped_release release;
+            g.arcSort(olabel);
+          },
+          "olabel"_a = false)
       .def("mark_arc_sorted", &Graph::markArcSorted, "olabel"_a = false)
       .def_property("calc_grad", &Graph::calcGrad, &Graph::setCalcGrad)
       .def("zero_grad", &Graph::zeroGrad)
@@ -51,6 +56,7 @@ PYBIND11_MODULE(_graph, m) {
       .def(
           "weights_to_list",
           [](Graph& g) {
+            py::gil_scoped_release release;
             return std::vector<float>(g.weights(), g.weights() + g.numArcs());
           })
       .def(
@@ -59,7 +65,6 @@ PYBIND11_MODULE(_graph, m) {
             std::vector<size_t> strides = {sizeof(float)};
             std::vector<size_t> shape = {static_cast<size_t>(g.numArcs())};
             size_t ndim = 1;
-
             return py::array(py::buffer_info(
                 g.weights(),
                 sizeof(float),
@@ -71,11 +76,13 @@ PYBIND11_MODULE(_graph, m) {
       .def(
           "set_weights",
           [](Graph& g, const std::uintptr_t b) {
+            py::gil_scoped_release release;
             g.setWeights(reinterpret_cast<float*>(b));
           })
       .def(
           "set_weights",
           [](Graph& g, const std::vector<float>& weights) {
+            py::gil_scoped_release release;
             g.setWeights(weights.data());
           })
       .def(

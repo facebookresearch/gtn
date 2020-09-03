@@ -10,12 +10,18 @@ using namespace py::literals;
 PYBIND11_MODULE(_autograd, m) {
   m.def(
       "backward",
-      py::overload_cast<Graph, bool>(&backward),
+      [](Graph g, bool retainGraph) {
+        py::gil_scoped_release release;
+        backward(g, retainGraph);
+      },
       "g"_a,
       "retain_graph"_a = false);
   m.def(
       "backward",
-      py::overload_cast<Graph, const Graph&, bool>(&backward),
+      [](Graph g, const Graph& grad, bool retainGraph) {
+        py::gil_scoped_release release;
+        backward(g, grad, retainGraph);
+      },
       "g"_a,
       "grad"_a,
       "retain_graph"_a = false);

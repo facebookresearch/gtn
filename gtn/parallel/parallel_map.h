@@ -2,7 +2,6 @@
 #pragma once
 
 #include <future>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
