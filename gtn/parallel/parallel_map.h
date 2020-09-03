@@ -3,6 +3,7 @@
 
 #include <future>
 #include <memory>
+#include <queue>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -153,17 +154,30 @@ auto parallelMap(FuncType&& function, Args&&... inputs) {
 
   auto& threadPool = detail::ThreadPoolSingleton::getInstance();
   threadPool.setPoolSize(detail::getNumViableThreads(size));
+  std::queue<std::exception_ptr> eQueue;
+  std::mutex eMutex;
 
   for (size_t i = 0; i < size; ++i) {
     futures[i] = threadPool.get().enqueue(
-        [size, i, &function](Args&&... inputs) -> OutType {
-          return function(getIdxOrBroadcast(size, i, inputs)...);
+        [size, i, &function, &eMutex, &eQueue](Args&&... inputs) -> OutType {
+          try {
+            return function(getIdxOrBroadcast(size, i, inputs)...);
+          } catch (...) {
+            std::unique_lock<std::mutex> m(eMutex);
+            eQueue.push(std::current_exception());
+            return OutType();
+          }
         },
         std::forward<Args>(inputs)...);
   }
 
   // Waits until work is done
-  return OutPayload<OutType>(futures).value();
+  auto out = OutPayload<OutType>(futures);
+  while (!eQueue.empty()) {
+    std::rethrow_exception(eQueue.front());
+    eQueue.pop();
+  }
+  return out.value();
 }
 
 /**

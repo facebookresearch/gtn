@@ -223,3 +223,18 @@ TEST_CASE("Test ParallelMap Backward", "[parallel.parallelmap.backward]") {
     CHECK(equal(inputs2[i].grad(), inputs2Dup[i].grad()));
   }
 }
+
+TEST_CASE("Test ParallelMap Throws", "[parallel.parallelmap.onearg]") {
+  const int B = 4;
+
+  std::vector<Graph> inputs;
+  for (size_t i = 0; i < B; ++i) {
+    inputs.push_back(linearGraph(2, 1));
+  }
+
+  // Throws - inputs contains graph with more than one arc
+  REQUIRE_THROWS_MATCHES(
+      parallelMap(negate, inputs),
+      std::logic_error,
+      Catch::Message("[gtn::negate] input must have only one arc"));
+}
