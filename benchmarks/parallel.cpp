@@ -29,6 +29,15 @@ void timeParallelCompose(const int B) {
   };
 
   TIME(composeParallel);
+
+  auto out = parallelMap(compose, graphs1, graphs2);
+  std::vector<bool> retainGraph({true});
+  auto backwardParallel = [&out, &retainGraph]() {
+    parallelMap(
+        static_cast<void (*)(Graph, bool)>(&backward), out, retainGraph);
+  };
+
+  TIME(backwardParallel);
 }
 
 int main(int argc, char** argv) {

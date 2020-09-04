@@ -13,33 +13,40 @@ def time_compose():
     for g in graphs2:
         for i in range(N2):
             for j in range(A2):
-              g.add_arc(i, i, j);
+                g.add_arc(i, i, j)
+
     def fwd():
-        gtn.parallel_map(gtn.compose, graphs1, graphs2)
+        gtn.compose(graphs1, graphs2)
+
     time_func(fwd, 20, "parallel compose Fwd")
 
-    out = gtn.parallel_map(gtn.compose, graphs1, graphs2)
+    out = gtn.compose(graphs1, graphs2)
 
     def bwd():
-        gtn.parallel_map(gtn.backward, out, [True])
+        gtn.backward(out, [True])
+
     time_func(bwd, 20, "parallel compose bwd")
 
 
 def time_forward_score():
     graphs = [gtn.linear_graph(1000, 100) for _ in range(B)]
+
     def fwd():
-        gtn.parallel_map(gtn.forward_score, graphs)
+        gtn.forward_score(graphs)
+
     time_func(fwd, 100, "parallel forward_score Fwd")
 
-    out = gtn.parallel_map(gtn.forward_score, graphs)
+    out = gtn.forward_score(graphs)
 
     def bwd():
-        gtn.parallel_map(gtn.backward, out, [True])
+        gtn.backward(out, [True])
+
     time_func(bwd, 100, "parallel forward_score bwd")
 
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         B = int(sys.argv[1])
     else:
