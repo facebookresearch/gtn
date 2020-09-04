@@ -162,9 +162,9 @@ class FunctionsTestCase(GTNModuleTestCase):
 
 
 class ParallelTestCase(GTNModuleTestCase):
-    def test_parallel_map_one_arg(self):
+    def test_parallel_one_arg(self):
         inputs = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
-        outputs = gtn.parallel_map(gtn.negate, inputs)
+        outputs = gtn.negate(inputs)
 
         expected = []
         for g in inputs:
@@ -174,10 +174,10 @@ class ParallelTestCase(GTNModuleTestCase):
         for i in range(0, len(expected)):
             self.assertTrue(gtn.equal(outputs[i], expected[i]))
 
-    def test_parallel_map_two_arg(self):
+    def test_parallel_two_arg(self):
         inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
         inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
-        outputs = gtn.parallel_map(gtn.add, inputs1, inputs2)
+        outputs = gtn.add(inputs1, inputs2)
 
         expected = []
         for g1, g2 in zip(inputs1, inputs2):
@@ -187,14 +187,14 @@ class ParallelTestCase(GTNModuleTestCase):
         for i in range(0, len(expected)):
             self.assertTrue(gtn.equal(outputs[i], expected[i]))
 
-    def test_parallel_map_vector_arg(self):
+    def test_parallel_vector_arg(self):
         inputList = [
             gtn.scalar_graph(1.0),
             gtn.scalar_graph(2.0),
             gtn.scalar_graph(3.0),
         ]
         inputs = [inputList, inputList, inputList]
-        outputs = gtn.parallel_map(gtn.concat, inputs)
+        outputs = gtn.concat(inputs)
 
         expected = []
         for gList in inputs:
@@ -204,35 +204,29 @@ class ParallelTestCase(GTNModuleTestCase):
         for i in range(0, len(expected)):
             self.assertTrue(gtn.equal(outputs[i], expected[i]))
 
-    @unittest.skip("Enable when pmap backward is fixed.")
     def test_backward_calls_once(self):
         g1 = gtn.scalar_graph(1)
         g2 = gtn.scalar_graph(1)
         gout = gtn.add(g1, g2)
-        gtn.parallel_map(gtn.backward, [gout])
+        gtn.backward([gout])
         pmap_grad = gout.grad()
         gout = gtn.add(g1, g2)
         gtn.backward(gout)
         grad = gout.grad()
         self.assertTrue(gtn.equal(pmap_grad, grad))
 
-    def test_parallel_map_backward(self):
+    def test_parallel_backward(self):
         inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
         inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
 
-        # Test overloads
-        # TODO: uncomment when overload resolution works
-        # outputs = gtn.parallel_map(gtn.add, inputs1, inputs2)
-        # gtn.parallel_map(gtn.backward, outputs)
-        outputs = gtn.parallel_map(gtn.add, inputs1, inputs2)
-        gtn.parallel_map(gtn.backward, outputs, [False])
-
+        outputs = gtn.add(inputs1, inputs2)
+        gtn.backward(outputs)
         # Test gradients
         inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
         inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
-        outputs = gtn.parallel_map(gtn.add, inputs1, inputs2)
+        outputs = gtn.add(inputs1, inputs2)
         gradIn = gtn.scalar_graph(5.0)
-        gtn.parallel_map(gtn.backward, outputs, [gradIn], [False])
+        gtn.backward(outputs, [gradIn], [False])
 
         inputs1Dup = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
         inputs2Dup = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]

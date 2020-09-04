@@ -100,7 +100,6 @@ setup(
         CMakeExtension("gtn._autograd"),
         CMakeExtension("gtn._utils"),
         CMakeExtension("gtn._creations"),
-        CMakeExtension("gtn._parallel"),
         CMakeExtension("gtn._functions"),
     ],
     cmdclass={"build_ext": CMakeBuild},
