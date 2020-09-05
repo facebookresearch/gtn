@@ -29,7 +29,7 @@ int main() {
       "2 2 0\n"
       "2 3 20\n"
       "3 3 20\n");
-  Graph fal_graph = load(fal_str);
+  Graph fal_graph = loadTxt(fal_str);
   // print(fal_graph);
 
   // Transition graph for the alphabet

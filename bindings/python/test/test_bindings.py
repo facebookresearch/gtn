@@ -108,9 +108,13 @@ class GraphTestCase(GTNModuleTestCase):
         self.assertTrue(gtn.isomorphic(g1, g2))
 
     def test_save_load(self):
-        with tempfile.NamedTemporaryFile(mode="w") as fid:
-            fid.write(self.g.__repr__().strip())
-            fid.flush()
+        with tempfile.NamedTemporaryFile(mode="r") as fid:
+            gtn.savetxt(fid.name, self.g)
+            loaded = gtn.loadtxt(fid.name)
+            self.assertTrue(gtn.isomorphic(self.g, loaded))
+
+        with tempfile.NamedTemporaryFile(mode="r") as fid:
+            gtn.save(fid.name, self.g)
             loaded = gtn.load(fid.name)
             self.assertTrue(gtn.isomorphic(self.g, loaded))
 

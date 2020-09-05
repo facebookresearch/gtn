@@ -26,4 +26,11 @@ PYBIND11_MODULE(_utils, m) {
       "osymbols"_a = SymbolMap());
 
   m.def("load", py::overload_cast<const std::string&>(&load), "file_name"_a);
+  
+  m.def("save", py::overload_cast<const std::string&, const Graph&>(&save), "file_name"_a, "graph"_a);
+  
+  m.def("savetxt", py::overload_cast<const std::string&, const Graph&>(&saveTxt), "file_name"_a, "graph"_a);
+  
+  m.def("loadtxt", py::overload_cast<const std::string&>(&loadTxt), "file_name"_a);
+
 }

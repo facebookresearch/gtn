@@ -15,7 +15,7 @@ void asgMulti() {
 
   // ASG force align graph for "the"
   Graph the =
-      load(std::stringstream("0\n"
+      loadTxt(std::stringstream("0\n"
                              "3\n"
                              "0 0 2\n"
                              "0 1 2\n"
@@ -72,7 +72,7 @@ void asgSubLetter() {
 
   // ASG force align graph for "cat"
   Graph cat =
-      load(std::stringstream("0\n"
+      loadTxt(std::stringstream("0\n"
                              "6\n"
                              "0 1 3\n"
                              "1 1 4\n"
@@ -124,13 +124,13 @@ void ctcForceEps() {
       "6 7 0\n"
       "7 7 0\n";
 
-  Graph cat = load(std::stringstream("1\n6 7\n" + base + "4 6 3\n"));
+  Graph cat = loadTxt(std::stringstream("1\n6 7\n" + base + "4 6 3\n"));
   draw(cat, "ctc_cat.dot", symbols);
 
-  cat = load(std::stringstream("0\n7\n0 1 0\n" + base + "4 6 3\n"));
+  cat = loadTxt(std::stringstream("0\n7\n0 1 0\n" + base + "4 6 3\n"));
   draw(cat, "ctc_cat_force_start_end.dot", symbols);
 
-  cat = load(std::stringstream("1\n6 7\n" + base));
+  cat = loadTxt(std::stringstream("1\n6 7\n" + base));
   draw(cat, "ctc_cat_force_mid.dot", symbols);
 }
 

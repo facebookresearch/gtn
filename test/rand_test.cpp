@@ -59,7 +59,7 @@ TEST_CASE("Test sample", "[rand.sample]") {
 
     auto path = sample(g, 1);
     auto expected =
-        load(std::stringstream("0\n"
+        loadTxt(std::stringstream("0\n"
                                "1\n"
                                "0 1 1\n"));
     CHECK(equal(expected, path));

@@ -10,6 +10,18 @@
 
 using namespace gtn;
 
+namespace {
+std::string getTmpFileName() {
+  // Get user unique filename
+  char* user = std::getenv("USER");
+  std::string userstr = "unknown";
+  if (user != nullptr) {
+    userstr = std::string(user);
+  }
+  return std::string("/tmp/test_") + userstr + std::string(".graph");
+}
+} // namespace
+
 TEST_CASE("Test Graph equality", "[utils.equal]") {
   {
     // Empty graph is equal to itself
@@ -276,7 +288,7 @@ TEST_CASE("Test Graph isomorphic", "[utils.isomorphic]") {
   }
 }
 
-TEST_CASE("Test load", "[utils.load]") {
+TEST_CASE("Test loadTxt", "[utils.loadTxt]") {
   {
     Graph g1;
     g1.addNode(true, true);
@@ -292,44 +304,37 @@ TEST_CASE("Test load", "[utils.load]") {
         "0 0 1 1 0\n"
         "0 2 1 1 1.1\n"
         "2 1 2 2 2.1\n";
-    auto g2 = load(std::stringstream(graph_string));
+    auto g2 = loadTxt(std::stringstream(graph_string));
     CHECK(equal(g1, g2));
     CHECK(isomorphic(g1, g2));
 
-    // Get user unique filename
-    char* user = std::getenv("USER");
-    std::string userstr = "unknown";
-    if (user != nullptr) {
-      userstr = std::string(user);
-    }
-    auto fn = std::string("/tmp/test_") + userstr + std::string(".graph");
+    auto fn = getTmpFileName();
 
     // Write the test file
     std::ofstream outf;
     outf.open(fn);
     outf << graph_string;
     outf.close();
-
-    auto g3 = load(fn);
+    auto g3 = loadTxt(fn);
     CHECK(equal(g1, g3));
   }
 
   // Empty graph doesn't load
   {
     std::stringstream in("");
-    CHECK_THROWS(load(in));
+    CHECK_THROWS(loadTxt(in));
   }
 
   // Graph without accept nodes doesn't load
   {
     std::stringstream in("1\n");
-    CHECK_THROWS(load(in));
+    CHECK_THROWS(loadTxt(in));
   }
 
   // Graph with repeat start nodes doesn't load
   {
     std::stringstream in("1 0 0\n0 1");
-    CHECK_THROWS(load(in));
+    CHECK_THROWS(loadTxt(in));
   }
 
   // Graph loads if the start and accept nodes are specified
@@ -338,13 +343,13 @@ TEST_CASE("Test load", "[utils.load]") {
     Graph g;
     g.addNode(true);
     g.addNode(false, true);
-    CHECK(equal(g, load(in)));
+    CHECK(equal(g, loadTxt(in)));
   }
 
   // Graph doesn't load if arc incorrect
   {
-    CHECK_THROWS(load(std::stringstream("0\n1\n0 2\n")));
-    CHECK_THROWS(load(std::stringstream("0\n1\n0 1 2 3 4 5\n")));
+    CHECK_THROWS(loadTxt(std::stringstream("0\n1\n0 2\n")));
+    CHECK_THROWS(loadTxt(std::stringstream("0\n1\n0 1 2 3 4 5\n")));
   }
 
   // Transducer loads
@@ -363,13 +368,13 @@ TEST_CASE("Test load", "[utils.load]") {
         "0 0 1\n"
         "0 2 1 2 1.1\n"
         "2 1 2 3 2.1\n";
-    auto g2 = load(std::stringstream(graph_string));
+    auto g2 = loadTxt(std::stringstream(graph_string));
     CHECK(equal(g1, g2));
     CHECK(isomorphic(g1, g2));
   }
 }
 
-TEST_CASE("Test Print", "[utils.print]") {
+TEST_CASE("Test SaveTxt", "[utils.saveTxt]") {
   {
     // Acceptor test
     Graph g;
@@ -395,7 +400,7 @@ TEST_CASE("Test Print", "[utils.print]") {
         "3 4 3 3 4.1\n"
         "4 5 4 4 5.1\n";
     std::stringstream out;
-    print(g, out);
+    saveTxt(out, g);
     CHECK(out.str() == graph_string);
   }
   {
@@ -421,9 +426,50 @@ TEST_CASE("Test Print", "[utils.print]") {
         "1 2 1 2 2.1\n"
         "2 3 2 3 3.1\n"
         "3 4 3 4 4.1\n"
-        "4 5 4 ε 5.1\n";
+        "4 5 4 -1 5.1\n";
     std::stringstream out;
-    print(g, out);
+    saveTxt(out, g);
     CHECK(out.str() == graph_string);
+  }
+}
+
+TEST_CASE("Test loadsave", "[utils.load, utils.save]") {
+  auto fn = getTmpFileName();
+  {
+    Graph g;
+    std::stringstream stream;
+    save(stream, g);
+    std::cout << stream.str();
+    Graph g2 = load(stream);
+    CHECK(equal(g, g2));
+
+    save(fn, g);
+    Graph g3 = load(fn);
+    CHECK(equal(g, g3));
+  }
+  {
+    Graph g;
+    g.addNode(true);
+    g.addNode(true);
+    g.addNode();
+    g.addNode();
+    g.addNode(false, true);
+    g.addNode(false, true);
+
+    g.addArc(0, 1, 0, 1, 1.1);
+    g.addArc(1, 2, 1, 2, 2.1);
+    g.addArc(2, 3, 2, 3, 3.1);
+    g.addArc(3, 4, 3, 4, 4.1);
+    g.addArc(4, 5, 4, Graph::epsilon, 5.1);
+    std::stringstream stream;
+    save(stream, g);
+    Graph g2 = load(stream);
+    CHECK(equal(g, g2));
+    CHECK(isomorphic(g, g2));
+
+    save(fn, g);
+    Graph g3 = load(fn);
+    CHECK(equal(g, g3));
+    CHECK(isomorphic(g, g3));
   }
 }

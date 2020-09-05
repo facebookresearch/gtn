@@ -93,7 +93,7 @@ PYBIND11_MODULE(_graph, m) {
       .def("labels_to_list", &Graph::labelsToVector, "ilabel"_a = true)
       .def("__repr__", [](const Graph& a) {
         std::ostringstream ss;
-        print(a, ss);
+        ss << a;
         return ss.str();
       });
   m.attr("epsilon") = Graph::epsilon;

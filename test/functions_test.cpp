@@ -30,7 +30,7 @@ TEST_CASE("Test Scalar Ops", "[functions.scalars]") {
 
 TEST_CASE("Test Project/clone", "[functions.clone]") {
   Graph graph =
-      load(std::stringstream("0 1\n"
+      loadTxt(std::stringstream("0 1\n"
                              "3 4\n"
                              "0 1 0 2 2\n"
                              "0 2 1 3 1\n"
@@ -47,7 +47,7 @@ TEST_CASE("Test Project/clone", "[functions.clone]") {
 
   // Test projecting input
   Graph inputExpected =
-      load(std::stringstream("0 1\n"
+      loadTxt(std::stringstream("0 1\n"
                              "3 4\n"
                              "0 1 0 0 2\n"
                              "0 2 1 1 1\n"
@@ -61,7 +61,7 @@ TEST_CASE("Test Project/clone", "[functions.clone]") {
 
   // Test projecting output
   Graph outputExpected =
-      load(std::stringstream("0 1\n"
+      loadTxt(std::stringstream("0 1\n"
                              "3 4\n"
                              "0 1 2 2 2\n"
                              "0 2 3 3 1\n"
@@ -126,7 +126,7 @@ TEST_CASE("Test Composition", "[functions.compose]") {
         "0 1 0\n"
         "1 1 0\n"
         "1 2 1\n");
-    Graph expected = load(in);
+    Graph expected = loadTxt(in);
     CHECK(isomorphic(compose(g1, g2), expected));
     CHECK(isomorphic(intersect(g1, g2), expected));
 
@@ -162,7 +162,7 @@ TEST_CASE("Test Composition", "[functions.compose]") {
         "1 0 0\n"
         "1 2 1\n"
         "2 1 1\n");
-    Graph expected = load(in);
+    Graph expected = loadTxt(in);
     CHECK(isomorphic(compose(g1, g2), expected));
     CHECK(isomorphic(intersect(g1, g2), expected));
 
@@ -207,7 +207,7 @@ TEST_CASE("Test Composition", "[functions.compose]") {
         "4 5 1 1 5.5\n"
         "3 6 1 1 2.5\n"
         "5 6 1 1 5.5\n");
-    Graph expected = load(in);
+    Graph expected = loadTxt(in);
     CHECK(isomorphic(compose(g1, g2), expected));
     CHECK(isomorphic(intersect(g1, g2), expected));
 
@@ -376,7 +376,7 @@ TEST_CASE("Test Forward", "[functions.forwardScore]") {
         "1 4 0 0 2\n"
         "2 4 1 1 3\n"
         "3 4 0 0 2\n");
-    Graph g = load(in);
+    Graph g = loadTxt(in);
     CHECK(forwardScore(g).item() == Approx(8.36931));
   }
 }
@@ -440,7 +440,7 @@ TEST_CASE("Test Viterbi Score", "[functions.viterbiScore]") {
         "1 4 0 0 2\n"
         "2 4 1 1 3\n"
         "3 4 0 0 2\n");
-    Graph g = load(in);
+    Graph g = loadTxt(in);
     CHECK(viterbiScore(g).item() == 7.0f);
   }
 }
@@ -549,7 +549,7 @@ TEST_CASE("Test Viterbi Path", "[functions.viterbiPath]") {
         "1 4 0 0 2\n"
         "2 4 1 1 3\n"
         "3 4 0 0 2\n");
-    Graph g = load(in);
+    Graph g = loadTxt(in);
 
     // There are three options for the best path, the
     // viterbiPath may return any of them.

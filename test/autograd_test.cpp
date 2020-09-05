@@ -329,7 +329,7 @@ TEST_CASE("Test forwardScore Grad", "[functions.forwardScore (grad)]") {
         "1 4 0 0 2\n"
         "2 4 1 1 3\n"
         "3 4 0 0 2\n");
-    Graph g = load(in);
+    Graph g = loadTxt(in);
     backward(forwardScore(g));
     CHECK(numericalGradCheck(forwardScore, g, 1e-3, 1e-3));
   }
@@ -401,10 +401,12 @@ TEST_CASE("Test viterbiScore Grad", "[functions.viterbiScore (grad)]") {
         "1 4 0 0 2\n"
         "2 4 1 1 3\n"
         "3 4 0 0 2\n");
-    Graph g = load(in);
+    Graph g = loadTxt(in);
     backward(viterbiScore(g));
-    std::vector<float> expected = {1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
-    CHECK(gradsToVec(g) == expected);
+    // two possible paths with same viterbi score
+    std::vector<float> expected1 = {1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
+    std::vector<float> expected2 = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0};
+    CHECK(((gradsToVec(g) == expected1) || (gradsToVec(g) == expected2)));
   }
 }
 
@@ -429,7 +431,7 @@ TEST_CASE("Test viterbiPath Grad", "[functions.viterbiPath (grad)]") {
         "1 4 0 0 2\n"
         "2 4 1 1 3\n"
         "3 4 0 0 2\n");
-    Graph g = load(in);
+    Graph g = loadTxt(in);
     backward(viterbiPath(g));
     std::vector<float> expected = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0};
     CHECK(gradsToVec(g) == expected);

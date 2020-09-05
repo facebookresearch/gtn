@@ -150,7 +150,7 @@ TEST_CASE("Test id", "[Graph::id]") {
 
 TEST_CASE("Test copy", "[Graph::deepCopy]") {
   Graph graph =
-      load(std::stringstream("0 1\n"
+      loadTxt(std::stringstream("0 1\n"
                              "3 4\n"
                              "0 1 0 2 2\n"
                              "0 2 1 3 1\n"

@@ -33,7 +33,7 @@ void simpleAcceptors() {
   graph.addArc(2, 1, 0, 0, 2);
 
   // Print graph to std::out
-  print(graph);
+  std::cout << graph;
 
   // Draw the graph in dot format to file
   draw(graph, "simple_fsa.dot", symbols);
@@ -54,7 +54,7 @@ void simpleAcceptors() {
       "0 2 1 1\n" // olabel = 1, weight = 0.0
       "2 1 0 0 2\n"); // olabel = 0, weight = 2.0
 
-  Graph other_graph = load(in);
+  Graph other_graph = loadTxt(in);
 
   // Exact match the two graphs, the node indices,
   // arc weights and arc labels should all be identical.
@@ -284,7 +284,7 @@ void differentiableAcceptors() {
       "0 1 1\n"
       "1 2 0\n"
       "1 2 1");
-  Graph g1 = load(in);
+  Graph g1 = loadTxt(in);
   // To disable gradient computation for and through a graph, set it's
   // calcGrad value to false:
   Graph g2(false);

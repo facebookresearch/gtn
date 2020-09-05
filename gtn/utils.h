@@ -27,12 +27,43 @@ bool isomorphic(const Graph& g1, const Graph& g2);
  *  @{
  */
 
+/** Save a graph to a file in binary format. */
+void save(const std::string& fileName, const Graph& g);
+
+/** Save a graph to an output stream in binary format. */
+void save(std::ostream& out, const Graph& g);
+
+/** Load a graph from a file in binary format. */
+Graph load(const std::string& fileName);
+
+/** Load a graph from an input stream in binary format. */
+Graph load(std::istream& in);
+
+/** Load a graph from an input stream in binary format. */
+Graph load(std::istream&& in);
+
 /**
- * Load a graph from a file.
+ * Save a graph to a file in txt format.
+ *
+ * The first line will be a space separated list of the start nodes
+ * (`Graph::start`) and the second line will be a space separated list of
+ * accepting nodes (`Graph::accept`).The following lines contain the arcs in
+ * the format:
+ * ```
+ * srcNode dstNode ilabel olabel weight
+ * ```
+ */
+void saveTxt(const std::string& fileName, const Graph& g);
+
+/** Save a graph to an output stream in txt format. */
+void saveTxt(std::ostream& out, const Graph& g);
+
+/**
+ * Load a graph from a file in txt format.
  *
  * The expected format is the first two lines contain a list of space separated
- * start and accept nodes respectively. The following lines contain the arcs in
- * the format:
+ * start and accept nodes respectively. The following lines should contain the
+ * arcs in the format:
  *   ```
  *   srcNode dstNode ilabel [olabel=ilabel] [weight=0.0]
  *   ```
@@ -60,28 +91,21 @@ bool isomorphic(const Graph& g1, const Graph& g2);
  * ```
  * is a two node graph with an arc from node 0 to node 1 with input label 1,
  * output label 2, and a weight of 3.0.
+ *
+ * The returned Graph will contain "maxNodeIdx" nodes where "maxNodeIdx" is the
+ * largest index of a node in the file regardless of if there are arcs for every
+ * node.
  */
-Graph load(const std::string& fileName);
+Graph loadTxt(const std::string& fileName);
 
-/** Load a graph from an input stream. */
-Graph load(std::istream& in);
+/** Load a graph from an input stream in txt format. */
+Graph loadTxt(std::istream& in);
 
-/** Load a graph from an input stream. */
-Graph load(std::istream&& in);
+/** Load a graph from an input stream in txt format. */
+Graph loadTxt(std::istream&& in);
 
-/**
- * Prints a graph to stdout as a list of arcs:
- * ```
- * srcNode dstNode ilabel olabel weight
- * ```
- * the first line will be a space separated list of the start nodes
- * (`Graph::start`) and the second line will be a space separated list of
- * accepting nodes (`Graph::accept`).
- */
-void print(const Graph& graph);
-
-/** Prints a graph to an output stream. */
-void print(const Graph& graph, std::ostream& out);
+/** overload `<<` operator for working with `std::cout` on `Graph` */
+std::ostream& operator<<(std::ostream& out, const Graph& g);
 
 /**
  * User defined map of integer to arc label strings for use with e.g.
@@ -121,4 +145,5 @@ void draw(
     const SymbolMap& osymbols = SymbolMap());
 
 /** @}*/
+
 } // namespace gtn

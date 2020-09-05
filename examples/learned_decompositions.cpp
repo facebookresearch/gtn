@@ -40,7 +40,7 @@ void asgWithTransducers() {
   // The "the" graph can be simplified to just accepting the token sequence:
   //   ['t', 'h', 'e']
   auto the =
-      load(std::stringstream("0\n"
+      loadTxt(std::stringstream("0\n"
                              "3\n"
                              "0 1 2\n"
                              "1 2 1\n"
@@ -104,7 +104,7 @@ void ctcWithTransducers() {
   // The "the" graph can be simplified to just accepting the token sequence:
   //   ['t', 'h', 'e']
   Graph the =
-      load(std::stringstream("0\n"
+      loadTxt(std::stringstream("0\n"
                              "3\n"
                              "0 1 2\n"
                              "1 2 1\n"
@@ -143,7 +143,7 @@ void wordDecompositions() {
   // allowed and is the only change needed (other than augmenting the token
   // set).
   auto the =
-      load(std::stringstream("0\n"
+      loadTxt(std::stringstream("0\n"
                              "3\n"
                              "0 1 2 -1\n"
                              "0 2 3 -1\n"
