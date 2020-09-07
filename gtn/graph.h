@@ -285,7 +285,9 @@ class Graph {
    * Set the gradient function of a graph. Intended for use by the autograd.
    */
   void setGradFunc(GradFunc gradFunc) {
-    sharedGrad_->gradFunc = gradFunc;
+    if (calcGrad()) {
+      sharedGrad_->gradFunc = gradFunc;
+    }
   }
 
   /**

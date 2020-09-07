@@ -223,6 +223,12 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
     // this should be a no-op
     g.addGrad({0, 0, 0});
     CHECK_THROWS(g.grad());
+
+    // this should be a no-op
+    g.setGradFunc([](std::vector<Graph>&, Graph&) {
+        return Graph{}; }
+    );
+    CHECK(g.gradFunc() == nullptr);
   }
 
   {
