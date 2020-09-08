@@ -178,7 +178,7 @@ Comparisons
 Parallel	
 --------	
 
-.. py:function:: parallelMap(function, int_list)
+.. py:function:: parallel_for(function, int_list)
 
    Computes the result of a given function that takes an int argument in
    parallel given some list of ints over which to process.

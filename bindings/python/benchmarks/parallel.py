@@ -56,13 +56,15 @@ def time_indexed_func():
             for j in range(A2):
                 g.add_arc(i, i, j)
 
+    out = [None] * B
+
     def process(b):
-        return gtn.forward_score(gtn.compose(graphs1[b], graphs2[b]))
+        out[b] = gtn.forward_score(gtn.compose(graphs1[b], graphs2[b]))
 
     def indexed_func():
-        gtn.parallel_map(process, range(B))
+        gtn.parallel_for(process, range(B))
 
-    time_func(indexed_func, 100, "indexed python func")
+    time_func(indexed_func, 100, "parallel indexed python func")
 
 
 if __name__ == "__main__":

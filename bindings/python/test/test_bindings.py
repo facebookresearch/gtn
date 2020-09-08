@@ -244,6 +244,28 @@ class ParallelTestCase(GTNModuleTestCase):
             self.assertTrue(gtn.equal(inputs1[i].grad(), inputs1Dup[i].grad()))
             self.assertTrue(gtn.equal(inputs2[i].grad(), inputs2Dup[i].grad()))
 
+    def test_parallel_func(self):
+        B = 3
+        inputs1 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+        inputs2 = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
+
+        out = [None] * B
+
+        def process(b):
+            out[b] = gtn.add(gtn.add(inputs1[b], inputs1[b]), gtn.negate(inputs2[b]))
+
+        gtn.parallel_for(process, range(B))
+
+        expected = []
+        for b in range(B):
+            expected.append(
+                gtn.add(gtn.add(inputs1[b], inputs1[b]), gtn.negate(inputs2[b]))
+            )
+
+        self.assertEqual(len(out), len(expected))
+        for i in range(len(expected)):
+            self.assertTrue(gtn.equal(out[i], expected[i]))
+
 
 class AutogradTestCase(GTNModuleTestCase):
     def test_calc_grad(self):

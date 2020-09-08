@@ -11,10 +11,10 @@ using namespace py::literals;
 
 PYBIND11_MODULE(_parallel, m) {
   m.def(
-      "parallel_map",
+      "parallel_for",
       [](const std::function<void(int)>& function,
-         const std::vector<int>& ints) {
+         const std::vector<int>& ints) -> void {
         py::gil_scoped_release release;
-        return parallelMap(function, ints);
+        parallelMap(function, ints);
       });
 }
