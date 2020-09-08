@@ -44,6 +44,27 @@ def time_forward_score():
     time_func(bwd, 100, "parallel forward_score bwd")
 
 
+def time_indexed_func():
+    N1 = 100
+    N2 = 50
+    A1 = 20
+    A2 = 500
+    graphs1 = [gtn.linear_graph(N1, A1) for _ in range(B)]
+    graphs2 = [gtn.linear_graph(N2, A2) for _ in range(B)]
+    for g in graphs2:
+        for i in range(N2):
+            for j in range(A2):
+                g.add_arc(i, i, j)
+
+    def process(b):
+        return gtn.forward_score(gtn.compose(graphs1[b], graphs2[b]))
+
+    def indexed_func():
+        gtn.parallel_map(process, range(B))
+
+    time_func(indexed_func, 100, "indexed python func")
+
+
 if __name__ == "__main__":
     import sys
 
@@ -53,3 +74,4 @@ if __name__ == "__main__":
         B = 1
     time_compose()
     time_forward_score()
+    time_indexed_func()

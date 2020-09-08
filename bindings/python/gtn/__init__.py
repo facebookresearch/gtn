@@ -10,7 +10,7 @@ from ._functions import *
 from ._autograd import *
 from ._utils import *
 from ._creations import *
-
+from ._parallel import *
 
 def draw(graph, file_name, isymbols={}, osymbols={}):
     ext = os.path.splitext(file_name)[1]

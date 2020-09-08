@@ -101,6 +101,7 @@ setup(
         CMakeExtension("gtn._utils"),
         CMakeExtension("gtn._creations"),
         CMakeExtension("gtn._functions"),
+        CMakeExtension("gtn._parallel"),
     ],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,

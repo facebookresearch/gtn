@@ -175,6 +175,17 @@ Comparisons
   large graphs.
 
 
+Parallel	
+--------	
+
+.. py:function:: parallelMap(function, int_list)
+
+   Computes the result of a given function that takes an int argument in
+   parallel given some list of ints over which to process.
+
+   Returns nothing, even if the passed function has a return value.
+
+
 Input and Output
 ----------------
 
