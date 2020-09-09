@@ -15,6 +15,8 @@ struct hashIntPair {
 
 using NodeMap = std::unordered_map<std::pair<int, int>, int, hashIntPair>;
 static const std::string epsilonSymbol = "ε";
+constexpr const int kNumMaxSummary = 10;
+constexpr const int kSummaryThreshold = 20;
 
 std::vector<std::string> split(const std::string& input) {
   std::vector<std::string> result;
@@ -201,9 +203,16 @@ Graph load(std::istream& in) {
   return g;
 }
 
-void saveTxt(std::ostream& out, const Graph& g) {
+void saveTxtImpl(std::ostream& out, const Graph& g, bool limitOutput) {
+  // `limitOutput` param can be used to output only a brief summary rather than
+  // full representation of the graph.
+
   // save start nodes
   for (int i = 0; i < g.numStart(); ++i) {
+    if (limitOutput && i >= kNumMaxSummary) {
+      out << " ...";
+      break;
+    }
     if (i > 0) {
       out << " ";
     }
@@ -213,6 +222,10 @@ void saveTxt(std::ostream& out, const Graph& g) {
 
   // save accept nodes
   for (int i = 0; i < g.numAccept(); ++i) {
+    if (limitOutput && i >= kNumMaxSummary) {
+      out << " ...";
+      break;
+    }
     if (i > 0) {
       out << " ";
     }
@@ -222,9 +235,17 @@ void saveTxt(std::ostream& out, const Graph& g) {
 
   // save arcs
   for (int i = 0; i < g.numArcs(); i++) {
+    if (limitOutput && i >= kNumMaxSummary) {
+      out << "...\n";
+      break;
+    }
     out << g.srcNode(i) << " " << g.dstNode(i) << " " << g.ilabel(i) << " "
         << g.olabel(i) << " " << g.weight(i) << "\n";
   }
+}
+
+void saveTxt(std::ostream& out, const Graph& g) {
+  saveTxtImpl(out, g, false /* limitOutput */);
 }
 
 Graph loadTxt(std::istream& in) {
@@ -320,7 +341,9 @@ Graph load(std::istream&& in) {
   return load(in);
 }
 
-void saveTxt(const std::string& fileName, const Graph& g) {
+void saveTxt(
+    const std::string& fileName,
+    const Graph& g) {
   std::ofstream out(fileName);
   saveTxt(out, g);
 }
@@ -339,7 +362,7 @@ Graph loadTxt(std::istream&& in) {
 }
 
 std::ostream& operator<<(std::ostream& out, const Graph& g) {
-  saveTxt(out, g);
+  saveTxtImpl(out, g, std::max(g.numArcs(), g.numNodes()) > kSummaryThreshold);
   return out;
 }
 

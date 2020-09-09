@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 #include "catch.hpp"
 
@@ -430,6 +432,28 @@ TEST_CASE("Test SaveTxt", "[utils.saveTxt]") {
     std::stringstream out;
     saveTxt(out, g);
     CHECK(out.str() == graph_string);
+  }
+
+  {
+    // Save summary
+    Graph g;
+    for (int i = 0; i < 10; ++i) {
+      g.addNode(true, true);
+    }
+    for (int i = 0; i < 10; ++i) {
+      for (int j = 0; j < 10; ++j) {
+        g.addArc(i, j, i, j, i*j);
+      }
+    }
+    std::stringstream out;
+    out << g;
+    std::string line;
+    int numLines = 0;
+    while(std::getline(out, line)) {
+      CHECK(line.size() < 20);
+      ++numLines;
+    }
+    CHECK(numLines < 20);
   }
 }
 

@@ -52,6 +52,7 @@ Graph load(std::istream&& in);
  * ```
  * srcNode dstNode ilabel olabel weight
  * ```
+ * 
  */
 void saveTxt(const std::string& fileName, const Graph& g);
 
