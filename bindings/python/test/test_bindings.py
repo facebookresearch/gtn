@@ -125,9 +125,6 @@ class GraphTestCase(GTNModuleTestCase):
         self.assertEqual(g.num_arcs(), 1)
         self.assertEqual(g.num_nodes(), 2)
 
-        g_epsilon = gtn.scalar_graph()
-        self.assertEqual(g_epsilon.item(), gtn.epsilon)
-
 
 class FunctionsTestCase(GTNModuleTestCase):
     def test_scalar_ops(self):
@@ -207,6 +204,18 @@ class ParallelTestCase(GTNModuleTestCase):
         self.assertEqual(len(outputs), len(inputs))
         for i in range(0, len(expected)):
             self.assertTrue(gtn.equal(outputs[i], expected[i]))
+
+    def test_default_args(self):
+        g1 = gtn.scalar_graph(0)
+        g1.add_arc(0, 1, 0)
+
+        g2 = gtn.scalar_graph(0)
+        g2.add_arc(0, 1, 0)
+
+        g_expected = gtn.remove(g1)
+        g_removed = gtn.remove([g1, g2])[0]
+
+        self.assertTrue(gtn.equal(g_expected, g_removed))
 
     def test_backward_calls_once(self):
         g1 = gtn.scalar_graph(1)

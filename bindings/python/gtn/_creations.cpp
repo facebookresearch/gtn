@@ -15,7 +15,7 @@ PYBIND11_MODULE(_creations, m) {
         py::gil_scoped_release release;
         return scalarGraph(weight, calcGrad);
       },
-      "weight"_a = Graph::epsilon,
+      "weight"_a,
       "calc_grad"_a = true);
 
   m.def(

@@ -177,7 +177,7 @@ PYBIND11_MODULE(_functions, m) {
             static_cast<Graph (*)(const Graph&, int)>(&remove), graphs, labels);
       },
       "graphs"_a,
-      "labels"_a);
+      "labels"_a = std::vector<int>{ Graph::epsilon });
   m.def(
       "subtract",
       [](const Graph& g1, const Graph& g2) {
