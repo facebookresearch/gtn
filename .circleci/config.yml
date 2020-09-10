@@ -14,8 +14,7 @@ jobs:
             mkdir build && cd build && \
             cmake .. \
                   -DBUILD_SHARED_LIBS=ON \
-                  -DGTN_BUILD_PYTHON_BINDINGS=ON \
-                  -DGTN_BUILD_PYTHON_BINDINGS_NO_GIL=ON && \
+                  -DGTN_BUILD_PYTHON_BINDINGS=ON && \
             make -j2
       - run:
           name: "Install Python bindings"
