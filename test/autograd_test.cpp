@@ -442,7 +442,7 @@ TEST_CASE("Test viterbiPath Grad", "[functions.viterbiPath (grad)]") {
       return forwardScore(union_(paths));
     };
     backward(forwardFn(g));
-
+    
     CHECK(numericalGradCheck(forwardFn, g, 1e-2, 1e-5));
   }
 }

@@ -3,20 +3,19 @@
 
 import ctypes
 import numpy as np
-import struct
 import unittest
 import random
 import tempfile
-
-from test_utils import GTNModuleTestCase
-
-try:
-    import gtn
-except ImportError:
-    print("Could not import gtn package - will skip tests")
+import gtn
 
 
-class GraphTestCase(GTNModuleTestCase):
+def list_almost_equal(list1, list2, tolerance=1e-7):
+    if len(list1) != len(list2):
+        return False
+    return all(abs(list1[i] - list2[i]) < tolerance for i in range(len(list1)))
+
+
+class GraphTestCase(unittest.TestCase):
     def setUp(self):
         g = gtn.Graph(False)
         g.add_node(True)
@@ -51,13 +50,13 @@ class GraphTestCase(GTNModuleTestCase):
         get_weights_numpy = np.frombuffer(
             (ctypes.c_float * length).from_address(weights), np.float32
         )
-        self.assertListAlmostEqual(get_weights_numpy.tolist(), expected, places=4)
+        self.assertTrue(list_almost_equal(get_weights_numpy.tolist(), expected, 1e-4))
 
         # get weights as list
-        self.assertListAlmostEqual(weights_list, expected, places=4)
+        self.assertTrue(list_almost_equal(weights_list, expected, 1e-4))
 
         # get weights as numpy
-        self.assertListAlmostEqual(weights_numpy.tolist(), expected, places=4)
+        self.assertTrue(list_almost_equal(weights_numpy.tolist(), expected, 1e-4))
 
     def test_graph_weights_set(self):
         weights_original = self.g.weights()
@@ -66,15 +65,15 @@ class GraphTestCase(GTNModuleTestCase):
         # set weights as list
         self.g.set_weights(weights_new_expected)
         weights_new = self.g.weights_to_list()
-        self.assertListAlmostEqual(weights_new, weights_new_expected, places=4)
+        self.assertTrue(list_almost_equal(weights_new, weights_new_expected, 1e-4))
         self.g.set_weights(weights_original)
 
         # set weights via numpy
         weights_new_arr = np.array(weights_new_expected, dtype="f")
         self.g.set_weights(weights_new_arr)
         weights_new = self.g.weights_to_numpy()
-        self.assertListAlmostEqual(
-            weights_new.tolist(), weights_new_arr.tolist(), places=4
+        self.assertTrue(
+            list_almost_equal(weights_new.tolist(), weights_new_arr.tolist(), 1e-4)
         )
         self.g.set_weights(weights_original)
 
@@ -82,7 +81,7 @@ class GraphTestCase(GTNModuleTestCase):
         weights_new_arr_ptr = weights_new_arr.__array_interface__["data"][0]
         self.g.set_weights(weights_new_arr_ptr)
         weights_new = self.g.weights_to_list()
-        self.assertListAlmostEqual(weights_new, weights_new_arr.tolist(), places=4)
+        self.assertTrue(list_almost_equal(weights_new, weights_new_arr.tolist(), 1e-4))
         self.g.set_weights(weights_original)
 
     def test_comparisons(self):
@@ -121,12 +120,13 @@ class GraphTestCase(GTNModuleTestCase):
     def test_scalar_graph(self):
         weight = random.random()
         g = gtn.scalar_graph(weight)
-        self.assertListAlmostEqual(g.weights_to_list(), [weight])
+        self.assertTrue(list_almost_equal(g.weights_to_list(), [weight]))
         self.assertEqual(g.num_arcs(), 1)
         self.assertEqual(g.num_nodes(), 2)
+        self.assertEqual(g.labels_to_list(), [gtn.epsilon])
 
 
-class FunctionsTestCase(GTNModuleTestCase):
+class FunctionsTestCase(unittest.TestCase):
     def test_scalar_ops(self):
         g1 = gtn.Graph()
         g1.add_node(True)
@@ -162,7 +162,7 @@ class FunctionsTestCase(GTNModuleTestCase):
         self.assertEqual(g2.grad().item(), -1.0)
 
 
-class ParallelTestCase(GTNModuleTestCase):
+class ParallelTestCase(unittest.TestCase):
     def test_parallel_one_arg(self):
         inputs = [gtn.scalar_graph(k) for k in [1.0, 2.0, 3.0]]
         outputs = gtn.negate(inputs)
@@ -276,7 +276,7 @@ class ParallelTestCase(GTNModuleTestCase):
             self.assertTrue(gtn.equal(out[i], expected[i]))
 
 
-class AutogradTestCase(GTNModuleTestCase):
+class AutogradTestCase(unittest.TestCase):
     def test_calc_grad(self):
         g1 = gtn.Graph(False)
         g1.calc_grad = True

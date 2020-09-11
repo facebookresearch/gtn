@@ -98,6 +98,7 @@ setup(
         CMakeExtension("gtn._graph"),
         CMakeExtension("gtn._autograd"),
         CMakeExtension("gtn._utils"),
+        CMakeExtension("gtn._rand"),
         CMakeExtension("gtn._creations"),
         CMakeExtension("gtn._functions"),
         CMakeExtension("gtn._parallel"),

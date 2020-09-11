@@ -38,6 +38,7 @@ PYBIND11_MODULE(_graph, m) {
       .def("num_nodes", &Graph::numNodes)
       .def("num_start", &Graph::numStart)
       .def("num_accept", &Graph::numAccept)
+      .def("is_grad_available", &Graph::isGradAvailable)
       .def("item", &Graph::item)
       .def("arc_sort",
           [](Graph& g, bool olabel) {

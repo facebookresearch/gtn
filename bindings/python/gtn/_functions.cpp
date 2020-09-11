@@ -68,6 +68,13 @@ PYBIND11_MODULE(_functions, m) {
       "g1"_a,
       "g2"_a);
   m.def(
+      "clone",
+      [](const Graph& g1) {
+        py::gil_scoped_release release;
+        return clone(g1);
+      },
+      "g1"_a);
+  m.def(
       "intersect",
       [](const std::vector<Graph>& graphs1, const std::vector<Graph>& graphs2) {
         py::gil_scoped_release release;
@@ -169,6 +176,15 @@ PYBIND11_MODULE(_functions, m) {
       },
       "g"_a,
       "label"_a = Graph::epsilon);
+  m.def(
+      "remove",
+      [](const Graph& g, int ilabel, int olabel) {
+        py::gil_scoped_release release;
+        return remove(g, ilabel, olabel);
+      },
+      "g"_a,
+      "ilabel"_a,
+      "olabel"_a);
   m.def(
       "remove",
       [](const std::vector<Graph>& graphs, const std::vector<int>& labels) {
