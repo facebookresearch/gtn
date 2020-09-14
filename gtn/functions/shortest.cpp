@@ -94,7 +94,7 @@ void shortestDistanceGrad(
         computed.push(un);
       }
     }
-    if (g.start(n)) {
+    if (g.isStart(n)) {
       inGrads.emplace_back(0.0, std::make_pair(-1, -1));
     }
     updateGrad(inGrads, nodeGrads[n]);
@@ -144,7 +144,7 @@ Graph shortestDistance(const Graph& g, bool tropical /* = false */) {
       auto un = g.srcNode(a);
       inScores.push_back(scores[un] + g.weight(a));
     }
-    if (g.start(n)) {
+    if (g.isStart(n)) {
       inScores.push_back(0.0);
     }
     scores[n] = getScore(inScores);

@@ -323,11 +323,11 @@ class Graph {
     return sharedGraph_->accept;
   };
   /** Check if the `i`-th node is a start node. */
-  bool start(int i) const {
+  bool isStart(int i) const {
     return node(i).start;
   };
   /** Check if the `i`-th node is an accepting node. */
-  bool accept(int i) const {
+  bool isAccept(int i) const {
     return node(i).accept;
   };
   /** Make the the `i`-th node an accepting node. */

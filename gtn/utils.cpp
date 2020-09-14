@@ -42,7 +42,7 @@ bool equal(const Graph& g1, const Graph& g2) {
 
   for (size_t n = 0; n < g1.numNodes(); n++) {
     if (g1.numIn(n) != g2.numIn(n) || g1.numOut(n) != g2.numOut(n) ||
-        g1.start(n) != g2.start(n) || g1.accept(n) != g2.accept(n)) {
+        g1.isStart(n) != g2.isStart(n) || g1.isAccept(n) != g2.isAccept(n)) {
       return false;
     }
 
@@ -83,8 +83,8 @@ bool isomorphic(
 
   if (g1.numIn(g1Node) != g2.numIn(g2Node) ||
       g1.numOut(g1Node) != g2.numOut(g2Node) ||
-      g1.start(g1Node) != g2.start(g2Node) ||
-      g1.accept(g1Node) != g2.accept(g2Node)) {
+      g1.isStart(g1Node) != g2.isStart(g2Node) ||
+      g1.isAccept(g1Node) != g2.isAccept(g2Node)) {
     item.first->second = -1;
     return false;
   }
@@ -385,8 +385,8 @@ void draw(
   };
 
   auto drawNode = [&g, &out, &isymbols, &osymbols, &label_to_string](auto n) {
-    std::string penwidth = g.start(n) ? "2.0" : "1.0";
-    std::string shape = g.accept(n) ? "doublecircle" : "circle";
+    std::string penwidth = g.isStart(n) ? "2.0" : "1.0";
+    std::string shape = g.isAccept(n) ? "doublecircle" : "circle";
     out << "  " << n << " [label = \"" << n << "\", shape = " << shape
         << ", penwidth = " << penwidth << ", fontsize = 14];\n";
     for (auto a : g.out(n)) {
@@ -407,13 +407,13 @@ void draw(
   }
 
   for (int i = 0; i < g.numNodes(); i++) {
-    if (!g.start(i) && !g.accept(i)) {
+    if (!g.isStart(i) && !g.isAccept(i)) {
       drawNode(i);
     }
   }
 
   for (auto i : g.accept()) {
-    if (g.start(i)) {
+    if (g.isStart(i)) {
       continue;
     }
     drawNode(i);

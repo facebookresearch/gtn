@@ -271,7 +271,7 @@ Graph compose(
       auto idx = toIndex(s1, s2, first);
       if (reachable[idx]) {
         newNodes[idx] =
-            ngraph.addNode(true, first.accept(s1) && second.accept(s2));
+            ngraph.addNode(true, first.isAccept(s1) && second.isAccept(s2));
         toExplore.emplace(s1, s2);
       }
     }
@@ -295,8 +295,8 @@ Graph compose(
       // Build the node
       if (newNodes[idx] < 0) {
         newNodes[idx] = ngraph.addNode(
-            first.start(dn1) && second.start(dn2),
-            first.accept(dn1) && second.accept(dn2));
+            first.isStart(dn1) && second.isStart(dn2),
+            first.isAccept(dn1) && second.isAccept(dn2));
         toExplore.emplace(dn1, dn2);
       }
       auto weight = first.weight(i) + second.weight(j);
@@ -325,8 +325,8 @@ Graph compose(
       }
       if (newNodes[idx] < 0) {
         newNodes[idx] = ngraph.addNode(
-            first.start(dn1) && second.start(dn2),
-            first.accept(dn1) && second.accept(dn2));
+            first.isStart(dn1) && second.isStart(dn2),
+            first.isAccept(dn1) && second.isAccept(dn2));
         toExplore.emplace(dn1, dn2);
       }
       auto weight = first.weight(i);
@@ -353,8 +353,8 @@ Graph compose(
       }
       if (newNodes[idx] < 0) {
         newNodes[idx] = ngraph.addNode(
-            first.start(dn1) && second.start(dn2),
-            first.accept(dn1) && second.accept(dn2));
+            first.isStart(dn1) && second.isStart(dn2),
+            first.isAccept(dn1) && second.isAccept(dn2));
         toExplore.emplace(dn1, dn2);
       }
       auto weight = second.weight(j);

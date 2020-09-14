@@ -13,8 +13,8 @@ Graph sample(const Graph& g, size_t maxLength /* = 1000 */) {
   auto node = g.start()[rand() % g.numStart()];
   size_t acceptLength = 0;
   for (size_t length = 0; length < maxLength + 1; length++) {
-    auto mod = g.numOut(node) + g.accept(node);
-    acceptLength = g.accept(node) ? (length + 1) : acceptLength;
+    auto mod = g.numOut(node) + g.isAccept(node);
+    acceptLength = g.isAccept(node) ? (length + 1) : acceptLength;
 
     // Dead end
     if (!mod) {

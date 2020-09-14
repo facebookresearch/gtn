@@ -62,7 +62,7 @@ Graph clone(const Graph& g, Projection projection /* = Projection::NONE */) {
   };
   Graph out(gradFunc, {g.withoutWeights()});
   for (auto n = 0; n < g.numNodes(); ++n) {
-    out.addNode(g.start(n), g.accept(n));
+    out.addNode(g.isStart(n), g.isAccept(n));
   }
   for (auto a = 0; a < g.numArcs(); ++a) {
     out.addArc(
@@ -118,8 +118,8 @@ Graph concat(const std::vector<Graph>& graphs) {
     auto& graph = graphs[i];
     for (auto n = 0; n < graph.numNodes(); ++n) {
       out.addNode(
-          (i == 0) && graph.start(n),
-          (i == graphs.size() - 1) && graph.accept(n));
+          (i == 0) && graph.isStart(n),
+          (i == graphs.size() - 1) && graph.isAccept(n));
     }
     for (auto a = 0; a < graph.numArcs(); ++a) {
       out.addArc(
@@ -199,7 +199,7 @@ Graph union_(const std::vector<Graph>& graphs) {
   int nodeOffset = 0;
   for (auto& graph : graphs) {
     for (auto n = 0; n < graph.numNodes(); ++n) {
-      out.addNode(graph.start(n), graph.accept(n));
+      out.addNode(graph.isStart(n), graph.isAccept(n));
     }
     for (auto a = 0; a < graph.numArcs(); ++a) {
       out.addArc(
@@ -272,9 +272,9 @@ Graph remove(const Graph& g, int ilabel, int olabel) {
   std::vector<int> nodes(g.numNodes(), -1);
   Graph graph(gradFunc, {g});
   for (auto n = 0; n < g.numNodes(); ++n) {
-    if (g.start(n) ||
+    if (g.isStart(n) ||
         !std::all_of(g.in(n).begin(), g.in(n).end(), label_match)) {
-      nodes[n] = graph.addNode(g.start(n));
+      nodes[n] = graph.addNode(g.isStart(n));
     }
   }
 
@@ -289,7 +289,7 @@ Graph remove(const Graph& g, int ilabel, int olabel) {
     while (!toExplore.empty()) {
       auto next = toExplore.front();
       toExplore.pop();
-      if (g.accept(next)) {
+      if (g.isAccept(next)) {
         graph.makeAccept(curr);
       }
       for (auto a : g.out(next)) {

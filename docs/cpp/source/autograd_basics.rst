@@ -42,7 +42,7 @@ Here is a simple example
   auto g3Grad = g3.grad(); // g3Grad.item() = 1
 
 .. warning::
-  Calling ``g2.grad()`` will throw an exception since ``isCalcGrad`` is set to ``false`` for the graph
+  Calling ``g2.grad()`` will throw an exception since ``calcGrad`` is set to ``false`` for the graph
 
 **Retaining the Computation Graph**
 
