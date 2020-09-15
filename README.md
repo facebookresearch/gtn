@@ -53,7 +53,7 @@ conda activate gtn_env
 Required dependencies:
 ```
 cd bindings/python
-conda install setuptools packaging numpy
+conda install setuptools numpy
 ```
 
 Use one of the following commands for installation:

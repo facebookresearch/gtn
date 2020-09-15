@@ -5,7 +5,6 @@ import platform
 import re
 import subprocess
 import sys
-from packaging import version
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
@@ -34,7 +33,8 @@ class CMakeBuild(build_ext):
             )
 
         cmake_version = re.search(r"version\s*([\d.]+)", out.decode().lower()).group(1)
-        if version.parse(cmake_version) < version.parse("3.5.1"):
+        cmake_version = [int(i) for i in cmake_version.split(".")]
+        if cmake_version < [3, 5, 1]:
             raise RuntimeError("CMake >= 3.5.1 is required to build gtn")
 
         for ext in self.extensions:
