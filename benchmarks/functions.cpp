@@ -56,7 +56,7 @@ void timeSimpleOps() {
 }
 
 void timeForward() {
-  auto graph = makeLinear(1000, 100);
+  auto graph = makeLinear(1000, 1000);
   auto forwardScoreLinearForward = [&graph]() {
     auto out = forwardScore(graph);
   };
