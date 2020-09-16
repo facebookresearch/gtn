@@ -221,9 +221,11 @@ class AutogradTestCase(unittest.TestCase):
         denom = 1 / (2 * math.exp(2) + math.exp(4))
         grad = g.grad()
         grad_weights = grad.weights_to_list()
-        self.assertAlmostEqual(grad_weights[0], (denom * (math.exp(2) + math.exp(4))))
-        self.assertAlmostEqual(grad_weights[1], (denom * math.exp(2)))
-        self.assertAlmostEqual(grad_weights[2], (denom * math.exp(4)))
+        self.assertAlmostEqual(
+            grad_weights[0], (denom * (math.exp(2) + math.exp(4))), places=5
+        )
+        self.assertAlmostEqual(grad_weights[1], (denom * math.exp(2)), places=5)
+        self.assertAlmostEqual(grad_weights[2], (denom * math.exp(4)), places=5)
 
         # Handle case where some arcs don't lead to accepting states
         g = gtn.Graph()

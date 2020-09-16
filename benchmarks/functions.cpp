@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <random>
+
 #include "benchmarks/time_utils.h"
 #include "gtn/gtn.h"
 
@@ -57,6 +60,9 @@ void timeSimpleOps() {
 
 void timeForward() {
   auto graph = makeLinear(1000, 1000);
+  std::vector<float> weights(graph.numArcs());
+  std::generate(weights.begin(), weights.end(), std::rand);
+  graph.setWeights(weights.data());
   auto forwardScoreLinearForward = [&graph]() {
     auto out = forwardScore(graph);
   };
@@ -68,7 +74,7 @@ void timeForward() {
   };
   TIME(forwardScoreLinearBackward);
 
-  graph = makeRandomDAG(2000, 20000);
+  graph = makeRandomDAG(20000, 200000);
   auto forwardScoreRandDAGForward = [&graph]() {
     auto out = forwardScore(graph);
   };

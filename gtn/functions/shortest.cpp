@@ -28,6 +28,8 @@ void shortestDistanceGrad(
     float output,
     const Graph& deltas,
     const std::vector<float>& nodeScores,
+    const std::vector<float>& maxScoresCache,
+    const std::vector<int>& maxArcIdxCache,
     bool tropical) {
   std::queue<int> computed;
   std::vector<int> degrees(g.numNodes());
@@ -36,69 +38,38 @@ void shortestDistanceGrad(
   for (auto n = 0; n < g.numNodes(); ++n) {
     degrees[n] = g.numOut(n);
   }
-  auto updateGrad = [tropical, &nodeGrads, &arcGrads, &deltas](
-                        std::vector<std::pair<float, std::pair<int, int>>>& in,
-                        float scale) {
-    // NB: Perf could be improved by passing max val, idx to the function
-    // directly
-    if (in.empty()) {
-      return;
-    }
-    auto maxIt = std::max_element(in.begin(), in.end());
-    auto maxVal = maxIt->first;
-    auto maxIdx = std::distance(in.begin(), maxIt);
-    if (tropical) {
-      auto& n = in[maxIdx];
-      if (n.second.first >= 0) { // node grad
-        nodeGrads[n.second.first] += scale;
-      }
-      if (n.second.second >= 0) { // arc grad
-        arcGrads[n.second.second] = scale * deltas.item();
-      }
-    } else {
-      float denom = 0.0;
-      for (auto& n : in) {
-        n.first = std::exp(n.first - maxVal);
-        denom += n.first;
-      }
-      for (auto& n : in) {
-        n.first = scale * (n.first / denom);
-        if (n.second.first >= 0) { // node grad
-          nodeGrads[n.second.first] += n.first;
-        }
-        if (n.second.second >= 0) { // arc grad
-          arcGrads[n.second.second] = n.first * deltas.item();
-        }
-      }
-    }
-  };
-
-  // {score, {node id, arc id}}
-  std::vector<std::pair<float, std::pair<int, int>>> inGrads;
+  float curScore = 0.0;
+  float denom = tropical ? 0.0 : std::exp(output - maxScoresCache.back());
   for (auto n : g.accept()) {
-    inGrads.emplace_back(nodeScores[n], std::make_pair(n, -1));
     if (g.numOut(n) == 0) {
       computed.push(n);
     }
+    if (tropical) {
+      curScore = (n == maxArcIdxCache.back()) ? 1.0 : 0.0;
+    } else {
+      curScore = std::exp(nodeScores[n] - maxScoresCache.back()) / denom;
+    }
+    nodeGrads[n] += curScore;
   }
-  updateGrad(inGrads, 1.0);
-  inGrads.clear();
 
   while (!computed.empty()) {
     auto n = computed.front();
     computed.pop();
-    for (auto a : g.in(n)) {
+    denom = tropical ? 0.0 : std::exp(nodeScores[n] - maxScoresCache[n]);
+    for (const auto a : g.in(n)) {
       auto un = g.srcNode(a);
-      inGrads.emplace_back(nodeScores[un] + g.weight(a), std::make_pair(un, a));
+      if (tropical) {
+        curScore = (a == maxArcIdxCache[n]) ? nodeGrads[n] : 0.0;
+      } else {
+        curScore = nodeGrads[n] *
+            std::exp(nodeScores[un] + g.weight(a) - maxScoresCache[n]) / denom;
+      }
+      nodeGrads[un] += curScore;
+      arcGrads[a] = curScore * deltas.item();
       if ((--degrees[un]) == 0) {
         computed.push(un);
       }
     }
-    if (g.isStart(n)) {
-      inGrads.emplace_back(0.0, std::make_pair(-1, -1));
-    }
-    updateGrad(inGrads, nodeGrads[n]);
-    inGrads.clear();
   }
   g.addGrad(std::move(arcGrads));
 }
@@ -109,6 +80,8 @@ Graph shortestDistance(const Graph& g, bool tropical /* = false */) {
   std::queue<int> computed;
   // List of scores and list of in degrees for each node
   std::vector<float> scores(g.numNodes());
+  std::vector<float> maxScoresCache(g.numNodes() + 1, kNegInf);
+  std::vector<int> maxArcIdxCache(g.numNodes() + 1, -1);
   std::vector<int> degrees;
   degrees.reserve(g.numNodes());
   for (auto n = 0; n < g.numNodes(); ++n) {
@@ -142,13 +115,19 @@ Graph shortestDistance(const Graph& g, bool tropical /* = false */) {
     for (auto a : g.in(n)) {
       auto un = g.srcNode(a);
       inScores.push_back(scores[un] + g.weight(a));
-      maxScore = std::max(maxScore, inScores.back());
+      if (inScores.back() > maxScoresCache[n]) {
+        maxScoresCache[n] = inScores.back();
+        maxArcIdxCache[n] = a;
+      }
     }
     if (g.isStart(n)) {
       inScores.push_back(0.0);
-      maxScore = std::max(maxScore, inScores.back());
+      if (inScores.back() > maxScoresCache[n]) {
+        maxScoresCache[n] = inScores.back();
+        maxArcIdxCache[n] = -1; // an invalid value
+      }
     }
-    scores[n] = getScore(inScores, maxScore);
+    scores[n] = getScore(inScores, maxScoresCache[n]);
     inScores.clear();
     maxScore = kNegInf;
     for (auto a : g.out(n)) {
@@ -160,19 +139,39 @@ Graph shortestDistance(const Graph& g, bool tropical /* = false */) {
   }
 
   // Accumulate scores at all the accept nodes.
-  for (auto a : g.accept()) {
-    if (degrees[a] > 0) {
+  for (auto n : g.accept()) {
+    if (degrees[n] > 0) {
       throw std::invalid_argument(
           "Graph has a cycle, self-loop or is disconnected!");
     }
-    inScores.push_back(scores[a]);
-    maxScore = std::max(maxScore, inScores.back());
+    inScores.push_back(scores[n]);
+    if (inScores.back() > maxScoresCache.back()) {
+      maxScoresCache.back() = std::max(maxScoresCache.back(), inScores.back());
+      maxArcIdxCache.back() = n; // NOTE: Using node idx (instead of arc idx)
+    }
   }
-  auto score = getScore(inScores, maxScore);
+  auto score = getScore(inScores, maxScoresCache.back());
 
-  auto gradFunc = [scores = std::move(scores), output = score, tropical](
-                      std::vector<Graph>& inputs, Graph deltas) mutable {
-    shortestDistanceGrad(inputs[0], output, deltas, scores, tropical);
+  // clear cache not required for bwd
+  if (tropical) {
+    maxScoresCache.clear();
+  } else {
+    maxArcIdxCache.clear();
+  }
+
+  auto gradFunc = [scores = std::move(scores),
+                   maxScoresCache = std::move(maxScoresCache),
+                   maxArcIdxCache = std::move(maxArcIdxCache),
+                   output = score,
+                   tropical](std::vector<Graph>& inputs, Graph deltas) mutable {
+    shortestDistanceGrad(
+        inputs[0],
+        output,
+        deltas,
+        scores,
+        maxScoresCache,
+        maxArcIdxCache,
+        tropical);
   };
 
   Graph result(gradFunc, {g});
