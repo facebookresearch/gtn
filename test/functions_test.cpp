@@ -599,7 +599,7 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     Graph g1;
     g1.addNode(true);
     g1.addNode(false, true);
-    g1.addArc(0, 0, 0, Graph::epsilon, 1.0);
+    g1.addArc(0, 0, 0, epsilon, 1.0);
     g1.addArc(0, 1, 1, 2);
 
     Graph g2;
@@ -610,7 +610,7 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     Graph expected;
     expected.addNode(true);
     expected.addNode(false, true);
-    expected.addArc(0, 0, 0, Graph::epsilon, 1.0);
+    expected.addArc(0, 0, 0, epsilon, 1.0);
     expected.addArc(0, 1, 1, 3);
 
     CHECK(equal(compose(g1, g2), expected));
@@ -627,13 +627,13 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     g2.addNode(true);
     g2.addNode(false, true);
     g2.addArc(0, 1, 2, 3);
-    g2.addArc(1, 1, Graph::epsilon, 0, 2.0);
+    g2.addArc(1, 1, epsilon, 0, 2.0);
 
     Graph expected;
     expected.addNode(true);
     expected.addNode(false, true);
     expected.addArc(0, 1, 1, 3);
-    expected.addArc(1, 1, Graph::epsilon, 0, 2.0);
+    expected.addArc(1, 1, epsilon, 0, 2.0);
 
     CHECK(equal(compose(g1, g2), expected));
   }
@@ -650,8 +650,8 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     g1.addNode();
     g1.addNode(false, true);
     g1.addArc(0, 1, symbols["a"], symbols["a"]);
-    g1.addArc(1, 2, symbols["b"], Graph::epsilon);
-    g1.addArc(2, 3, symbols["c"], Graph::epsilon);
+    g1.addArc(1, 2, symbols["b"], epsilon);
+    g1.addArc(2, 3, symbols["c"], epsilon);
     g1.addArc(3, 4, symbols["d"], symbols["d"]);
 
     Graph g2;
@@ -660,7 +660,7 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     g2.addNode();
     g2.addNode(false, true);
     g2.addArc(0, 1, symbols["a"], symbols["d"]);
-    g2.addArc(1, 2, Graph::epsilon, symbols["e"]);
+    g2.addArc(1, 2, epsilon, symbols["e"]);
     g2.addArc(2, 3, symbols["d"], symbols["a"]);
 
     Graph expected;
@@ -671,7 +671,7 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     expected.addNode(false, true);
     expected.addArc(0, 1, symbols["a"], symbols["d"]);
     expected.addArc(1, 2, symbols["b"], symbols["e"]);
-    expected.addArc(2, 3, symbols["c"], Graph::epsilon);
+    expected.addArc(2, 3, symbols["c"], epsilon);
     expected.addArc(3, 4, symbols["d"], symbols["a"]);
 
     CHECK(randEquivalent(compose(g1, g2), expected));
@@ -682,20 +682,20 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     Graph g1;
     g1.addNode(true);
     g1.addNode(false, true);
-    g1.addArc(0, 0, 1, Graph::epsilon, 1.1);
-    g1.addArc(0, 1, 2, Graph::epsilon, 2.1);
-    g1.addArc(0, 1, 3, Graph::epsilon, 3.1);
+    g1.addArc(0, 0, 1, epsilon, 1.1);
+    g1.addArc(0, 1, 2, epsilon, 2.1);
+    g1.addArc(0, 1, 3, epsilon, 3.1);
 
     Graph g2;
     g2.addNode(true);
     g2.addNode(false, true);
-    g2.addArc(0, 1, Graph::epsilon, 3, 2.1);
+    g2.addArc(0, 1, epsilon, 3, 2.1);
     g2.addArc(0, 1, 1, 2);
 
     Graph expected;
     expected.addNode(true);
     expected.addNode(false, true);
-    expected.addArc(0, 0, 1, Graph::epsilon, 1.1);
+    expected.addArc(0, 0, 1, epsilon, 1.1);
     expected.addArc(0, 1, 2, 3, 4.2);
     expected.addArc(0, 1, 3, 3, 5.2);
 
@@ -807,16 +807,16 @@ TEST_CASE("Test Closure", "[functions.closure]") {
     expected.addNode();
     expected.addNode(false, true);
     expected.addNode(false, true);
-    expected.addArc(0, 1, Graph::epsilon);
-    expected.addArc(0, 2, Graph::epsilon);
+    expected.addArc(0, 1, epsilon);
+    expected.addArc(0, 2, epsilon);
     expected.addArc(1, 3, 0, 0, 0.0);
     expected.addArc(1, 4, 1, 2, 2.1);
     expected.addArc(2, 3, 0, 1, 1.0);
     expected.addArc(2, 4, 1, 3, 3.1);
-    expected.addArc(3, 1, Graph::epsilon);
-    expected.addArc(3, 2, Graph::epsilon);
-    expected.addArc(4, 1, Graph::epsilon);
-    expected.addArc(4, 2, Graph::epsilon);
+    expected.addArc(3, 1, epsilon);
+    expected.addArc(3, 2, epsilon);
+    expected.addArc(4, 1, epsilon);
+    expected.addArc(4, 2, epsilon);
 
     CHECK(randEquivalent(closure(g), expected));
   }
@@ -888,17 +888,17 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     g.addNode(true);
     g.addNode();
     g.addNode(false, true);
-    g.addArc(0, 1, Graph::epsilon);
+    g.addArc(0, 1, epsilon);
     g.addArc(1, 2, 0);
 
     Graph expected;
     expected.addNode(true);
     expected.addNode(false, true);
     expected.addArc(0, 1, 0);
-    CHECK(equal(remove(g, Graph::epsilon), expected));
+    CHECK(equal(remove(g, epsilon), expected));
 
     // Check gradient status propagates correctly
-    CHECK(remove(g, Graph::epsilon).calcGrad() == false);
+    CHECK(remove(g, epsilon).calcGrad() == false);
   }
 
   {
@@ -936,8 +936,8 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     g.addNode(false, true);
     g.addArc(0, 1, 0);
     g.addArc(0, 2, 1);
-    g.addArc(1, 3, Graph::epsilon);
-    g.addArc(2, 3, Graph::epsilon);
+    g.addArc(1, 3, epsilon);
+    g.addArc(2, 3, epsilon);
 
     Graph expected;
     expected.addNode(true);
@@ -955,7 +955,7 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     g.addNode();
     g.addNode();
     g.addNode(false, true);
-    g.addArc(0, 1, Graph::epsilon);
+    g.addArc(0, 1, epsilon);
     g.addArc(0, 2, 1);
     g.addArc(2, 1, 0);
     g.addArc(1, 3, 1);
@@ -981,8 +981,8 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     g.addNode();
     g.addNode(false, true);
     g.addArc(0, 1, 0);
-    g.addArc(1, 2, Graph::epsilon);
-    g.addArc(2, 3, Graph::epsilon);
+    g.addArc(1, 2, epsilon);
+    g.addArc(2, 3, epsilon);
     g.addArc(2, 4, 1);
     g.addArc(3, 4, 2);
     g.addArc(1, 4, 0);
@@ -1006,8 +1006,8 @@ TEST_CASE("Test Remove", "[functions.remove]") {
     g.addNode();
     g.addNode();
     g.addNode(false, true);
-    g.addArc(0, 1, Graph::epsilon);
-    g.addArc(1, 2, Graph::epsilon);
+    g.addArc(0, 1, epsilon);
+    g.addArc(1, 2, epsilon);
     g.addArc(2, 3, 0);
     g.addArc(3, 4, 0);
 

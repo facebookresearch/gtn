@@ -171,7 +171,7 @@ TEST_CASE("Test randEquivalent", "[rand.randEquivalent]") {
     g1.addNode(false, true);
     g1.addArc(0, 1, 0, 3);
     g1.addArc(1, 2, 1, 4);
-    g1.addArc(2, 3, 2, Graph::epsilon);
+    g1.addArc(2, 3, 2, epsilon);
     g1.addArc(3, 4, 3, 0);
 
     Graph g2;
@@ -181,7 +181,7 @@ TEST_CASE("Test randEquivalent", "[rand.randEquivalent]") {
     g2.addNode();
     g2.addNode(false, true);
     g2.addArc(0, 1, 0, 3);
-    g2.addArc(1, 2, 1, Graph::epsilon);
+    g2.addArc(1, 2, 1, epsilon);
     g2.addArc(2, 3, 2, 4);
     g2.addArc(3, 4, 3, 0);
 
@@ -195,9 +195,9 @@ TEST_CASE("Test randEquivalent", "[rand.randEquivalent]") {
     g3.addNode();
     g3.addNode(false, true);
     g3.addArc(0, 1, 0, 3);
-    g3.addArc(1, 2, 1, Graph::epsilon);
-    g3.addArc(2, 3, Graph::epsilon, 4);
-    g3.addArc(3, 4, 2, Graph::epsilon);
+    g3.addArc(1, 2, 1, epsilon);
+    g3.addArc(2, 3, epsilon, 4);
+    g3.addArc(3, 4, 2, epsilon);
     g3.addArc(4, 5, 3, 0);
 
     CHECK(randEquivalent(g1, g3, 100));

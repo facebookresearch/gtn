@@ -14,19 +14,19 @@ void asgWithTransducers() {
   e.addNode(true);
   e.addNode(false, true);
   e.addArc(0, 1, 0);
-  e.addArc(1, 1, 0, Graph::epsilon);
+  e.addArc(1, 1, 0, epsilon);
 
   Graph h;
   h.addNode(true);
   h.addNode(false, true);
   h.addArc(0, 1, 1);
-  h.addArc(1, 1, 1, Graph::epsilon);
+  h.addArc(1, 1, 1, epsilon);
 
   Graph t;
   t.addNode(true);
   t.addNode(false, true);
   t.addArc(0, 1, 2);
-  t.addArc(1, 1, 2, Graph::epsilon);
+  t.addArc(1, 1, 2, epsilon);
 
   draw(e, "asg_e_graph.dot", symbols, symbols);
   draw(h, "asg_h_graph.dot", symbols, symbols);
@@ -52,7 +52,7 @@ void asgWithTransducers() {
   draw(asg_the, "asg_eps_the.dot", symbols, symbols);
 
   // Clean-up / remove unneeded epsilons to speed things up.
-  asg_the = remove(asg_the, Graph::epsilon);
+  asg_the = remove(asg_the, epsilon);
   draw(asg_the, "asg_fst_the.dot", symbols, symbols);
 
   // Get an FSA (using the FST would be fine, but this way we don't have to
@@ -77,24 +77,24 @@ void ctcWithTransducers() {
   e.addNode(true);
   e.addNode(false, true);
   e.addArc(0, 1, 0);
-  e.addArc(1, 1, 0, Graph::epsilon);
+  e.addArc(1, 1, 0, epsilon);
 
   Graph h;
   h.addNode(true);
   h.addNode(false, true);
   h.addArc(0, 1, 1);
-  h.addArc(1, 1, 1, Graph::epsilon);
+  h.addArc(1, 1, 1, epsilon);
 
   Graph t;
   t.addNode(true);
   t.addNode(false, true);
   t.addArc(0, 1, 2);
-  t.addArc(1, 1, 2, Graph::epsilon);
+  t.addArc(1, 1, 2, epsilon);
 
   // The <B> token is optional
   Graph blank;
   blank.addNode(true, true);
-  blank.addArc(0, 0, 3, Graph::epsilon);
+  blank.addArc(0, 0, 3, epsilon);
   draw(blank, "ctc_blank.dot", symbols, symbols);
 
   // Everything else is the same as in ASG!
@@ -111,7 +111,7 @@ void ctcWithTransducers() {
                              "2 3 0\n"));
 
   // This gives the standard CTC force align graph for "the"
-  auto ctc_the = remove(compose(tokens, the), Graph::epsilon);
+  auto ctc_the = remove(compose(tokens, the), epsilon);
   draw(ctc_the, "ctc_eps_the.dot", symbols, symbols);
 
   // At this point, we can use the standard emissions graph to
@@ -134,7 +134,7 @@ void wordDecompositions() {
     g.addNode(true);
     g.addNode(false, true);
     g.addArc(0, 1, kv.first);
-    g.addArc(1, 1, kv.first, Graph::epsilon);
+    g.addArc(1, 1, kv.first, epsilon);
     tokens_vec.push_back(g);
   }
   auto tokens = closure(union_(tokens_vec));
@@ -153,7 +153,7 @@ void wordDecompositions() {
                              "2 3 0 5\n"));
   draw(the, "word_decomps_the.dot", symbols, symbols);
 
-  auto asg_the = remove(compose(tokens, the), Graph::epsilon);
+  auto asg_the = remove(compose(tokens, the), epsilon);
   draw(asg_the, "asg_word_decomps_the.dot", symbols, symbols);
 
   // At this point, we can use the standard emissions and transitions graph to
@@ -168,11 +168,11 @@ void wordDecompositions() {
   // Add blank graph to the tokens graph
   Graph blank;
   blank.addNode(true, true);
-  blank.addArc(0, 0, 6, Graph::epsilon);
+  blank.addArc(0, 0, 6, epsilon);
   tokens_vec.push_back(blank);
 
   tokens = closure(union_(tokens_vec));
-  auto ctc_the = remove(compose(tokens, the), Graph::epsilon);
+  auto ctc_the = remove(compose(tokens, the), epsilon);
   draw(ctc_the, "ctc_word_decomps_the.dot", symbols, symbols);
 }
 

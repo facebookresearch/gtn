@@ -116,7 +116,7 @@ void interestingAcceptors() {
     graph.addNode(false, true);
 
     graph.addArc(0, 1, 0);
-    graph.addArc(0, 1, Graph::epsilon);
+    graph.addArc(0, 1, epsilon);
     graph.addArc(1, 2, 1);
     draw(graph, "epsilons.dot", symbols);
   }
@@ -186,7 +186,7 @@ void simpleOps() {
 
   // The closure of a graph accepts any sequence accepted by the original graph
   // repeated 0 or more times (0 repeats is the empty sequence
-  // "Graph::epsilon").
+  // "epsilon").
   {
     // Recognizes "aba"
     Graph g;
@@ -559,27 +559,27 @@ void epsilonTransitions() {
   g1.addNode();
   g1.addNode(false, true);
 
-  // Use Graph::epsilon to denote an epsilon label (the integer value is -1,
+  // Use epsilon to denote an epsilon label (the integer value is -1,
   // though you should avoid using that directly to make your code more future
   // proof).
-  g1.addArc(0, 1, 1, Graph::epsilon, 1.1);
+  g1.addArc(0, 1, 1, epsilon, 1.1);
   g1.addArc(1, 2, 0, 0, 2);
 
   // We can forward graphs with epsilons (as long as they don't have any
   // cycles).
   forwardScore(g1);
 
-  g1.addArc(0, 0, 0, Graph::epsilon, 0.5);
+  g1.addArc(0, 0, 0, epsilon, 0.5);
 
   // Drawing will use a special "ε" token to represent
-  // `Graph::epsilon` when symbols are specified.
+  // `epsilon` when symbols are specified.
   draw(g1, "epsilon_graph1.dot", isymbols, osymbols);
 
   Graph g2;
   g2.addNode(true);
   g2.addNode(false, true);
   g2.addArc(0, 1, 0, 0, 1.3);
-  g2.addArc(1, 1, Graph::epsilon, 2, 2.5);
+  g2.addArc(1, 1, epsilon, 2, 2.5);
   draw(g2, "epsilon_graph2.dot", osymbols, isymbols);
 
   // We can compose graphs with epsilons

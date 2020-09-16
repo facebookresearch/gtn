@@ -419,7 +419,7 @@ TEST_CASE("Test SaveTxt", "[utils.saveTxt]") {
     g.addArc(1, 2, 1, 2, 2.1);
     g.addArc(2, 3, 2, 3, 3.1);
     g.addArc(3, 4, 3, 4, 4.1);
-    g.addArc(4, 5, 4, Graph::epsilon, 5.1);
+    g.addArc(4, 5, 4, epsilon, 5.1);
 
     std::string graph_string =
         "0 1\n"
@@ -484,7 +484,7 @@ TEST_CASE("Test loadsave", "[utils.load, utils.save]") {
     g.addArc(1, 2, 1, 2, 2.1);
     g.addArc(2, 3, 2, 3, 3.1);
     g.addArc(3, 4, 3, 4, 4.1);
-    g.addArc(4, 5, 4, Graph::epsilon, 5.1);
+    g.addArc(4, 5, 4, epsilon, 5.1);
     std::stringstream stream;
     save(stream, g);
     Graph g2 = load(stream);

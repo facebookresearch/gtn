@@ -97,7 +97,7 @@ PYBIND11_MODULE(_graph, m) {
         ss << a;
         return ss.str();
       });
-  m.attr("epsilon") = Graph::epsilon;
+  m.attr("epsilon") = epsilon;
 #ifdef VERSION_INFO
     m.attr("__version__") = VERSION_INFO;
 #else

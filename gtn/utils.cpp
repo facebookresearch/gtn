@@ -375,7 +375,7 @@ void draw(
       << "  center = 1;\n  ranksep = \"0.4\";\n  nodesep = \"0.25\";\n";
 
   auto label_to_string = [](const auto& symbols, const auto label) {
-    if (label == Graph::epsilon) {
+    if (label == epsilon) {
       return epsilonSymbol;
     }
     if (symbols.empty()) {

@@ -10,6 +10,9 @@
 
 namespace gtn {
 
+/** The index of the epsilon label. */
+constexpr int epsilon{-1};
+
 /**
  * A `Graph` class to perform automatic differentiation with weighted
  * finite-state acceptors (WFSAs) and transducers (WFSTs).
@@ -214,9 +217,6 @@ class Graph {
    * `Graph::labelsToArray`.
    */
   std::vector<int> labelsToVector(bool ilabel = true);
-
-  /** The index of the epsilon label. */
-  static constexpr int epsilon{-1};
 
   /** @}*/
 

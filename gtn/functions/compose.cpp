@@ -35,7 +35,7 @@ auto findReachable(
     int i, j;
     while (matcher->hasNext()) {
       std::tie(i, j) = matcher->next();
-      epsilon_matched |= (first.olabel(i) == Graph::epsilon);
+      epsilon_matched |= (first.olabel(i) == epsilon);
       auto un1 = first.srcNode(i);
       auto un2 = second.srcNode(j);
       auto idx = toIndex(un1, un2, first);
@@ -47,9 +47,9 @@ auto findReachable(
     }
     if (!epsilon_matched) {
       for (auto i : first.in(curr.first)) {
-        if (first.olabel(i) != Graph::epsilon) {
+        if (first.olabel(i) != epsilon) {
           if (first.olabelSorted()) {
-            // Graph::epsilon < 0
+            // epsilon < 0
             break;
           } else {
             continue;
@@ -66,9 +66,9 @@ auto findReachable(
     }
     if (!epsilon_matched) {
       for (auto j : second.in(curr.second)) {
-        if (second.ilabel(j) != Graph::epsilon) {
+        if (second.ilabel(j) != epsilon) {
           if (second.ilabelSorted()) {
-            // Graph::epsilon < 0
+            // epsilon < 0
             break;
           } else {
             continue;
@@ -308,9 +308,9 @@ Graph compose(
     }
     // Check for output epsilons in the first graph
     for (auto i : first.out(curr.first)) {
-      if (first.olabel(i) != Graph::epsilon) {
+      if (first.olabel(i) != epsilon) {
         if (first.olabelSorted()) {
-          // Graph::epsilon < 0
+          // epsilon < 0
           break;
         } else {
           continue;
@@ -331,14 +331,14 @@ Graph compose(
       }
       auto weight = first.weight(i);
       auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], first.ilabel(i), Graph::epsilon, weight);
+          currNode, newNodes[idx], first.ilabel(i), epsilon, weight);
       gradInfo.emplace_back(i, -1);
     }
     // Check out input epsilons in the second graph
     for (auto j : second.out(curr.second)) {
-      if (second.ilabel(j) != Graph::epsilon) {
+      if (second.ilabel(j) != epsilon) {
         if (second.ilabelSorted()) {
-          // Graph::epsilon < 0
+          // epsilon < 0
           break;
         } else {
           continue;
@@ -359,7 +359,7 @@ Graph compose(
       }
       auto weight = second.weight(j);
       auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], Graph::epsilon, second.olabel(j), weight);
+          currNode, newNodes[idx], epsilon, second.olabel(j), weight);
       gradInfo.emplace_back(-1, j);
     }
   }

@@ -12,7 +12,7 @@ namespace gtn {
 
 /**
  * Creates a scalar graph - a graph with a single arc between two nodes with a
- * given weight value and a `Graph::epsilon` label.
+ * given weight value and a `epsilon` label.
  * \ingroup creations
  */
 Graph scalarGraph(float val, bool calcGrad = true);

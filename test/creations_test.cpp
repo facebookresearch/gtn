@@ -13,7 +13,7 @@ TEST_CASE("Test Scalar Creation", "[creations.createScalar]") {
   float weight = static_cast<float>(rand());
   auto g = scalarGraph(weight, false);
   CHECK(g.numArcs() == 1);
-  CHECK(g.label(0) == Graph::epsilon);
+  CHECK(g.label(0) == epsilon);
   CHECK(g.numNodes() == 2);
   CHECK(g.weight(0) == weight);
   CHECK(g.item() == weight);

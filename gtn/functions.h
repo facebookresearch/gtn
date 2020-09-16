@@ -87,7 +87,7 @@ Graph union_(const std::vector<Graph>& graphs);
  * were epsilon transitions. Note this is different than simply pruning the
  * arc.
  */
-Graph remove(const Graph& g, int label = Graph::epsilon);
+Graph remove(const Graph& g, int label = epsilon);
 
 /**
  * Create the equivalent graph without `ilabel:olabel` transitions. The removed

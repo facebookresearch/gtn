@@ -127,7 +127,7 @@ Graphs can also have cycles, though not every function supports cyclic graphs.
    :alt: cyclic fsa
 
 GTN also allows :math:`\epsilon` transitions in graphs. Use
-:cpp:member:`Graph::epsilon` to add :math:`\epsilon` labels for arcs.
+:cpp:member:`epsilon` to add :math:`\epsilon` labels for arcs.
 
 .. figure:: images/epsilons.svg
    :align: center

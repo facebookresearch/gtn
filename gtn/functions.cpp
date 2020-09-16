@@ -136,7 +136,7 @@ Graph concat(const std::vector<Graph>& graphs) {
       auto pNodeOffset = nodeOffset - pGraph.numNodes();
       for (auto a : pGraph.accept()) {
         for (auto s : graph.start()) {
-          out.addArc(a + pNodeOffset, s + nodeOffset, Graph::epsilon);
+          out.addArc(a + pNodeOffset, s + nodeOffset, epsilon);
         }
       }
     }
@@ -169,11 +169,11 @@ Graph closure(const Graph& g) {
 
   // Epsilon from new start to old accepts
   for (auto s : g.start()) {
-    closed.addArc(0, s + 1, Graph::epsilon);
+    closed.addArc(0, s + 1, epsilon);
   }
   // Epsilon from old accepts to new start
   for (auto a : g.accept()) {
-    closed.addArc(a + 1, 0, Graph::epsilon);
+    closed.addArc(a + 1, 0, epsilon);
   }
   return closed;
 }
@@ -243,7 +243,7 @@ Graph intersect(const Graph& g1, const Graph& g2) {
   return detail::compose(g1, g2, matcher);
 }
 
-Graph remove(const Graph& g, int label /* = Graph::epsilon */) {
+Graph remove(const Graph& g, int label /* = epsilon */) {
   return remove(g, label, label);
 }
 
