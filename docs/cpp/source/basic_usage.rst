@@ -56,13 +56,13 @@ Input and Output
 ----------------
 
 The GTN framework provides some convenience functions to visualize graphs. We
-can print them to ``stdout`` or a file with :cpp:func:`print`.  We can write them to
-`Graphviz's <https://graphviz.org/>`_ ``.dot`` format with :cpp:func:`draw`.
+can print them to ``stdout`` or write them to `Graphviz's
+<https://graphviz.org/>`_ ``.dot`` format with :cpp:func:`draw`.
 
 ::
 
-  // print graph to std::out
-  print(graph);
+  // print graph to stdout
+  std::cout << graph << std::endl;
 
   // Draw the graph in dot format to file
   draw(graph, "simple_fsa.dot", {{0, "a"}, {1, "b"}, {2, "c"}});
@@ -74,7 +74,26 @@ example, to make a PDF image use
 
   dot -Tpdf graph.dot -o graph.pdf
 
-We can also load a graph from an input stream or a file using :cpp:func:`load`.
+We can save graphs in binary with :cpp:func:`save` or as a text file with
+:cpp:func:`saveTxt`. Similarly we can load graphs in binary format with
+:cpp:func:`load` or from a text file with :cpp:func:`loadTxt`.
+
+::
+
+  // save in binary format
+  save("myGraph.bin", graph);
+
+  // save in text format
+  saveTxt("myGraph.txt", graph);
+
+  // load in binary format
+  graph = load("myGraph.bin");
+
+  // load in text format
+  graph = loadTxt("myGraph.txt");
+
+We can save and load graphs from input streams as well as files. The text
+format of the graph is described below.
 
 ::
 
@@ -96,23 +115,23 @@ We can also load a graph from an input stream or a file using :cpp:func:`load`.
 Comparisons
 -----------
 
-There are several ways to compare two graph in GTN. For example use
-:cpp:func:`equal` to check for exact match between two graphs. In this case the
-nodes of the same id should have the same arcs. The function
-:cpp:func:`isomorphic` checks that the graph structures are the same regardless
-of the actual node ids, this can be expensive for large graphs.
+There are several ways to compare two graphs in GTN. Use :cpp:func:`equal` to
+check for an exact match between two graphs. In this case nodes with the same
+id should have the same arcs. The function :cpp:func:`isomorphic` checks that
+the graph structures are the same regardless of the actual node ids. This can
+be expensive for large graphs.
 
 WFSAs and WFSTs of different structure can be equivalent in the sense that they
-accept or transduce the same paths with the same scores. To check this case,
-GTN supplies :cpp:func:`randEquivalent`. The function
-:cpp:func:`randEquivalent` uses a monte carlo sampling strategy to assess the
+accept or transduce the same paths with the same scores. To check this
+condition, use :cpp:func:`randEquivalent`. The function
+:cpp:func:`randEquivalent` uses a Monte Carlo sampling strategy to assess the
 equivalence between two graphs and may incorrectly assume the graphs are
-equivalence if not enough samples are used.
+equivalent if not enough samples are used.
 
 Example Graphs
 --------------
 
-Graphs in GTN can have multiple start and accepting nodes. Start nodes have
+Graphs in GTN can have multiple start and accept nodes. Start nodes have
 bold circles and accepting nodes are denoted by concentric circles in the
 figure below.
 

@@ -271,7 +271,7 @@ void forwardingAcceptors() {
   std::cout << "The Viterbi score is: " << vscore.item() << std::endl;
 
   auto vpath = viterbiPath(graph);
-  draw(graph, "simple_viterbi_path.dot", symbols);
+  draw(vpath, "simple_viterbi_path.dot", symbols);
 }
 
 // Differentiable WFSAs

@@ -20,7 +20,7 @@ any sequence accepted by either input graph.
    :align: center
    :width: 200px
 
-   The ``g1`` recognizes :math:`aba*`.
+   The ``g1`` recognizes :math:`aba^*`.
 
 .. figure:: images/union_g2.svg
    :align: center
@@ -38,7 +38,7 @@ any sequence accepted by either input graph.
    :align: center
    :width: 200px
 
-   The union graph, ``union_({g1, g2, g3})``, recognizes any of :math:`aba*`,
+   The union graph, ``union_({g1, g2, g3})``, recognizes any of :math:`aba^*`,
    :math:`ba`, or :math:`ac`.
 
 
@@ -75,7 +75,7 @@ Closure
 
 Use :cpp:func:`closure` to compute the Kleene closure of a graph.
 
-The Kleene closure, :math:`\mathcal{A}*`, accepts any sequence
+The Kleene closure, :math:`\mathcal{A}^*`, accepts any sequence
 accepted by the original graph repeated 0 or more times (0 repeats is the empty
 sequence, :math:`\epsilon`.).
 
@@ -89,7 +89,7 @@ sequence, :math:`\epsilon`.).
    :align: center
    :width: 300px
 
-   The closed graph, ``closure(g)``, recognizes :math:`\{aba\}*`.
+   The closed graph, ``closure(g)``, recognizes :math:`\{aba\}^*`.
 
 Intersection
 ------------
@@ -98,7 +98,7 @@ Use :cpp:func:`intersect` to compute the intersection of two acceptors.
 
 The intersection, :math:`\mathcal{A}_1 \circ \mathcal{A}_2` accepts any path
 which is accepted by both input graphs. The score for a path in the intersected
-graph is the sum of the score of the path in each input graph.
+graph is the sum of the scores of the path from each input graph.
 
 .. figure:: images/simple_intersect_g1.svg
    :align: center
