@@ -9,6 +9,8 @@
 | [**Documentation**](https://gtn.readthedocs.io/en/latest/)
 
 [![facebookresearch](https://circleci.com/gh/facebookresearch/gtn.svg?style=shield&circle-token=5bc7bf18680cc891afda8dbabfdec02605131e17)](https://circleci.com/gh/facebookresearch/gtn)
+[![C++ Documentation Status](https://img.shields.io/readthedocs/gtn.svg?label=C%2B%2B+docs)](https://gtn.readthedocs.io/en/latest/)
+[![Python Documentation Status](https://img.shields.io/readthedocs/gtn-python.svg?label=Python+docs)](https://gtn.readthedocs.io/projects/python/en/latest/)
 
 ## What is GTN?
 
