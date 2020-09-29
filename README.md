@@ -4,7 +4,7 @@
 
 # GTN: Automatic Differentiation with WFSTs
 
-[**Quickstart**](#quickstart)
+[**Quickstart**](#quick-start)
 | [**Installation**](#installation)
 | [**Documentation**](https://gtn.readthedocs.io/en/latest/)
 
