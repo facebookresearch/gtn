@@ -8,6 +8,8 @@
 | [**Installation**](#installation)
 | [**Documentation**](https://gtn.readthedocs.io/en/latest/)
 
+[![facebookresearch](https://circleci.com/gh/facebookresearch/gtn.svg?style=shield&circle-token=5bc7bf18680cc891afda8dbabfdec02605131e17)](https://circleci.com/gh/facebookresearch/gtn)
+
 ## What is GTN?
 
 GTN is a framework for automatic differentiation with weighted finite-state
