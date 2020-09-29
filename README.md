@@ -144,4 +144,4 @@ python bindings/python/examples/simple_graph.py
 
 ### License
 
-gtn is licensed under a MIT license. See [LICENSE](LICENSE).
+GTN is licensed under a MIT license. See [LICENSE](LICENSE).
