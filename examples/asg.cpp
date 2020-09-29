@@ -5,35 +5,27 @@
 
 using namespace gtn;
 
-float rand_score() {
-  auto uni = static_cast<float>(std::rand());
-  uni /= static_cast<float>(RAND_MAX);
-  return uni * 10 - 5;
-}
+/*
+ * An implementation of the Auto Segmentation Criterion (ASG)
+ * in the graph transducer framework. See e.g.
+ * https://arxiv.org/abs/1609.03193
+ */
 
 int main() {
-  /*
-   * An implementation of the Auto Segmentation Crieterion (ASG)
-   * in the graph transducer framework. See e.g.
-   * https://arxiv.org/abs/1609.03193
-   */
+  // We consider an example where input sequence has length 5 and output
+  // sequence is ['c', 'a', 't']. Output alphabet contains the letters a-z and a
+  // space (_)
 
-  // Force align graph for "cat"
-  int L = 3;
-  std::stringstream fal_str(
-      "0\n"
-      "3\n"
-      "0 1 2\n"
-      "1 1 2\n"
-      "1 2 0\n"
-      "2 2 0\n"
-      "2 3 20\n"
-      "3 3 20\n");
-  Graph fal_graph = loadTxt(fal_str);
-  // print(fal_graph);
-
-  // Transition graph for the alphabet
   int N = 27; // size of alphabet (arcs per step)
+  int T = 5; // length of input
+  int L = 3; // length of target
+  std::vector<int> output = {2, 0, 19}; // corresponds to 'c', 'a', 't'
+
+  // Build emissions(recognition) graph
+  Graph emissions = linearGraph(T, N);
+  // emissions.setWeights(...); // set emisssion weights appropriately
+
+  // Build transition graph
   Graph transitions;
   transitions.addNode(true);
   for (int i = 1; i <= N; i++) {
@@ -45,36 +37,41 @@ int main() {
       transitions.addArc(i + 1, j + 1, j); // p(j | i)
     }
   }
+  // transitions.setWeights(...); // set transition weights appropriately
 
-  // Emissions (recognition) graph
-  int T = 10; // graph length (frames)
-  Graph emissions;
-  emissions.addNode(true);
-  for (int t = 1; t <= T; t++) {
-    emissions.addNode(false, t == T);
-    for (int i = 0; i < N; i++) {
-      emissions.addArc(t - 1, t, i, i, rand_score());
+  // Build force align graph (all the acceptable sequences for "cat")
+  Graph fal; // https://bit.ly/3jbxbya
+  fal.addNode(true);
+  for (int l = 1; l <= L; l++) {
+    int label = output[l-1];
+    fal.addNode(false, l == L - 1);
+    fal.addArc(l, l, label);
+    if (l > 0) {
+      fal.addArc(l - 1, l, label);
     }
   }
-  auto composed_fal = compose(emissions, compose(fal_graph, transitions));
+
+  Graph falAlignments = compose(emissions, compose(fal, transitions)); // https://git.io/JU6et
   // NB: compose is associative, so we could also do:
-  // auto composed_fal = compose(compose(emissions, fal_graph), transitions);
-  auto composed_fcc = compose(emissions, transitions);
-  auto fal = forwardScore(composed_fal);
-  auto fcc = forwardScore(composed_fcc);
-  auto asg = subtract(fcc, fal);
-  std::cout << "Composed FAL Graph Nodes: " << composed_fal.numNodes()
-            << " Arcs: " << composed_fal.numArcs() << " should be "
-            << (2 * L - 1) * (T - L) + L << std::endl;
-  std::cout << "Composed FCC Graph Nodes: " << composed_fcc.numNodes()
-            << " Arcs: " << composed_fcc.numArcs() << " should be "
-            << N * N * (T - 1) + N << std::endl;
+  // Graph falAlignments = compose(compose(emissions, fal), transitions);
+  Graph falScore = forwardScore(falAlignments); 
 
-  std::cout << "FAL: " << fal.item() << std::endl;
-  std::cout << "FCC: " << fcc.item() << std::endl;
-  std::cout << "ASG: " << asg.item() << std::endl;
+  // Build full connect graph (all the acceptable sequences for "cat")
+  Graph fccAlignments = compose(emissions, transitions);
+  Graph fccScore = forwardScore(fccAlignments);
 
-  // Compute gradients with respect to the
-  // emissions graph and the fal_graph
-  backward(asg);
+  Graph asgScore = subtract(fccScore, falScore);
+  std::cout << "FAL Alignments Graph Nodes: " << falAlignments.numNodes()
+            << " Arcs: " << falAlignments.numArcs() << " (should be "
+            << (2 * L - 1) * (T - L) + L << ")" << std::endl;
+  std::cout << "FCC Alignments Graph Nodes: " << fccAlignments.numNodes()
+            << " Arcs: " << fccAlignments.numArcs() << " (should be "
+            << N * N * (T - 1) + N << ")" << std::endl;
+
+  std::cout << "FAL Score: " << falScore.item() << std::endl;
+  std::cout << "FCC Score: " << fccScore.item() << std::endl;
+  std::cout << "ASG Score: " << asgScore.item() << std::endl;
+
+  // Compute gradients with respect to emissions and transitions graphs
+  backward(asgScore); // emissions.grad() and transitions.grad() will be computed.
 }

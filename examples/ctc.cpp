@@ -5,25 +5,28 @@
 
 using namespace gtn;
 
-float rand_score() {
-  auto uni = static_cast<float>(std::rand());
-  uni /= static_cast<float>(RAND_MAX);
-  return uni * 10 - 5;
-}
+/*
+ * An implementation of Connectionist Temporal Classification (CTC)
+ * in the GTN framework. See e.g.
+ * https://www.cs.toronto.edu/~graves/icml_2006.pdf
+ */
 
-Graph ctc_graph(std::vector<int> target, int blank) {
+Graph createCtcTargetGraph(const std::vector<int>& target, int blank) {
   int L = target.size();
-  int U = 2 * L + 1;
+  int U = 2 * L + 1; // # c # a # t #
   Graph ctc;
   for (int l = 0; l < U; l++) {
     int idx = (l - 1) / 2;
     ctc.addNode(l == 0, l == U - 1 || l == U - 2);
     int label = l % 2 ? target[idx] : blank;
-    ctc.addArc(l, l, label);
+    ctc.addArc(l, l, label); // current label can repeat itself
     if (l > 0) {
+      // transition from blank to label or vice-versa
       ctc.addArc(l - 1, l, label);
     }
     if (l % 2 && l > 1 && label != target[idx - 1]) {
+      // transition from previous target label to current label provided it
+      // is not a repeat label
       ctc.addArc(l - 2, l, label);
     }
   }
@@ -31,53 +34,27 @@ Graph ctc_graph(std::vector<int> target, int blank) {
 }
 
 int main() {
-  /* An implementation of Connectionist Temporal Classification (CTC)
-   * in the graph transducer framework. See e.g.
-   * https://www.cs.toronto.edu/~graves/icml_2006.pdf
-   */
+  // We consider an example where input sequence has length 5 and output
+  // sequence is ['c', 'a', 't']. Output alphabet contains the letters a-z, a
+  // space (_), and a blank token (#).
 
-  // Force align graph for "cat"
   int N = 28; // size of alphabet (arcs per step)
-  Graph ctc = ctc_graph({1, 3, 21}, 0);
+  int T = 5; // length of input
+  std::vector<int> output = {3, 1, 20}; // corresponds to 'c', 'a', 't'
+  Graph ctc = createCtcTargetGraph(output, 0 /* blank idx */); // https://git.io/JUKAZ
 
-  // Emissions (recognition) graph
-  int T = 10; // graph length (frames)
-  Graph emissions;
-  emissions.addNode(true);
-  for (int t = 1; t <= T; t++) {
-    emissions.addNode(false, t == T);
-    for (int i = 0; i < N; i++) {
-      emissions.addArc(t - 1, t, i, i, rand_score());
-    }
-  }
+  // Emission graph
+  Graph emissions = linearGraph(T, N);
+  // Set the weights of the emission graph appropriately. We assume that the
+  // weights are normalized with `logsoftmax` for each timestep.
+  // emissions.setWeights(...);
 
-  auto denom = forwardScore(emissions);
-  auto composed_ctc = compose(ctc, emissions);
-  auto num = forwardScore(composed_ctc);
-  auto loss = subtract(denom, num);
-  std::cout << "Composed CTC Graph Nodes: " << composed_ctc.numNodes()
-            << " Arcs: " << composed_ctc.numArcs() << std::endl;
-  std::cout << "CTC Loss: " << loss.item() << std::endl;
+  auto ctcAlignments = compose(ctc, emissions); // https://git.io/JUKA1
+  auto ctcLoss = negate(forwardScore(ctcAlignments));
+  std::cout << "CTC Alignments Graph Nodes: " << ctcAlignments.numNodes()
+            << " Arcs: " << ctcAlignments.numArcs() << std::endl;
+  std::cout << "CTC Loss: " << ctcLoss.item() << std::endl;
 
-  // Just for fun, add bi-gram transitions to CTC.
-  Graph transitions;
-  transitions.addNode(true);
-  for (int i = 1; i <= N; i++) {
-    transitions.addNode(false, true);
-    transitions.addArc(0, i, i - 1); // p(i | <s>)
-  }
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-      transitions.addArc(i + 1, j + 1, j); // p(j | i)
-    }
-  }
-
-  auto composed_bigram_ctc = compose(compose(ctc, emissions), transitions);
-  num = forwardScore(composed_bigram_ctc);
-  denom = forwardScore(compose(emissions, transitions));
-  loss = subtract(denom, num);
-  std::cout << "Composed bi-gram CTC Graph Nodes: "
-            << composed_bigram_ctc.numNodes()
-            << " Arcs: " << composed_bigram_ctc.numArcs() << std::endl;
-  std::cout << "Bi-gram CTC Loss " << loss.item() << std::endl;
+  // Compute gradients with respect to the emissions graph
+  backward(ctcLoss); // emissions.grad() will be computed.
 }
