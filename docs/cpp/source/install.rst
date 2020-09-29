@@ -19,13 +19,13 @@ First, clone gtn from `its repository on Github <https://github.com/facebookrese
 
 .. code-block:: shell
 
-   git clone https://github.com/facebookresearch/gtn.git
+   git clone https://github.com/facebookresearch/gtn.git && cd gtn
 
-Create a build directory and run CMake:
+Create a build directory and run CMake and make:
 
 .. code-block:: shell
 
-   mkdir -p build & cd build
+   mkdir -p build && cd build
    cmake ..
    make -j $(nproc)
 

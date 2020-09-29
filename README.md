@@ -66,7 +66,7 @@ gtn.backward(score)
 
 ### Requirements
 
-- A C++ compiler with good C++11 support (e.g. g++ >= 5)
+- A C++ compiler with good C++14 support (e.g. g++ >= 5)
 - `cmake` >= 3.5.1, and `make`
 
 ### Python
@@ -82,33 +82,24 @@ pip install gtn
 First, clone the project:
 
 ```
-git clone git@github.com:facebookresearch/gtn.git
-cd gtn
+git clone git@github.com:facebookresearch/gtn.git && cd gtn
 ```
 
-Create a build dir:
+Create a build directory and run CMake and make:
 
 ```
-mkdir build && cd build
-```
-
-Run CMake (no dependencies):
-
-```
+mkdir -p build && cd build
 cmake ..
+make -j $(nproc)
 ```
 
-Build:
-
-```
-make -j8
-```
-
-Run tests:
+Run tests with:
 
 ```
 make test
 ```
+
+Run `make install` to install.
 
 ### Python bindings from source
 
