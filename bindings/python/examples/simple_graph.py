@@ -29,10 +29,10 @@ g3.add_arc(1, 2, 2)
 
 symbols = {0: "a", 1: "b", 2: "c"}
 
-gtn.draw(g1, "/tmp/sum_g1.dot", symbols, symbols)
-gtn.draw(g2, "/tmp/sum_g2.dot", symbols, symbols)
-gtn.draw(g3, "/tmp/sum_g3.dot", symbols, symbols)
+gtn.draw(g1, "/tmp/union_g1.pdf", symbols, symbols)
+gtn.draw(g2, "/tmp/union_g2.pdf", symbols, symbols)
+gtn.draw(g3, "/tmp/union_g3.pdf", symbols, symbols)
 
-graph = gtn.sum([g1, g2, g3])
+graph = gtn.union([g1, g2, g3])
 
-gtn.draw(graph, "/tmp/sum_graph.dot", symbols, symbols)
+gtn.draw(graph, "/tmp/union_graph.pdf", symbols, symbols)
