@@ -4,7 +4,7 @@
 
 # GTN: Automatic Differentiation with WFSTs
 
-[**Quickstart**](#quick-start)
+[**Quickstart**](#quickstart)
 | [**Installation**](#installation)
 | [**Documentation**](https://gtn.readthedocs.io/en/latest/)
 
@@ -24,7 +24,7 @@ acceptors (WFSAs) or transducers (WFSTs). With `gtn` you can dynamically constru
 graphs from operations on simpler graphs. Automatic differentiaation gives gradients with repsect to any input or intermediate graph
 with a single call to `gtn.backward`.
 
-## Quick Start
+## Quickstart
 
 First [install](#installation) the python bindings.
 
@@ -36,7 +36,7 @@ import gtn
 # Make some graphs:
 g1 = gtn.Graph()
 g1.add_node(True)  # Add a start node
-g1.add_n_ode()  # Add an internal node
+g1.add_node()  # Add an internal node
 g1.add_node(False, True)  # Add an accepting node
 
 # Add arcs with (src node, dst node, label):
