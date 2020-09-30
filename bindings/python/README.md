@@ -1,4 +1,11 @@
 ## GTN Python Bindings
 
-Please follow the instructions [here](../../README.md#python-bindings) to install python bindings.
+Install the Python bindings with
+
+```
+pip install gtn
+```
+
+Follow these [instructions](../../README.md#python-bindings-from-source) to
+install the bindings from source.
 
