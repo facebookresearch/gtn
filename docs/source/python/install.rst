@@ -1,5 +1,5 @@
-Installation
-============
+Installing Python Bindings
+--------------------------
 
 The python package may be installed with ``pip``:
 
@@ -39,14 +39,18 @@ or, to install in editable mode (for dev):
 
   python setup.py develop
 
-Python binding tests can be run with `make test`, or with
+Running Python Tests
+~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: shell
+Python binding tests can be run with ``make test``, or with
 
-  python -m unittest discover bindings/python/test
+.. code-block::
+
+    python -m unittest discover bindings/python/test
+
 
 Run a simple example:
 
-.. code-block:: shell
+.. code-block::
 
-  python bindings/python/examples/simple_graph.py
+   python bindings/python/examples/simple_graph.py
