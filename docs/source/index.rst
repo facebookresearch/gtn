@@ -17,6 +17,7 @@ finite-state tranducers (WFSTs).
    basic_usage
    common_functions
    autograd_basics
+   pytorch
 
 .. toctree::
    :caption: C++ API Reference
