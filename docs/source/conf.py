@@ -28,6 +28,7 @@ extensions = [
 intersphinx_mapping = {
     'https://docs.python.org/3': None,
     'https://numpy.org/doc/stable/': None,
+    'https://pytorch.org/docs/stable/' : None,
 }
 
 breathe_projects = {"gtn" : "../build/xml"}
