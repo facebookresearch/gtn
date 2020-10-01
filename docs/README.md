@@ -1,4 +1,4 @@
-# gtn` Documentation
+# GTN Documentation
 
 ## Building the Docs
 
@@ -16,23 +16,17 @@ pip install -r requirements.txt
 
 ### Build
 
-From `docs/cpp`:
+From `docs/`:
 
 ```
 doxygen && make html
-```
-
-From `docs/python/`:
-
-```
-make html
 ```
 
 If you run into issues rebuilding the docs, run `make clean` before building again.
 
 ### View the Docs
 
-Run a server in `docs/{cpp|python}/build/html`:
+Run a server in `docs/build/html`:
 
 ```
 python -m http.server <port>

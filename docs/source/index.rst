@@ -5,13 +5,13 @@ Documentation for GTN, a library for automatic differentiation with weighted
 finite-state tranducers (WFSTs).
 
 .. toctree::
-   :caption: INSTALLATION
+   :caption: Installation
    :maxdepth: 1
 
    install
 
 .. toctree::
-   :caption: USAGE
+   :caption: Usage
    :maxdepth: 1
 
    basic_usage
@@ -19,7 +19,7 @@ finite-state tranducers (WFSTs).
    autograd_basics
 
 .. toctree::
-   :caption: C++ API REFERENCE
+   :caption: C++ API Reference
    :maxdepth: 1
 
    graph
@@ -30,11 +30,12 @@ finite-state tranducers (WFSTs).
    utils
 
 .. toctree::
-   :caption: Language Bindings
+   :caption: Python API Reference
    :maxdepth: 1
 
-   Python <https://gtn.readthedocs.io/projects/python/en/latest/>
-
+   Installation <python/install>
+   python/gtn
+   python/graph
 
 
 Indices

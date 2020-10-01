@@ -5,6 +5,10 @@ import subprocess
 
 import sphinx_rtd_theme
 
+read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+if read_the_docs_build:
+    subprocess.call('cd ..; doxygen', shell=True)
+
 # -- Project information -----------------------------------------------------
 
 project = 'GTN'
@@ -12,29 +16,27 @@ copyright = '2020, GTN Contributors'
 author = 'GTN Contributors'
 version = '0.0'
 
-
 # -- General configuration ---------------------------------------------------
 
 extensions = [
+    'sphinx.ext.graphviz',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
+    'breathe'
 ]
+
 intersphinx_mapping = {
     'https://docs.python.org/3': None,
     'https://numpy.org/doc/stable/': None,
 }
 
+breathe_projects = {"gtn" : "../build/xml"}
+breathe_default_project = "gtn"
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
-language = 'Python'
+highlight_language = 'c++'
 pygments_style = 'sphinx'
-
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
-
 
 # -- Options for HTML output -------------------------------------------------
 
