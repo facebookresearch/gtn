@@ -21,7 +21,7 @@ Python.
 The goal of GTN is to make adding and experimenting with structure in learning
 algorithms much simpler. This structure is encoded as weighted automata, either
 acceptors (WFSAs) or transducers (WFSTs). With `gtn` you can dynamically construct complex
-graphs from operations on simpler graphs. Automatic differentiaation gives gradients with repsect to any input or intermediate graph
+graphs from operations on simpler graphs. Automatic differentiation gives gradients with respect to any input or intermediate graph
 with a single call to `gtn.backward`.
 
 ## Quickstart
