@@ -45,13 +45,13 @@ g1.add_arc(1, 2, 1)
 g1.add_arc(1, 2, 0)
 
 g2 = gtn.Graph()
-g2.add_node(True)
+g2.add_node(True, True)
 g2.add_arc(0, 0, 1)
 g2.add_arc(0, 0, 0)
 
 # Compute a function of the graphs:
 intersection = gtn.intersect(g1, g2)
-score = gtn.forward_score()
+score = gtn.forward_score(intersection)
 
 # Visualize the intersected graph:
 gtn.draw(intersection, "intersection.pdf")
