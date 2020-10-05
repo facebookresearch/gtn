@@ -47,21 +47,19 @@ int main() {
   // transitions.setWeights(...); // set transition weights appropriately
 
   // Build force align graph (all the acceptable sequences for "cat")
-  Graph fal; // https://bit.ly/3jbxbya
+  Graph fal; // https://bit.ly/36to2xk
   fal.addNode(true);
   for (int l = 1; l <= L; l++) {
-    int label = output[l-1];
-    fal.addNode(false, l == L - 1);
+    int label = output[l - 1];
+    fal.addNode(false, l == L);
     fal.addArc(l, l, label);
-    if (l > 0) {
-      fal.addArc(l - 1, l, label);
-    }
+    fal.addArc(l - 1, l, label);
   }
 
-  Graph falAlignments = compose(emissions, compose(fal, transitions)); // https://git.io/JU6et
+  Graph falAlignments = compose(emissions, compose(fal, transitions)); // https://git.io/JUF9n
   // NB: compose is associative, so we could also do:
   // Graph falAlignments = compose(compose(emissions, fal), transitions);
-  Graph falScore = forwardScore(falAlignments); 
+  Graph falScore = forwardScore(falAlignments);
 
   // Build full connect graph (all the acceptable sequences for "cat")
   Graph fccAlignments = compose(emissions, transitions);
