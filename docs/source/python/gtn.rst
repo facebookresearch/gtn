@@ -243,7 +243,7 @@ Input and Output
   is a two node graph with an arc from node 0 to node 1 with input label 1,
   output label 2, and a weight of 3.0.
 
-.. py:function:: write_dot(g, file_name, isymbbols={}, osymbols={})
+.. py:function:: write_dot(g, file_name, isymbols={}, osymbols={})
 
   Write the graph in `Graphviz <https://graphviz.org/>`_ DOT format. See
   :func:`draw`.
