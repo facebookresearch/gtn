@@ -27,7 +27,8 @@ with a single call to `gtn.backward`.
 
 First [install](#installation) the python bindings.
 
-The following is a minimal example of building two WFSAs with `gtn`, constructing a simple function on the graphs, and computing gradients.
+The following is a minimal example of building two WFSAs with `gtn`, constructing a simple function on the graphs, and computing gradients. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1h_qQnk2BRDqEJwQJtIL_j6DavWF0MRgw#scrollTo=vnLz8l__WgI4)
+
 
 ```python
 import gtn
@@ -59,7 +60,6 @@ gtn.draw(intersection, "intersection.pdf")
 # Backprop:
 gtn.backward(score)
 ```
-
 
 ## Installation
 
