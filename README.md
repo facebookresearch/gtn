@@ -51,14 +51,14 @@ g2.add_arc(0, 0, 1)
 g2.add_arc(0, 0, 0)
 
 # Compute a function of the graphs:
-g_intersection = gtn.intersect(g1, g2)
-g_score = gtn.forward_score(g_intersection)
+intersection = gtn.intersect(g1, g2)
+score = gtn.forward_score(intersection)
 
 # Visualize the intersected graph:
-gtn.draw(g_intersection, "g_intersection.pdf")
+gtn.draw(intersection, "intersection.pdf")
 
 # Backprop:
-gtn.backward(g_score)
+gtn.backward(score)
 
 # Print gradients of arc weights 
 print(g1.grad().weights_to_list()) # [1.0, 0.0, 1.0, 0.0]
