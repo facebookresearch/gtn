@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+Copyright (c) Facebook, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
 
 import gtn
 import numpy as np
@@ -170,6 +176,7 @@ def main():
         correct += np.sum(np.array(Y.labels_to_list()) == prediction)
         total += len(prediction)
     print("Test: Accuracy {:.3f}".format(correct / total))
+
 
 if __name__ == "__main__":
     main()
