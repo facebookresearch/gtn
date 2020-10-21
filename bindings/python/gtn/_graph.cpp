@@ -27,14 +27,15 @@ PYBIND11_MODULE(_graph, m) {
           py::overload_cast<bool, bool>(&Graph::addNode),
           "start"_a = false,
           "accept"_a = false)
-      .def("add_arc",
-          py::overload_cast<int, int, int>(&Graph::addArc),
+      .def(
+          "add_arc",
+          py::overload_cast<size_t, size_t, int>(&Graph::addArc),
           "src_node"_a,
           "dst_node"_a,
           "label"_a)
       .def(
           "add_arc",
-          py::overload_cast<int, int, int, int, float>(&Graph::addArc),
+          py::overload_cast<size_t, size_t, int, int, float>(&Graph::addArc),
           "src_node"_a,
           "dst_node"_a,
           "ilabel"_a,
@@ -47,7 +48,8 @@ PYBIND11_MODULE(_graph, m) {
       .def("num_accept", &Graph::numAccept)
       .def("is_grad_available", &Graph::isGradAvailable)
       .def("item", &Graph::item)
-      .def("arc_sort",
+      .def(
+          "arc_sort",
           [](Graph& g, bool olabel) {
             py::gil_scoped_release release;
             g.arcSort(olabel);
@@ -106,8 +108,8 @@ PYBIND11_MODULE(_graph, m) {
       });
   m.attr("epsilon") = epsilon;
 #ifdef VERSION_INFO
-    m.attr("__version__") = VERSION_INFO;
+  m.attr("__version__") = VERSION_INFO;
 #else
-    m.attr("__version__") = "dev";
+  m.attr("__version__") = "dev";
 #endif
 }
