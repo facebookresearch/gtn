@@ -90,7 +90,7 @@ Graph shortestDistance(const Graph& g, bool tropical /* = false */) {
   std::vector<float> maxScoresCache(g.numNodes() + 1, kNegInf);
   std::vector<int> maxArcIdxCache(g.numNodes() + 1, -1);
   std::vector<int> degrees;
-  degrees.reserve(g.numNodes());
+  degrees.resize(g.numNodes());
   for (auto n = 0; n < g.numNodes(); ++n) {
     degrees[n] = g.numIn(n);
   }
@@ -192,7 +192,7 @@ Graph shortestPath(const Graph& g) {
   std::queue<int> computed;
   // List of in degrees for each node
   std::vector<int> degrees;
-  degrees.reserve(g.numNodes());
+  degrees.resize(g.numNodes());
   // List of scores and backpointers for each node
   std::vector<int> backPointers(g.numNodes());
   std::vector<float> scores(g.numNodes(), kNegInf);
