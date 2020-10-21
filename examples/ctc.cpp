@@ -19,8 +19,8 @@ using namespace gtn;
  */
 
 Graph createCtcTargetGraph(const std::vector<int>& target, int blank) {
-  int L = target.size();
-  int U = 2 * L + 1; // # c # a # t #
+  size_t L = target.size();
+  size_t U = 2 * L + 1; // # c # a # t #
   Graph ctc;
   for (int l = 0; l < U; l++) {
     int idx = (l - 1) / 2;

@@ -6,6 +6,7 @@
  */
 
 #include <math.h>
+#include <string>
 
 #include "benchmarks/time_utils.h"
 #include "gtn/gtn.h"

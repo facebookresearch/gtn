@@ -124,19 +124,19 @@ class Graph {
       float weight = 0.0);
 
   /** The number of arcs in the graph. */
-  int numArcs() const {
+  size_t numArcs() const {
     return sharedGraph_->arcs.size();
   };
   /** The number of nodes in the graph. */
-  int numNodes() const {
+  size_t numNodes() const {
     return sharedGraph_->nodes.size();
   };
   /** The number of starting nodes in the graph. */
-  int numStart() const {
+  size_t numStart() const {
     return sharedGraph_->start.size();
   };
   /** The number of accepting nodes in the graph. */
-  int numAccept() const {
+  size_t numAccept() const {
     return sharedGraph_->accept.size();
   };
 
@@ -346,7 +346,7 @@ class Graph {
     }
   };
   /** The number of outgoing arcs from the `i`-th node. */
-  int numOut(int i) const {
+  size_t numOut(int i) const {
     return node(i).out.size();
   }
   /** Get the indices of outgoing arcs from the `i`-th node. */
@@ -358,7 +358,7 @@ class Graph {
     return node(i).out[j];
   }
   /** The number of incoming arcs to the `i`-th node. */
-  int numIn(int i) const {
+  size_t numIn(int i) const {
     return node(i).in.size();
   }
   /** Get the indices of incoming arcs to the `i`-th node. */
@@ -414,20 +414,20 @@ class Graph {
   int addArc(int srcNode, int dstNode, int label, float) = delete;
   int addArc(int srcNode, int dstNode, int label, double) = delete;
 
-  const Node& node(int i) const {
+  const Node& node(size_t i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numNodes());
     return sharedGraph_->nodes[i];
   }
-  Node& node(int i) {
+  Node& node(size_t i) {
     return const_cast<Node&>(static_cast<const Graph&>(*this).node(i));
   }
-  const Arc& arc(int i) const {
+  const Arc& arc(size_t i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numArcs());
     return sharedGraph_->arcs[i];
   }
-  Arc& arc(int i) {
+  Arc& arc(size_t i) {
     return const_cast<Arc&>(static_cast<const Graph&>(*this).arc(i));
   }
 
