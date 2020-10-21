@@ -36,23 +36,23 @@ void shortestDistanceGrad(
     const Graph& deltas,
     const std::vector<float>& nodeScores,
     const std::vector<float>& maxScoresCache,
-    const std::vector<int>& maxArcIdxCache,
+    const std::vector<size_t>& maxArcIdxCache,
     bool tropical) {
   std::queue<int> computed;
-  std::vector<int> degrees(g.numNodes());
+  std::vector<size_t> degrees(g.numNodes());
   std::vector<float> nodeGrads(g.numNodes(), 0.0);
   std::vector<float> arcGrads(g.numArcs(), 0.0);
   for (auto n = 0; n < g.numNodes(); ++n) {
     degrees[n] = g.numOut(n);
   }
   float curScore = 0.0;
-  float denom = tropical ? 0.0 : std::exp(output - maxScoresCache.back());
+  float denom = tropical ? 0.0f : std::exp(output - maxScoresCache.back());
   for (auto n : g.accept()) {
     if (g.numOut(n) == 0) {
       computed.push(n);
     }
     if (tropical) {
-      curScore = (n == maxArcIdxCache.back()) ? 1.0 : 0.0;
+      curScore = (n == maxArcIdxCache.back()) ? 1.0f : 0.0f;
     } else {
       curScore = std::exp(nodeScores[n] - maxScoresCache.back()) / denom;
     }
@@ -62,11 +62,11 @@ void shortestDistanceGrad(
   while (!computed.empty()) {
     auto n = computed.front();
     computed.pop();
-    denom = tropical ? 0.0 : std::exp(nodeScores[n] - maxScoresCache[n]);
+    denom = tropical ? 0.0f : std::exp(nodeScores[n] - maxScoresCache[n]);
     for (const auto a : g.in(n)) {
       auto un = g.srcNode(a);
       if (tropical) {
-        curScore = (a == maxArcIdxCache[n]) ? nodeGrads[n] : 0.0;
+        curScore = (a == maxArcIdxCache[n]) ? nodeGrads[n] : 0.0f;
       } else {
         curScore = nodeGrads[n] *
             std::exp(nodeScores[un] + g.weight(a) - maxScoresCache[n]) / denom;
@@ -88,9 +88,9 @@ Graph shortestDistance(const Graph& g, bool tropical /* = false */) {
   // List of scores and list of in degrees for each node
   std::vector<float> scores(g.numNodes());
   std::vector<float> maxScoresCache(g.numNodes() + 1, kNegInf);
-  std::vector<int> maxArcIdxCache(g.numNodes() + 1, -1);
-  std::vector<int> degrees(g.numNodes());
-  for (auto n = 0; n < g.numNodes(); ++n) {
+  std::vector<size_t> maxArcIdxCache(g.numNodes() + 1, -1);
+  std::vector<size_t> degrees(g.numNodes());
+  for (size_t n = 0; n < g.numNodes(); ++n) {
     degrees[n] = g.numIn(n);
   }
   for (auto n : g.start()) {

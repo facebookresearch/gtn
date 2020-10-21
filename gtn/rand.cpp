@@ -30,7 +30,7 @@ Graph sample(const Graph& g, size_t maxLength /* = 1000 */) {
 
     // Select a random arc with optional transition to "final state" if node is
     // accepting
-    auto i = rand() % mod;
+    auto i = static_cast<int>(rand() % mod);
 
     // Successful and complete
     if (i == g.numOut(node)) {

@@ -179,7 +179,7 @@ TEST_CASE("Test copy", "[Graph::deepCopy]") {
 }
 
 TEST_CASE("Test arc weight get/set", "[graph setWeight weights]") {
-  std::vector<float> l = {1.1, 2.2, 3.3, 4.4};
+  std::vector<float> l = {1.1f, 2.2f, 3.3f, 4.4f};
 
   Graph g;
   g.addNode(true, false);

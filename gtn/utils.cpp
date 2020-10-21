@@ -8,6 +8,7 @@
 #include "gtn/utils.h"
 
 #include <algorithm>
+#include <string>
 #include <list>
 #include <unordered_set>
 
@@ -140,7 +141,7 @@ bool isomorphic(const Graph& g1, const Graph& g2) {
 
 void save(std::ostream& out, const Graph& g) {
   // save num_nodes, num_arcs,  num_start_nodes, num_accept_nodes
-  std::vector<int> nums = {
+  std::vector<size_t> nums = {
       g.numNodes(), g.numArcs(), g.numStart(), g.numAccept()};
   out.write(
       reinterpret_cast<const char*>(nums.data()), nums.size() * sizeof(int));

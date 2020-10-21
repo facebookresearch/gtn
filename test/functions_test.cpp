@@ -191,7 +191,7 @@ TEST_CASE("Test Composition", "[functions.compose]") {
     g1.addNode(false, true);
     for (int i = 0; i < g1.numNodes() - 1; i++) {
       for (int j = 0; j < 3; j++) {
-        g1.addArc(i, i + 1, j, j, j);
+        g1.addArc(i, i + 1, j, j, static_cast<float>(j));
       }
     }
 
