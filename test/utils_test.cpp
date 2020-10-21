@@ -463,7 +463,7 @@ TEST_CASE("Test SaveTxt", "[utils.saveTxt]") {
     }
     for (int i = 0; i < 10; ++i) {
       for (int j = 0; j < 10; ++j) {
-        g.addArc(i, j, i, j, i * j);
+        g.addArc(i, j, i, j, static_cast<float>(i * j));
       }
     }
     std::stringstream out;

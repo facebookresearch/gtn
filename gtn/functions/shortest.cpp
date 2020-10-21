@@ -190,11 +190,11 @@ Graph shortestDistance(const Graph& g, bool tropical /* = false */) {
 Graph shortestPath(const Graph& g) {
   std::queue<int> computed;
   // List of in degrees for each node
-  std::vector<int> degrees(g.numNodes());
+  std::vector<size_t> degrees(g.numNodes());
   // List of scores and backpointers for each node
   std::vector<int> backPointers(g.numNodes());
   std::vector<float> scores(g.numNodes(), kNegInf);
-  for (auto n = 0; n < g.numNodes(); ++n) {
+  for (size_t n = 0; n < g.numNodes(); ++n) {
     degrees[n] = g.numIn(n);
   }
   for (auto n : g.start()) {
