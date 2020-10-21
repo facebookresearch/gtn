@@ -17,7 +17,7 @@ Graph sample(const Graph& g, size_t maxLength /* = 1000 */) {
   }
 
   std::vector<int> arcs;
-  auto node = g.start()[rand() % g.numStart()];
+  size_t node = g.start()[rand() % g.numStart()];
   size_t acceptLength = 0;
   for (size_t length = 0; length < maxLength + 1; length++) {
     auto mod = g.numOut(node) + g.isAccept(node);
