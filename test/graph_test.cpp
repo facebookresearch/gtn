@@ -158,15 +158,15 @@ TEST_CASE("Test id", "[Graph::id]") {
 TEST_CASE("Test copy", "[Graph::deepCopy]") {
   Graph graph =
       loadTxt(std::stringstream("0 1\n"
-                             "3 4\n"
-                             "0 1 0 2 2\n"
-                             "0 2 1 3 1\n"
-                             "1 2 0 1 2\n"
-                             "2 3 0 0 1\n"
-                             "2 3 1 2 1\n"
-                             "1 4 0 1 2\n"
-                             "2 4 1 1 3\n"
-                             "3 4 0 2 2\n"));
+                                "3 4\n"
+                                "0 1 0 2 2\n"
+                                "0 2 1 3 1\n"
+                                "1 2 0 1 2\n"
+                                "2 3 0 0 1\n"
+                                "2 3 1 2 1\n"
+                                "1 4 0 1 2\n"
+                                "2 4 1 1 3\n"
+                                "3 4 0 2 2\n"));
 
   // Test copy
   Graph copied = Graph::deepCopy(graph);
@@ -232,9 +232,7 @@ TEST_CASE("Test gradient functionality", "[graph grad]") {
     CHECK_THROWS(g.grad());
 
     // this should be a no-op
-    g.setGradFunc([](std::vector<Graph>&, Graph&) {
-        return Graph{}; }
-    );
+    g.setGradFunc([](std::vector<Graph>&, Graph&) { return Graph{}; });
     CHECK(g.gradFunc() == nullptr);
   }
 
@@ -383,7 +381,7 @@ TEST_CASE("Test threaded grad", "[threaded_graph_grad]") {
     g.addArc(0, 1, i);
   }
 
-  auto add_to_grad = [&g] () {
+  auto add_to_grad = [&g]() {
     auto grad = std::vector<float>(g.numArcs(), 1);
     g.addGrad(grad);
   };
@@ -398,7 +396,7 @@ TEST_CASE("Test threaded grad", "[threaded_graph_grad]") {
   }
   // Check the grad is correct
   CHECK((std::all_of(
-    g.grad().weights(),
-    g.grad().weights() + g.numArcs(),
-    [num_threads] (float v) { return v == num_threads; })));
+      g.grad().weights(),
+      g.grad().weights() + g.numArcs(),
+      [num_threads](float v) { return v == num_threads; })));
 }

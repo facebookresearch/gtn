@@ -38,15 +38,15 @@ TEST_CASE("Test Scalar Ops", "[functions.scalars]") {
 TEST_CASE("Test Project/clone", "[functions.clone]") {
   Graph graph =
       loadTxt(std::stringstream("0 1\n"
-                             "3 4\n"
-                             "0 1 0 2 2\n"
-                             "0 2 1 3 1\n"
-                             "1 2 0 1 2\n"
-                             "2 3 0 0 1\n"
-                             "2 3 1 2 1\n"
-                             "1 4 0 1 2\n"
-                             "2 4 1 1 3\n"
-                             "3 4 0 2 2\n"));
+                                "3 4\n"
+                                "0 1 0 2 2\n"
+                                "0 2 1 3 1\n"
+                                "1 2 0 1 2\n"
+                                "2 3 0 0 1\n"
+                                "2 3 1 2 1\n"
+                                "1 4 0 1 2\n"
+                                "2 4 1 1 3\n"
+                                "3 4 0 2 2\n"));
 
   // Test clone
   Graph cloned = clone(graph);
@@ -55,29 +55,29 @@ TEST_CASE("Test Project/clone", "[functions.clone]") {
   // Test projecting input
   Graph inputExpected =
       loadTxt(std::stringstream("0 1\n"
-                             "3 4\n"
-                             "0 1 0 0 2\n"
-                             "0 2 1 1 1\n"
-                             "1 2 0 0 2\n"
-                             "2 3 0 0 1\n"
-                             "2 3 1 1 1\n"
-                             "1 4 0 0 2\n"
-                             "2 4 1 1 3\n"
-                             "3 4 0 0 2\n"));
+                                "3 4\n"
+                                "0 1 0 0 2\n"
+                                "0 2 1 1 1\n"
+                                "1 2 0 0 2\n"
+                                "2 3 0 0 1\n"
+                                "2 3 1 1 1\n"
+                                "1 4 0 0 2\n"
+                                "2 4 1 1 3\n"
+                                "3 4 0 0 2\n"));
   CHECK(equal(projectInput(graph), inputExpected));
 
   // Test projecting output
   Graph outputExpected =
       loadTxt(std::stringstream("0 1\n"
-                             "3 4\n"
-                             "0 1 2 2 2\n"
-                             "0 2 3 3 1\n"
-                             "1 2 1 1 2\n"
-                             "2 3 0 0 1\n"
-                             "2 3 2 2 1\n"
-                             "1 4 1 1 2\n"
-                             "2 4 1 1 3\n"
-                             "3 4 2 2 2\n"));
+                                "3 4\n"
+                                "0 1 2 2 2\n"
+                                "0 2 3 3 1\n"
+                                "1 2 1 1 2\n"
+                                "2 3 0 0 1\n"
+                                "2 3 2 2 1\n"
+                                "1 4 1 1 2\n"
+                                "2 4 1 1 3\n"
+                                "3 4 2 2 2\n"));
   CHECK(equal(projectOutput(graph), outputExpected));
 }
 

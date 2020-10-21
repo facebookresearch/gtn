@@ -55,7 +55,8 @@ size_t Graph::addArc(
     float weight /* = 0 */) {
   assert(ilabel >= epsilon && olabel >= epsilon);
   int idx = static_cast<int>(numArcs());
-  sharedGraph_->arcs.emplace_back(static_cast<int>(srcNode), static_cast<int>(dstNode), ilabel, olabel);
+  sharedGraph_->arcs.emplace_back(
+      static_cast<int>(srcNode), static_cast<int>(dstNode), ilabel, olabel);
   sharedWeights_->push_back(weight);
   node(srcNode).out.push_back(idx);
   node(dstNode).in.push_back(idx);
