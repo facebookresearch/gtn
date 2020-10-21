@@ -48,7 +48,8 @@ int main() {
   int N = 28; // size of alphabet (arcs per step)
   int T = 5; // length of input
   std::vector<int> output = {3, 1, 20}; // corresponds to 'c', 'a', 't'
-  Graph ctc = createCtcTargetGraph(output, 0 /* blank idx */); // https://git.io/JUKAZ
+  Graph ctc =
+      createCtcTargetGraph(output, 0 /* blank idx */); // https://git.io/JUKAZ
 
   // Emission graph
   Graph emissions = linearGraph(T, N);

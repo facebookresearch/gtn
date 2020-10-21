@@ -12,8 +12,8 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <vector>
 #include <mutex>
+#include <vector>
 
 namespace gtn {
 
@@ -73,7 +73,6 @@ class Graph {
   };
 
  public:
-
   using GradFunc =
       std::function<void(std::vector<Graph>& inputs, Graph& deltas)>;
   Graph(GradFunc gradFunc, std::vector<Graph> inputs);
@@ -318,8 +317,8 @@ class Graph {
   /** @} */
 
   /** \defgroup nodeAccess Node accessors
-    *  @{
-    */
+   *  @{
+   */
 
   /** Get the indices of the start nodes of the graph. */
   const std::vector<int>& start() const {
@@ -373,8 +372,8 @@ class Graph {
   /** @}*/
 
   /** \defgroup arcAccess Arc accessors
-    *  @{
-    */
+   *  @{
+   */
 
   /** The destination node of the `i`-th arc. */
   int srcNode(size_t i) const {
