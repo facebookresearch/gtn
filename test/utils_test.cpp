@@ -28,18 +28,20 @@ std::string getTmpFileName() {
   if (user != nullptr) {
     userstr = std::string(user);
   }
-  // tmp dir
-  char* dir1 = std::getenv("TMPDIR");
-  std::string tmpdir = "";
-  if (dir1 != nullptr) {
-    tmpdir = std::string(dir1);
-  }
-  char* dir2 = std::getenv("TMP");
-  if (dir2 != nullptr) {
-    tmpdir = std::string(dir2);
-  }
 
-  return tmpdir + "_test" + userstr + ".graph";
+  // tmp dir
+  std::string tmpDir = "/tmp";
+  auto getTmpDir = [&tmpDir](const std::string& env) {
+    char* dir = std::getenv(env.c_str());
+    if (dir != nullptr) {
+      tmpDir = std::string(dir);
+    }
+  };
+  getTmpDir("TMPDIR");
+  getTmpDir("TEMP");
+  getTmpDir("TMP");
+
+  return tmpDir + "/test_" + userstr + ".graph";
 }
 } // namespace
 
