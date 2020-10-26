@@ -8,7 +8,7 @@ To build the documentation, follow the steps below.
 
 Install [Doxygen](http://www.doxygen.nl/manual/install.html).
 
-Install sphinx, breathe and the theme using the `requirements.txt` file in `docs/`:
+Install `breathe` and the sphinx theme using the `requirements.txt` file in `docs/`:
 
 ```
 pip install -r requirements.txt
