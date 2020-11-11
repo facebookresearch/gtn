@@ -30,7 +30,7 @@ Graph::Graph(bool calcGrad /* = true */) {
 }
 
 int Graph::addNode(bool start /* = false */, bool accept /* = false */) {
-  int idx = numNodes();
+  int idx = static_cast<int>(numNodes());
   sharedGraph_->nodes.emplace_back(start, accept);
   if (start) {
     sharedGraph_->start.push_back(idx);
@@ -43,19 +43,20 @@ int Graph::addNode(bool start /* = false */, bool accept /* = false */) {
   return idx;
 }
 
-int Graph::addArc(int srcNode, int dstNode, int label) {
+size_t Graph::addArc(size_t srcNode, size_t dstNode, int label) {
   return addArc(srcNode, dstNode, label, label);
 }
 
-int Graph::addArc(
-    int srcNode,
-    int dstNode,
+size_t Graph::addArc(
+    size_t srcNode,
+    size_t dstNode,
     int ilabel,
     int olabel,
     float weight /* = 0 */) {
   assert(ilabel >= epsilon && olabel >= epsilon);
-  auto idx = numArcs();
-  sharedGraph_->arcs.emplace_back(srcNode, dstNode, ilabel, olabel);
+  int idx = static_cast<int>(numArcs());
+  sharedGraph_->arcs.emplace_back(
+      static_cast<int>(srcNode), static_cast<int>(dstNode), ilabel, olabel);
   sharedWeights_->push_back(weight);
   node(srcNode).out.push_back(idx);
   node(dstNode).in.push_back(idx);

@@ -35,8 +35,8 @@ Graph emissions_graph(
 }
 
 Graph ctc_graph(std::vector<int> target, int blank) {
-  int L = target.size();
-  int U = 2 * L + 1;
+  size_t L = target.size();
+  size_t U = 2 * L + 1;
   Graph ctc;
   for (int l = 0; l < U; l++) {
     int idx = (l - 1) / 2;
@@ -259,7 +259,8 @@ TEST_CASE("Test ASG", "[criterion.asg]") {
 
     Graph fal;
     fal.addNode(true);
-    for (size_t l = 1; l <= target.size(); l++) {
+    for (size_t _l = 1; _l <= target.size(); _l++) {
+      int l = static_cast<int>(_l);
       fal.addNode(false, l == target.size());
       fal.addArc(l - 1, l, target[l - 1]);
       fal.addArc(l, l, target[l - 1]);

@@ -8,6 +8,7 @@
 #define CATCH_CONFIG_MAIN
 
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -27,7 +28,20 @@ std::string getTmpFileName() {
   if (user != nullptr) {
     userstr = std::string(user);
   }
-  return std::string("/tmp/test_") + userstr + std::string(".graph");
+
+  // tmp dir
+  std::string tmpDir = "/tmp";
+  auto getTmpDir = [&tmpDir](const std::string& env) {
+    char* dir = std::getenv(env.c_str());
+    if (dir != nullptr) {
+      tmpDir = std::string(dir);
+    }
+  };
+  getTmpDir("TMPDIR");
+  getTmpDir("TEMP");
+  getTmpDir("TMP");
+
+  return tmpDir + "/test_" + userstr + ".graph";
 }
 } // namespace
 
@@ -449,7 +463,7 @@ TEST_CASE("Test SaveTxt", "[utils.saveTxt]") {
     }
     for (int i = 0; i < 10; ++i) {
       for (int j = 0; j < 10; ++j) {
-        g.addArc(i, j, i, j, i * j);
+        g.addArc(i, j, i, j, static_cast<float>(i * j));
       }
     }
     std::stringstream out;

@@ -120,15 +120,15 @@ Graph concat(const std::vector<Graph>& graphs) {
     out.addNode(true, true);
     return out;
   }
-  int nodeOffset = 0;
-  for (auto i = 0; i < graphs.size(); ++i) {
+  size_t nodeOffset = 0;
+  for (size_t i = 0; i < graphs.size(); ++i) {
     auto& graph = graphs[i];
-    for (auto n = 0; n < graph.numNodes(); ++n) {
+    for (size_t n = 0; n < graph.numNodes(); ++n) {
       out.addNode(
           (i == 0) && graph.isStart(n),
           (i == graphs.size() - 1) && graph.isAccept(n));
     }
-    for (auto a = 0; a < graph.numArcs(); ++a) {
+    for (size_t a = 0; a < graph.numArcs(); ++a) {
       out.addArc(
           nodeOffset + graph.srcNode(a),
           nodeOffset + graph.dstNode(a),
@@ -203,7 +203,7 @@ Graph union_(const std::vector<Graph>& graphs) {
   Graph out(gradFunc, std::move(inputs));
 
   // Add all the nodes in a predictable order
-  int nodeOffset = 0;
+  size_t nodeOffset = 0;
   for (auto& graph : graphs) {
     for (auto n = 0; n < graph.numNodes(); ++n) {
       out.addNode(graph.isStart(n), graph.isAccept(n));

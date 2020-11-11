@@ -19,8 +19,8 @@ using namespace gtn;
  */
 
 Graph createCtcTargetGraph(const std::vector<int>& target, int blank) {
-  int L = target.size();
-  int U = 2 * L + 1; // # c # a # t #
+  size_t L = target.size();
+  size_t U = 2 * L + 1; // # c # a # t #
   Graph ctc;
   for (int l = 0; l < U; l++) {
     int idx = (l - 1) / 2;
@@ -48,7 +48,8 @@ int main() {
   int N = 28; // size of alphabet (arcs per step)
   int T = 5; // length of input
   std::vector<int> output = {3, 1, 20}; // corresponds to 'c', 'a', 't'
-  Graph ctc = createCtcTargetGraph(output, 0 /* blank idx */); // https://git.io/JUKAZ
+  Graph ctc =
+      createCtcTargetGraph(output, 0 /* blank idx */); // https://git.io/JUKAZ
 
   // Emission graph
   Graph emissions = linearGraph(T, N);

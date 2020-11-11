@@ -12,8 +12,8 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <vector>
 #include <mutex>
+#include <vector>
 
 namespace gtn {
 
@@ -73,7 +73,6 @@ class Graph {
   };
 
  public:
-
   using GradFunc =
       std::function<void(std::vector<Graph>& inputs, Graph& deltas)>;
   Graph(GradFunc gradFunc, std::vector<Graph> inputs);
@@ -105,7 +104,7 @@ class Graph {
    * @param label The arc label.
    * @return The id of the added arc.
    */
-  int addArc(int srcNode, int dstNode, int label);
+  size_t addArc(size_t srcNode, size_t dstNode, int label);
 
   /**
    * Add a arc between two nodes.
@@ -116,27 +115,27 @@ class Graph {
    * @param weight The arc weight.
    * @return The id of the added arc.
    */
-  int addArc(
-      int srcNode,
-      int dstNode,
+  size_t addArc(
+      size_t srcNode,
+      size_t dstNode,
       int ilabel,
       int olabel,
       float weight = 0.0);
 
   /** The number of arcs in the graph. */
-  int numArcs() const {
+  size_t numArcs() const {
     return sharedGraph_->arcs.size();
   };
   /** The number of nodes in the graph. */
-  int numNodes() const {
+  size_t numNodes() const {
     return sharedGraph_->nodes.size();
   };
   /** The number of starting nodes in the graph. */
-  int numStart() const {
+  size_t numStart() const {
     return sharedGraph_->start.size();
   };
   /** The number of accepting nodes in the graph. */
-  int numAccept() const {
+  size_t numAccept() const {
     return sharedGraph_->accept.size();
   };
 
@@ -318,8 +317,8 @@ class Graph {
   /** @} */
 
   /** \defgroup nodeAccess Node accessors
-    *  @{
-    */
+   *  @{
+   */
 
   /** Get the indices of the start nodes of the graph. */
   const std::vector<int>& start() const {
@@ -330,80 +329,80 @@ class Graph {
     return sharedGraph_->accept;
   };
   /** Check if the `i`-th node is a start node. */
-  bool isStart(int i) const {
+  bool isStart(size_t i) const {
     return node(i).start;
   };
   /** Check if the `i`-th node is an accepting node. */
-  bool isAccept(int i) const {
+  bool isAccept(size_t i) const {
     return node(i).accept;
   };
   /** Make the the `i`-th node an accepting node. */
-  void makeAccept(int i) {
+  void makeAccept(size_t i) {
     auto& n = node(i);
     if (!n.accept) {
-      sharedGraph_->accept.push_back(i);
+      sharedGraph_->accept.push_back(static_cast<int>(i));
       n.accept = true;
     }
   };
   /** The number of outgoing arcs from the `i`-th node. */
-  int numOut(int i) const {
+  size_t numOut(size_t i) const {
     return node(i).out.size();
   }
   /** Get the indices of outgoing arcs from the `i`-th node. */
-  const std::vector<int>& out(int i) const {
+  const std::vector<int>& out(size_t i) const {
     return node(i).out;
   }
   /** Get the index of the `j`-th outgoing arc from the `i`-th node. */
-  int out(int i, int j) const {
+  int out(size_t i, size_t j) const {
     return node(i).out[j];
   }
   /** The number of incoming arcs to the `i`-th node. */
-  int numIn(int i) const {
+  size_t numIn(size_t i) const {
     return node(i).in.size();
   }
   /** Get the indices of incoming arcs to the `i`-th node. */
-  const std::vector<int>& in(int i) const {
+  const std::vector<int>& in(size_t i) const {
     return node(i).in;
   }
   /** Get the index of the `j`-th incoming arc to the `i`-th node. */
-  int in(int i, int j) const {
+  size_t in(size_t i, size_t j) const {
     return node(i).in[j];
   }
 
   /** @}*/
 
   /** \defgroup arcAccess Arc accessors
-    *  @{
-    */
+   *  @{
+   */
 
   /** The destination node of the `i`-th arc. */
-  int srcNode(int i) const {
+  int srcNode(size_t i) const {
     return arc(i).srcNode;
   }
   /** The source node of the `i`-th arc. */
-  int dstNode(int i) const {
+  int dstNode(size_t i) const {
     return arc(i).dstNode;
   }
   /** The label of the `i`-th arc (use this for acceptors). */
-  int label(int i) const {
+  int label(size_t i) const {
     return arc(i).ilabel;
   }
   /** The input label of the `i`-th arc. */
-  int ilabel(int i) const {
+  int ilabel(size_t i) const {
     return arc(i).ilabel;
   }
   /** The output label of the `i`-th arc. */
-  int olabel(int i) const {
+  int olabel(size_t i) const {
     return arc(i).olabel;
   }
 
   /** The weight of the `i`-th arc. */
-  float weight(int i) const {
+  float weight(size_t i) const {
     assert(sharedWeights_ != nullptr);
     return (*sharedWeights_)[i];
   }
   /** Set the weight of the `i`-th arc. */
-  void setWeight(int i, float weight) {
+  void setWeight(size_t i, float weight) {
     assert(sharedWeights_ != nullptr);
     (*sharedWeights_)[i] = weight;
   }
@@ -411,23 +410,23 @@ class Graph {
 
  private:
   // Attempt to keep code like `g.addArc(n1, n2, 0, 2.0)` from compiling
-  int addArc(int srcNode, int dstNode, int label, float) = delete;
-  int addArc(int srcNode, int dstNode, int label, double) = delete;
+  size_t addArc(size_t srcNode, size_t dstNode, int label, float) = delete;
+  size_t addArc(size_t srcNode, size_t dstNode, int label, double) = delete;
 
-  const Node& node(int i) const {
+  const Node& node(size_t i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numNodes());
     return sharedGraph_->nodes[i];
   }
-  Node& node(int i) {
+  Node& node(size_t i) {
     return const_cast<Node&>(static_cast<const Graph&>(*this).node(i));
   }
-  const Arc& arc(int i) const {
+  const Arc& arc(size_t i) const {
     // NB: assert gets stripped at in release mode
     assert(i >= 0 && i < numArcs());
     return sharedGraph_->arcs[i];
   }
-  Arc& arc(int i) {
+  Arc& arc(size_t i) {
     return const_cast<Arc&>(static_cast<const Graph&>(*this).arc(i));
   }
 

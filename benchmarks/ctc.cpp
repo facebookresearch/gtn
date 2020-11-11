@@ -6,6 +6,7 @@
  */
 
 #include <math.h>
+#include <string>
 
 #include "benchmarks/time_utils.h"
 #include "gtn/gtn.h"
@@ -38,10 +39,10 @@ std::vector<float> randVec(int num) {
 
 Graph ctcGraph(const std::vector<int>& target) {
   int blank = 0;
-  int L = 2 * target.size() + 1;
+  size_t L = 2 * target.size() + 1;
   Graph ctc;
-  for (int l = 0; l < L; l++) {
-    int idx = (l - 1) / 2;
+  for (size_t l = 0; l < L; l++) {
+    size_t idx = (l - 1) / 2;
     ctc.addNode(l == 0, l == L - 1 || l == L - 2);
     int label = l % 2 ? target[idx] : blank;
     ctc.addArc(l, l, label);
