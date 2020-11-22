@@ -18,6 +18,39 @@ inline size_t toIndex(int n1, int n2, const Graph& g) {
   return n1 + g.numNodes() * n2;
 }
 
+void epsilonReachable(
+    bool secondOrFirst,
+    const Graph& first,
+    const Graph& second,
+    const std::pair<int, int>& nodePair,
+    std::vector<bool>& reachable,
+    std::queue<std::pair<int, int>>& toExplore) {
+  auto edges = secondOrFirst ? second.in(nodePair.second) : first.in(nodePair.first);
+
+  for (auto i : edges) {
+    auto label = secondOrFirst ? second.ilabel(i) : first.olabel(i);
+    auto isSorted = secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
+    if (label != epsilon) {
+      if (isSorted) {
+        break;
+      } else {
+        continue;
+      }
+    }
+    auto un = secondOrFirst ? second.srcNode(i) : first.srcNode(i);
+    auto idx = secondOrFirst ?
+        toIndex(nodePair.first, un, first) :
+        toIndex(un, nodePair.second, first);
+    if (!reachable[idx]) {
+      // If we haven't seen this state before, explore it.
+      secondOrFirst ?
+          toExplore.emplace(nodePair.first, un) :
+          toExplore.emplace(un, nodePair.second);
+    }
+    reachable[idx] = true;
+  }
+}
+
 /* Find any state in the new composed graph which can reach
  * an accepting state. */
 auto findReachable(
@@ -53,42 +86,8 @@ auto findReachable(
       reachable[idx] = true;
     }
     if (!epsilon_matched) {
-      for (auto i : first.in(curr.first)) {
-        if (first.olabel(i) != epsilon) {
-          if (first.olabelSorted()) {
-            // epsilon < 0
-            break;
-          } else {
-            continue;
-          }
-        }
-        auto un1 = first.srcNode(i);
-        auto idx = toIndex(un1, curr.second, first);
-        if (!reachable[idx]) {
-          // If we haven't seen this state before, explore it.
-          toExplore.emplace(un1, curr.second);
-        }
-        reachable[idx] = true;
-      }
-    }
-    if (!epsilon_matched) {
-      for (auto j : second.in(curr.second)) {
-        if (second.ilabel(j) != epsilon) {
-          if (second.ilabelSorted()) {
-            // epsilon < 0
-            break;
-          } else {
-            continue;
-          }
-        }
-        auto un2 = second.srcNode(j);
-        auto idx = toIndex(curr.first, un2, first);
-        if (!reachable[idx]) {
-          // If we haven't seen this state before, explore it.
-          toExplore.emplace(curr.first, un2);
-        }
-        reachable[idx] = true;
-      }
+      epsilonReachable(false, first, second, curr, reachable, toExplore);
+      epsilonReachable(true, first, second, curr, reachable, toExplore);
     }
   }
   return reachable;
