@@ -93,6 +93,55 @@ auto findReachable(
   return reachable;
 }
 
+void addEpsilonReachableNodes(
+    bool secondOrFirst,
+    const Graph& first,
+    const Graph& second,
+    int currNode,
+    const std::pair<int, int>& nodePair,
+    const std::vector<bool>& reachable,
+    std::queue<std::pair<int, int>>& toExplore,
+    std::vector<int>& newNodes,
+    Graph& ngraph,
+    std::vector<std::pair<int, int>>& gradInfo) {
+
+    auto edges = secondOrFirst ? second.out(nodePair.second) :
+        first.out(nodePair.first);
+    // for (auto j : second.out(nodePair.second)) {
+    for (auto i : edges) {
+      auto label = secondOrFirst ? second.ilabel(i) : first.olabel(i);
+      auto isSorted = secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
+      // if (second.ilabel(j) != epsilon) {
+      if (label != epsilon) {
+        // if (second.ilabelSorted()) {
+        if (isSorted) {
+          // epsilon < 0
+          break;
+        } else {
+          continue;
+        }
+      }
+      // We only advance along the second arc.
+      auto dn1 = secondOrFirst ? nodePair.first : first.dstNode(i);
+      auto dn2 = secondOrFirst ? second.dstNode(i): nodePair.second;
+      auto idx = toIndex(dn1, dn2, first);
+      if (!reachable[idx]) {
+        continue;
+      }
+      if (newNodes[idx] < 0) {
+        newNodes[idx] = ngraph.addNode(
+            first.isStart(dn1) && second.isStart(dn2),
+            first.isAccept(dn1) && second.isAccept(dn2));
+        toExplore.emplace(dn1, dn2);
+      }
+      auto weight = secondOrFirst ? second.weight(i) : first.weight(i);
+      auto iLabel = secondOrFirst ? epsilon : first.ilabel(i);
+      auto oLabel = secondOrFirst ? second.olabel(i) : epsilon;
+      auto newarc = ngraph.addArc(
+          currNode, newNodes[idx], iLabel, oLabel, weight);
+      gradInfo.emplace_back(-1, i);
+    }
+}
 } // namespace
 
 void UnsortedMatcher::match(int lnode, int rnode, bool matchIn /* = false*/) {
@@ -313,61 +362,11 @@ Graph compose(
       gradInfo.emplace_back(i, j);
     }
     // Check for output epsilons in the first graph
-    for (auto i : first.out(curr.first)) {
-      if (first.olabel(i) != epsilon) {
-        if (first.olabelSorted()) {
-          // epsilon < 0
-          break;
-        } else {
-          continue;
-        }
-      }
-      // We only advance along the first arc.
-      auto dn1 = first.dstNode(i);
-      auto dn2 = curr.second;
-      auto idx = toIndex(dn1, dn2, first);
-      if (!reachable[idx]) {
-        continue;
-      }
-      if (newNodes[idx] < 0) {
-        newNodes[idx] = ngraph.addNode(
-            first.isStart(dn1) && second.isStart(dn2),
-            first.isAccept(dn1) && second.isAccept(dn2));
-        toExplore.emplace(dn1, dn2);
-      }
-      auto weight = first.weight(i);
-      auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], first.ilabel(i), epsilon, weight);
-      gradInfo.emplace_back(i, -1);
-    }
+    addEpsilonReachableNodes(false, first, second, currNode,
+        curr, reachable, toExplore, newNodes, ngraph, gradInfo);
     // Check out input epsilons in the second graph
-    for (auto j : second.out(curr.second)) {
-      if (second.ilabel(j) != epsilon) {
-        if (second.ilabelSorted()) {
-          // epsilon < 0
-          break;
-        } else {
-          continue;
-        }
-      }
-      // We only advance along the second arc.
-      auto dn1 = curr.first;
-      auto dn2 = second.dstNode(j);
-      auto idx = toIndex(dn1, dn2, first);
-      if (!reachable[idx]) {
-        continue;
-      }
-      if (newNodes[idx] < 0) {
-        newNodes[idx] = ngraph.addNode(
-            first.isStart(dn1) && second.isStart(dn2),
-            first.isAccept(dn1) && second.isAccept(dn2));
-        toExplore.emplace(dn1, dn2);
-      }
-      auto weight = second.weight(j);
-      auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], epsilon, second.olabel(j), weight);
-      gradInfo.emplace_back(-1, j);
-    }
+    addEpsilonReachableNodes(true, first, second, currNode,
+        curr, reachable, toExplore, newNodes, ngraph, gradInfo);
   }
 
   /* Here we assume deltas is the output (e.g. ngraph) and we know where
