@@ -11,6 +11,7 @@
 #include <list>
 #include <string>
 #include <unordered_set>
+#include <string>
 
 namespace gtn {
 
