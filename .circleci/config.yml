@@ -4,7 +4,7 @@ orbs:
   win: circleci/windows@2.4.0
 
 jobs:
-  linux_gcc_7_4_0:
+  ubuntu_gcc_7_4_0:
     docker:
       - image: cimg/base:2020.01
     steps:
@@ -88,9 +88,8 @@ jobs:
 
 workflows:
   version: 2
-
   build-and-test:
     jobs:
-      - linux_gcc_7_4_0
+      - ubuntu_gcc_7_4_0
       - macos_clang_11
       - windows_msvc_2019
