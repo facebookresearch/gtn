@@ -18,6 +18,40 @@ inline size_t toIndex(int n1, int n2, const Graph& g) {
   return n1 + g.numNodes() * n2;
 }
 
+/* Check reachability via edges with epsilon labels */
+void epsilonReachable(
+    bool secondOrFirst,
+    const Graph& first,
+    const Graph& second,
+    const std::pair<int, int>& nodePair,
+    std::vector<bool>& reachable,
+    std::queue<std::pair<int, int>>& toExplore) {
+  auto edges =
+      secondOrFirst ? second.in(nodePair.second) : first.in(nodePair.first);
+
+  for (auto i : edges) {
+    auto label = secondOrFirst ? second.ilabel(i) : first.olabel(i);
+    auto isSorted =
+        secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
+    if (label != epsilon) {
+      if (isSorted) {
+        break;
+      } else {
+        continue;
+      }
+    }
+    auto un = secondOrFirst ? second.srcNode(i) : first.srcNode(i);
+    auto idx = secondOrFirst ? toIndex(nodePair.first, un, first)
+                             : toIndex(un, nodePair.second, first);
+    if (!reachable[idx]) {
+      // If we haven't seen this state before, explore it.
+      secondOrFirst ? toExplore.emplace(nodePair.first, un)
+                    : toExplore.emplace(un, nodePair.second);
+    }
+    reachable[idx] = true;
+  }
+}
+
 /* Find any state in the new composed graph which can reach
  * an accepting state. */
 auto findReachable(
@@ -53,47 +87,91 @@ auto findReachable(
       reachable[idx] = true;
     }
     if (!epsilon_matched) {
-      for (auto i : first.in(curr.first)) {
-        if (first.olabel(i) != epsilon) {
-          if (first.olabelSorted()) {
-            // epsilon < 0
-            break;
-          } else {
-            continue;
-          }
-        }
-        auto un1 = first.srcNode(i);
-        auto idx = toIndex(un1, curr.second, first);
-        if (!reachable[idx]) {
-          // If we haven't seen this state before, explore it.
-          toExplore.emplace(un1, curr.second);
-        }
-        reachable[idx] = true;
-      }
-    }
-    if (!epsilon_matched) {
-      for (auto j : second.in(curr.second)) {
-        if (second.ilabel(j) != epsilon) {
-          if (second.ilabelSorted()) {
-            // epsilon < 0
-            break;
-          } else {
-            continue;
-          }
-        }
-        auto un2 = second.srcNode(j);
-        auto idx = toIndex(curr.first, un2, first);
-        if (!reachable[idx]) {
-          // If we haven't seen this state before, explore it.
-          toExplore.emplace(curr.first, un2);
-        }
-        reachable[idx] = true;
-      }
+      // Check for reachable node via output epsilon first graph
+      epsilonReachable(false, first, second, curr, reachable, toExplore);
+      // Check for reachable node via input epsilon in second graph
+      epsilonReachable(true, first, second, curr, reachable, toExplore);
     }
   }
   return reachable;
 }
 
+/* Add a node and arc to the new graph if it is reachable.
+ * Returns if node is reachable. */
+bool addReachableNodeAndArc(
+    const Graph& first,
+    const Graph& second,
+    int currNode,
+    const std::pair<int, int>& dstNodes,
+    float weight,
+    int ilabel,
+    int olabel,
+    const std::vector<bool>& reachable,
+    std::queue<std::pair<int, int>>& toExplore,
+    std::vector<int>& newNodes,
+    Graph& ngraph) {
+  // Ignore if we can't get to an accept state.
+  auto idx = toIndex(dstNodes.first, dstNodes.second, first);
+  if (reachable[idx]) {
+    // Build the node
+    if (newNodes[idx] < 0) {
+      newNodes[idx] = ngraph.addNode(
+          first.isStart(dstNodes.first) && second.isStart(dstNodes.second),
+          first.isAccept(dstNodes.first) && second.isAccept(dstNodes.second));
+      toExplore.emplace(dstNodes.first, dstNodes.second);
+    }
+    auto newarc =
+        ngraph.addArc(currNode, newNodes[idx], ilabel, olabel, weight);
+  }
+  return reachable[idx];
+}
+
+void addEpsilonReachableNodes(
+    bool secondOrFirst,
+    const Graph& first,
+    const Graph& second,
+    int currNode,
+    const std::pair<int, int>& nodePair,
+    const std::vector<bool>& reachable,
+    std::queue<std::pair<int, int>>& toExplore,
+    std::vector<int>& newNodes,
+    Graph& ngraph,
+    std::vector<std::pair<int, int>>& gradInfo) {
+  auto edges =
+      secondOrFirst ? second.out(nodePair.second) : first.out(nodePair.first);
+  for (auto i : edges) {
+    auto label = secondOrFirst ? second.ilabel(i) : first.olabel(i);
+    auto isSorted =
+        secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
+    if (label != epsilon) {
+      if (isSorted) {
+        // epsilon < 0
+        break;
+      } else {
+        continue;
+      }
+    }
+
+    bool isReachable = addReachableNodeAndArc(
+        first,
+        second,
+        currNode,
+        std::make_pair(
+            secondOrFirst ? nodePair.first : first.dstNode(i),
+            secondOrFirst ? second.dstNode(i) : nodePair.second),
+        secondOrFirst ? second.weight(i) : first.weight(i),
+        secondOrFirst ? epsilon : first.ilabel(i),
+        secondOrFirst ? second.olabel(i) : epsilon,
+        reachable,
+        toExplore,
+        newNodes,
+        ngraph);
+
+    if (isReachable) {
+      gradInfo.emplace_back(-1, i);
+    }
+  }
+}
 } // namespace
 
 void UnsortedMatcher::match(int lnode, int rnode, bool matchIn /* = false*/) {
@@ -292,83 +370,50 @@ Graph compose(
     matcher->match(curr.first, curr.second);
     while (matcher->hasNext()) {
       std::tie(i, j) = matcher->next();
-      auto dn1 = first.dstNode(i);
-      auto dn2 = second.dstNode(j);
-      // Ignore if we can't get to an accept state.
-      auto idx = toIndex(dn1, dn2, first);
-      if (!reachable[idx]) {
-        continue;
+
+      bool isReachable = addReachableNodeAndArc(
+          first,
+          second,
+          currNode,
+          std::make_pair(first.dstNode(i), second.dstNode(j)),
+          first.weight(i) + second.weight(j),
+          first.ilabel(i),
+          second.olabel(j),
+          reachable,
+          toExplore,
+          newNodes,
+          ngraph);
+
+      if (isReachable) {
+        // Arcs remember where they came from for
+        // easy gradient computation.
+        gradInfo.emplace_back(i, j);
       }
-      // Build the node
-      if (newNodes[idx] < 0) {
-        newNodes[idx] = ngraph.addNode(
-            first.isStart(dn1) && second.isStart(dn2),
-            first.isAccept(dn1) && second.isAccept(dn2));
-        toExplore.emplace(dn1, dn2);
-      }
-      auto weight = first.weight(i) + second.weight(j);
-      auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], first.ilabel(i), second.olabel(j), weight);
-      // Arcs remember where they came from for
-      // easy gradient computation.
-      gradInfo.emplace_back(i, j);
     }
     // Check for output epsilons in the first graph
-    for (auto i : first.out(curr.first)) {
-      if (first.olabel(i) != epsilon) {
-        if (first.olabelSorted()) {
-          // epsilon < 0
-          break;
-        } else {
-          continue;
-        }
-      }
-      // We only advance along the first arc.
-      auto dn1 = first.dstNode(i);
-      auto dn2 = curr.second;
-      auto idx = toIndex(dn1, dn2, first);
-      if (!reachable[idx]) {
-        continue;
-      }
-      if (newNodes[idx] < 0) {
-        newNodes[idx] = ngraph.addNode(
-            first.isStart(dn1) && second.isStart(dn2),
-            first.isAccept(dn1) && second.isAccept(dn2));
-        toExplore.emplace(dn1, dn2);
-      }
-      auto weight = first.weight(i);
-      auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], first.ilabel(i), epsilon, weight);
-      gradInfo.emplace_back(i, -1);
-    }
+    addEpsilonReachableNodes(
+        false,
+        first,
+        second,
+        currNode,
+        curr,
+        reachable,
+        toExplore,
+        newNodes,
+        ngraph,
+        gradInfo);
     // Check out input epsilons in the second graph
-    for (auto j : second.out(curr.second)) {
-      if (second.ilabel(j) != epsilon) {
-        if (second.ilabelSorted()) {
-          // epsilon < 0
-          break;
-        } else {
-          continue;
-        }
-      }
-      // We only advance along the second arc.
-      auto dn1 = curr.first;
-      auto dn2 = second.dstNode(j);
-      auto idx = toIndex(dn1, dn2, first);
-      if (!reachable[idx]) {
-        continue;
-      }
-      if (newNodes[idx] < 0) {
-        newNodes[idx] = ngraph.addNode(
-            first.isStart(dn1) && second.isStart(dn2),
-            first.isAccept(dn1) && second.isAccept(dn2));
-        toExplore.emplace(dn1, dn2);
-      }
-      auto weight = second.weight(j);
-      auto newarc = ngraph.addArc(
-          currNode, newNodes[idx], epsilon, second.olabel(j), weight);
-      gradInfo.emplace_back(-1, j);
-    }
+    addEpsilonReachableNodes(
+        true,
+        first,
+        second,
+        currNode,
+        curr,
+        reachable,
+        toExplore,
+        newNodes,
+        ngraph,
+        gradInfo);
   }
 
   /* Here we assume deltas is the output (e.g. ngraph) and we know where
