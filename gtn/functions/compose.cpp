@@ -18,6 +18,7 @@ inline size_t toIndex(int n1, int n2, const Graph& g) {
   return n1 + g.numNodes() * n2;
 }
 
+/* Check reachability via edges with epsilon labels */
 void epsilonReachable(
     bool secondOrFirst,
     const Graph& first,
@@ -25,11 +26,13 @@ void epsilonReachable(
     const std::pair<int, int>& nodePair,
     std::vector<bool>& reachable,
     std::queue<std::pair<int, int>>& toExplore) {
-  auto edges = secondOrFirst ? second.in(nodePair.second) : first.in(nodePair.first);
+  auto edges =
+      secondOrFirst ? second.in(nodePair.second) : first.in(nodePair.first);
 
   for (auto i : edges) {
     auto label = secondOrFirst ? second.ilabel(i) : first.olabel(i);
-    auto isSorted = secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
+    auto isSorted =
+        secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
     if (label != epsilon) {
       if (isSorted) {
         break;
@@ -38,14 +41,12 @@ void epsilonReachable(
       }
     }
     auto un = secondOrFirst ? second.srcNode(i) : first.srcNode(i);
-    auto idx = secondOrFirst ?
-        toIndex(nodePair.first, un, first) :
-        toIndex(un, nodePair.second, first);
+    auto idx = secondOrFirst ? toIndex(nodePair.first, un, first)
+                             : toIndex(un, nodePair.second, first);
     if (!reachable[idx]) {
       // If we haven't seen this state before, explore it.
-      secondOrFirst ?
-          toExplore.emplace(nodePair.first, un) :
-          toExplore.emplace(un, nodePair.second);
+      secondOrFirst ? toExplore.emplace(nodePair.first, un)
+                    : toExplore.emplace(un, nodePair.second);
     }
     reachable[idx] = true;
   }
@@ -86,13 +87,17 @@ auto findReachable(
       reachable[idx] = true;
     }
     if (!epsilon_matched) {
+      // Check for reachable node via output epsilon first graph
       epsilonReachable(false, first, second, curr, reachable, toExplore);
+      // Check for reachable node via input epsilon in second graph
       epsilonReachable(true, first, second, curr, reachable, toExplore);
     }
   }
   return reachable;
 }
 
+/* Add a node and arc to the new graph if it is reachable.
+ * Returns if node is reachable. */
 bool addReachableNodeAndArc(
     const Graph& first,
     const Graph& second,
@@ -115,29 +120,29 @@ bool addReachableNodeAndArc(
           first.isAccept(dstNodes.first) && second.isAccept(dstNodes.second));
       toExplore.emplace(dstNodes.first, dstNodes.second);
     }
-    auto newarc = ngraph.addArc(
-        currNode, newNodes[idx], ilabel, olabel, weight);
+    auto newarc =
+        ngraph.addArc(currNode, newNodes[idx], ilabel, olabel, weight);
   }
   return reachable[idx];
 }
 
 void addEpsilonReachableNodes(
-  bool secondOrFirst,
-  const Graph& first,
-  const Graph& second,
-  int currNode,
-  const std::pair<int, int>& nodePair,
-  const std::vector<bool>& reachable,
-  std::queue<std::pair<int, int>>& toExplore,
-  std::vector<int>& newNodes,
-  Graph& ngraph,
-  std::vector<std::pair<int, int>>& gradInfo) {
-
-  auto edges = secondOrFirst ? second.out(nodePair.second) :
-      first.out(nodePair.first);
+    bool secondOrFirst,
+    const Graph& first,
+    const Graph& second,
+    int currNode,
+    const std::pair<int, int>& nodePair,
+    const std::vector<bool>& reachable,
+    std::queue<std::pair<int, int>>& toExplore,
+    std::vector<int>& newNodes,
+    Graph& ngraph,
+    std::vector<std::pair<int, int>>& gradInfo) {
+  auto edges =
+      secondOrFirst ? second.out(nodePair.second) : first.out(nodePair.first);
   for (auto i : edges) {
     auto label = secondOrFirst ? second.ilabel(i) : first.olabel(i);
-    auto isSorted = secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
+    auto isSorted =
+        secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
     if (label != epsilon) {
       if (isSorted) {
         // epsilon < 0
@@ -147,14 +152,20 @@ void addEpsilonReachableNodes(
       }
     }
 
-   bool isReachable = addReachableNodeAndArc(first, second, currNode,
-       std::make_pair(
-           secondOrFirst ? nodePair.first : first.dstNode(i),
-           secondOrFirst ? second.dstNode(i): nodePair.second),
-       secondOrFirst ? second.weight(i) : first.weight(i),
-       secondOrFirst ? epsilon : first.ilabel(i),
-       secondOrFirst ? second.olabel(i) : epsilon,
-       reachable, toExplore, newNodes, ngraph);
+    bool isReachable = addReachableNodeAndArc(
+        first,
+        second,
+        currNode,
+        std::make_pair(
+            secondOrFirst ? nodePair.first : first.dstNode(i),
+            secondOrFirst ? second.dstNode(i) : nodePair.second),
+        secondOrFirst ? second.weight(i) : first.weight(i),
+        secondOrFirst ? epsilon : first.ilabel(i),
+        secondOrFirst ? second.olabel(i) : epsilon,
+        reachable,
+        toExplore,
+        newNodes,
+        ngraph);
 
     if (isReachable) {
       gradInfo.emplace_back(-1, i);
@@ -360,10 +371,18 @@ Graph compose(
     while (matcher->hasNext()) {
       std::tie(i, j) = matcher->next();
 
-      bool isReachable = addReachableNodeAndArc(first, second, currNode,
+      bool isReachable = addReachableNodeAndArc(
+          first,
+          second,
+          currNode,
           std::make_pair(first.dstNode(i), second.dstNode(j)),
-          first.weight(i) + second.weight(j), first.ilabel(i),
-          second.olabel(j), reachable, toExplore, newNodes, ngraph);
+          first.weight(i) + second.weight(j),
+          first.ilabel(i),
+          second.olabel(j),
+          reachable,
+          toExplore,
+          newNodes,
+          ngraph);
 
       if (isReachable) {
         // Arcs remember where they came from for
@@ -372,11 +391,29 @@ Graph compose(
       }
     }
     // Check for output epsilons in the first graph
-    addEpsilonReachableNodes(false, first, second, currNode,
-        curr, reachable, toExplore, newNodes, ngraph, gradInfo);
+    addEpsilonReachableNodes(
+        false,
+        first,
+        second,
+        currNode,
+        curr,
+        reachable,
+        toExplore,
+        newNodes,
+        ngraph,
+        gradInfo);
     // Check out input epsilons in the second graph
-    addEpsilonReachableNodes(true, first, second, currNode,
-        curr, reachable, toExplore, newNodes, ngraph, gradInfo);
+    addEpsilonReachableNodes(
+        true,
+        first,
+        second,
+        currNode,
+        curr,
+        reachable,
+        toExplore,
+        newNodes,
+        ngraph,
+        gradInfo);
   }
 
   /* Here we assume deltas is the output (e.g. ngraph) and we know where
