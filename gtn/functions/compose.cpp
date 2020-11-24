@@ -102,7 +102,7 @@ bool addReachableNodeAndArc(
     const Graph& first,
     const Graph& second,
     int currNode,
-    const std::pair<int, int> dstNodes,
+    const std::pair<int, int>& dstNodes,
     float weight,
     int ilabel,
     int olabel,
