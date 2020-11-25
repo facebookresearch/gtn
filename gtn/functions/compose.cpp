@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <cassert>
 
 #include "gtn/functions/compose.h"
 
@@ -448,5 +449,97 @@ Graph compose(
   return ngraph;
 }
 
+} // namespace detail
+} // namespace gtn
+
+namespace gtn {
+namespace detail {
+namespace dataparallel {
+// Change AOS to SOA
+struct GraphDataParallel {
+    std::vector<int> inEdgeOffset;
+    std::vector<int> outEdgesOffset.
+
+    std::vector<int> inEdges;  
+    std::vector<int> outEdges;
+
+    std::vector<int> ilabels;
+    std::vector<int> olabels;
+    std::vector<int> srcNodes;
+    std::vector<int> dstNodes;
+    std::vector<float> weights;
+};
+
+Graph compose(
+    const Graph& first,
+    const Graph& second) {
+
+  GraphDataParallel graphDP1, graphDP2;
+  // Convert from AOS to SOA
+
+  std::queue<int> toExplore;
+  std::vector<bool> visited(false, first.numNodes());
+
+  graphDP1.inEdgeOffset.resize(first.numNodes());
+  graphDP1.outEdgeOFfset.resize(first.numNodes());
+
+  graphDP1.inEdges.resize(first.numEdges()); `
+  graphDP1.outEdges.resize(first.numEdges()); `
+
+  graphDP1.ilabels.resize(first.numEdges()); `
+  graphDP1.olabels.resize(first.numEdges()); `
+  graphDP1.srcNodes.resize(first.numEdges()); `
+  graphDP1.dstNodes.resize(first.numEdges()); `
+  graphDP1.weights.resize(first.numEdges()); `
+
+  for (auto i : first.numNodes()) {
+    graphDP1.inEdgeOffset[i] = first.numIn(i);
+    graphDP1.outEdgeOffset[i] = first.numOut(i);
+  }
+
+  // Scan of offsets
+  {
+      int sum = 0;
+      for (auto i : graphDP1.inEdgeOffset.size()) {
+        auto count = graphDP1.inEdgeOffset[i];
+        graphDP1.inEdgeOffset[i] = sum;
+        sum += count;
+      }
+
+      sum = 0;
+      for (auto i : graphDP1.outEdgeOffset.size()) {
+        auto count = graphDP1.outEdgeOffset[i];
+        graphDP1.outEdgeOffset[i] = sum;
+        sum += count;
+      }
+  }
+
+  for (auto i : first.numNodes()) {
+    int offset = graphDP1.outEdgeOffset[i];
+
+    for (auto j : first.out(i)) {
+      graphDP1.outEdges[offset] = j;
+      offset++;
+
+      graphDP1.ilabels[j] = first.ilabel(j);
+      graphDP1.olabels[j] = first.olabel(j);
+      graphDP1.srcNodes[j] = first.srcNode(j);
+      graphDP1.dstNodes[j] = first.dstNode(j);
+      graphDP1.weights[j] = first.weight(j);
+    }
+  }
+
+  for (auto i : first.numNodes()) {
+    int offset = graphDP1.inEdgeOffset[i];
+
+    for (auto j : first.in(i)) {
+      graphDP1.inEdges[offset] = j;
+      offset++;
+    }
+  }
+
+}
+
+} // namespace dataparallel
 } // namespace detail
 } // namespace gtn
