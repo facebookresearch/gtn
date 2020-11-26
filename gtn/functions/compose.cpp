@@ -457,12 +457,20 @@ namespace detail {
 namespace dataparallel {
 // Change AOS to SOA
 struct GraphDataParallel {
-    std::vector<int> inEdgeOffset;
-    std::vector<int> outEdgesOffset.
+    std::vector<int> accept;
+    std::vector<int> start;
 
-    std::vector<int> inEdges;  
-    std::vector<int> outEdges;
+    // One value per node
+    // i-th value corresponds to i-th node
+    std::vector<int> inArcOffset;
+    std::vector<int> outArcOffset.
 
+    // One value per arc
+    std::vector<int> inArcs;  
+    std::vector<int> outArcs;
+
+    // One value per arc
+    // i-th value corresponds to i-th arc
     std::vector<int> ilabels;
     std::vector<int> olabels;
     std::vector<int> srcNodes;
@@ -472,14 +480,14 @@ struct GraphDataParallel {
 
 namespace {
 // Exclusive
-int prefixSumScan(std::vector<int>& input) {
+void sumScan(std::vector<int>& input) {
   int sum = 0;
   for (auto i : input.size()) {
     auto count = input[i];
     input[i] = sum;
     sum += count;
   }
-  return sum;
+  input.push_back(sum);
 }
 }
 
@@ -489,32 +497,40 @@ GraphDataParaellel convertToDataParallel(
 
   GraphDataParallel graphDP;
 
-  graphDP.inEdgeOffset.resize(graph.numNodes());
-  graphDP.outEdgeOFfset.resize(graph.numNodes());
+  graphDP.inArcOffset.resize(graph.numNodes());
+  graphDP.outArcOffset.resize(graph.numNodes());
 
-  graphDP.inEdges.resize(graph.numEdges()); `
-  graphDP.outEdges.resize(graph.numEdges()); `
+  graphDP.inArcs.resize(graph.numArcs()); `
+  graphDP.outArcs.resize(graph.numArcs()); `
 
-  graphDP.ilabels.resize(graph.numEdges()); `
-  graphDP.olabels.resize(graph.numEdges()); `
-  graphDP.srcNodes.resize(graph.numEdges()); `
-  graphDP.dstNodes.resize(graph.numEdges()); `
-  graphDP.weights.resize(graph.numEdges()); `
+  graphDP.ilabels.resize(graph.numArcs()); `
+  graphDP.olabels.resize(graph.numArcs()); `
+  graphDP.srcNodes.resize(graph.numArcs()); `
+  graphDP.dstNodes.resize(graph.numArcs()); `
+  graphDP.weights.resize(graph.numArcs()); `
 
-  for (auto i : graph.numNodes()) {
-    graphDP.inEdgeOffset[i] = graph.numIn(i);
-    graphDPoutEdgeOffset[i] = graph.numOut(i);
+  for (auto i : graph.start()) {
+    graphDP.start.push_back(i);
+  }
+
+  for (auto i : graph.accept()) {
+    graphDP.accept.push_back(i);
+  }
+
+  for (int i = 0; i < graph.numNodes(); ++i) {
+    graphDP.inArcOffset[i] = graph.numIn(i);
+    graphDP.outArcOffset[i] = graph.numOut(i);
   }
 
   // Scan of offsets
-  prefixSumScan(graphDP.inEdgeOffset);
-  prefixSumScan(graphDP.outEdgeOffset);
+  prefixSumScan(graphDP.inArcOffset);
+  prefixSumScan(graphDP.outArcOffset);
 
-  for (auto i : graph.numNodes()) {
-    int offset = graphDP.outEdgeOffset[i];
+  for (int i = 0; i < graph.numNodes(); ++i) {
+    int offset = graphDP.outArcOffset[i];
 
     for (auto j : graph.out(i)) {
-      graphDP1.outEdges[offset] = j;
+      graphDP1.outArcs[offset] = j;
       offset++;
 
       graphDP.ilabels[j] = graph.ilabel(j);
@@ -525,11 +541,11 @@ GraphDataParaellel convertToDataParallel(
     }
   }
 
-  for (auto i : graph.numNodes()) {
-    int offset = graphDP.inEdgeOffset[i];
+  for (int i = 0; i < graph.numNodes(); ++i) {
+    int offset = graphDP.inArcOffset[i];
 
     for (auto j : graph.in(i)) {
-      graphDP.inEdges[offset] = j;
+      graphDP.inArcs[offset] = j;
       offset++;
     }
   }
@@ -545,6 +561,38 @@ Graph compose(
   // Convert from AOS to SOA
   graphDP1 = convertToDataParallel(first);
   graphDP2 = convertToDataParallel(second);
+
+  // A first attempt at data parallel findReachable
+  // toExplorePair is a cross prodct 
+  std::vector<std::pair<int, int>> toExplore;
+  std::vector<int> toExploreNumEdge;
+
+  for (auto f : graphDP1.accept()) {
+    for (auto s : graphDP2.accept()) {
+      toExplore.push_back(std::make_pair(f, s));
+    }
+  }
+
+  // This is the outer control loop that would spawn DP kernels
+  while (!toExplore.empty()) {
+
+    // Calculate number of threads we have to spawn
+    toExploreNumEdge.resize(toExplore.size());
+    std::vector<int> edgeMulOffset(toExplore.size());
+
+    for (int i = 0; i < toExplore.size(); ++i) {
+      int node = toExplore[i].first;
+      const int numEdgesFirst = graphDP1.inArcOffset[node+1] - graphDP1.inArcOffset[node];
+
+      node = toExplore[i].second;
+      const int numEdgesSecond = graphDP2.inArcOffset[node+1] - graphDP2.inArcOffset[node];
+
+      toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
+      edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
+    }
+
+    sumScan(edgeMullOffset);
+  }
 
 
 
