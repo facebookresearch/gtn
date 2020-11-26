@@ -470,73 +470,83 @@ struct GraphDataParallel {
     std::vector<float> weights;
 };
 
+namespace {
+// Exclusive
+int prefixSumScan(std::vector<int>& input) {
+  int sum = 0;
+  for (auto i : input.size()) {
+    auto count = input[i];
+    input[i] = sum;
+    sum += count;
+  }
+  return sum;
+}
+}
+
+// Convert from AOS to SOA
+GraphDataParaellel convertToDataParallel(
+    const Graph& graph) {
+
+  GraphDataParallel graphDP;
+
+  graphDP.inEdgeOffset.resize(graph.numNodes());
+  graphDP.outEdgeOFfset.resize(graph.numNodes());
+
+  graphDP.inEdges.resize(graph.numEdges()); `
+  graphDP.outEdges.resize(graph.numEdges()); `
+
+  graphDP.ilabels.resize(graph.numEdges()); `
+  graphDP.olabels.resize(graph.numEdges()); `
+  graphDP.srcNodes.resize(graph.numEdges()); `
+  graphDP.dstNodes.resize(graph.numEdges()); `
+  graphDP.weights.resize(graph.numEdges()); `
+
+  for (auto i : graph.numNodes()) {
+    graphDP.inEdgeOffset[i] = graph.numIn(i);
+    graphDPoutEdgeOffset[i] = graph.numOut(i);
+  }
+
+  // Scan of offsets
+  prefixSumScan(graphDP.inEdgeOffset);
+  prefixSumScan(graphDP.outEdgeOffset);
+
+  for (auto i : graph.numNodes()) {
+    int offset = graphDP.outEdgeOffset[i];
+
+    for (auto j : graph.out(i)) {
+      graphDP1.outEdges[offset] = j;
+      offset++;
+
+      graphDP.ilabels[j] = graph.ilabel(j);
+      graphDP.olabels[j] = graph.olabel(j);
+      graphDP.srcNodes[j] = graph.srcNode(j);
+      graphDP.dstNodes[j] = graph.dstNode(j);
+      graphDP.weights[j] = graph.weight(j);
+    }
+  }
+
+  for (auto i : graph.numNodes()) {
+    int offset = graphDP.inEdgeOffset[i];
+
+    for (auto j : graph.in(i)) {
+      graphDP.inEdges[offset] = j;
+      offset++;
+    }
+  }
+
+  return graphDP;
+}
+
 Graph compose(
     const Graph& first,
     const Graph& second) {
 
   GraphDataParallel graphDP1, graphDP2;
   // Convert from AOS to SOA
+  graphDP1 = convertToDataParallel(first);
+  graphDP2 = convertToDataParallel(second);
 
-  std::queue<int> toExplore;
-  std::vector<bool> visited(false, first.numNodes());
 
-  graphDP1.inEdgeOffset.resize(first.numNodes());
-  graphDP1.outEdgeOFfset.resize(first.numNodes());
-
-  graphDP1.inEdges.resize(first.numEdges()); `
-  graphDP1.outEdges.resize(first.numEdges()); `
-
-  graphDP1.ilabels.resize(first.numEdges()); `
-  graphDP1.olabels.resize(first.numEdges()); `
-  graphDP1.srcNodes.resize(first.numEdges()); `
-  graphDP1.dstNodes.resize(first.numEdges()); `
-  graphDP1.weights.resize(first.numEdges()); `
-
-  for (auto i : first.numNodes()) {
-    graphDP1.inEdgeOffset[i] = first.numIn(i);
-    graphDP1.outEdgeOffset[i] = first.numOut(i);
-  }
-
-  // Scan of offsets
-  {
-      int sum = 0;
-      for (auto i : graphDP1.inEdgeOffset.size()) {
-        auto count = graphDP1.inEdgeOffset[i];
-        graphDP1.inEdgeOffset[i] = sum;
-        sum += count;
-      }
-
-      sum = 0;
-      for (auto i : graphDP1.outEdgeOffset.size()) {
-        auto count = graphDP1.outEdgeOffset[i];
-        graphDP1.outEdgeOffset[i] = sum;
-        sum += count;
-      }
-  }
-
-  for (auto i : first.numNodes()) {
-    int offset = graphDP1.outEdgeOffset[i];
-
-    for (auto j : first.out(i)) {
-      graphDP1.outEdges[offset] = j;
-      offset++;
-
-      graphDP1.ilabels[j] = first.ilabel(j);
-      graphDP1.olabels[j] = first.olabel(j);
-      graphDP1.srcNodes[j] = first.srcNode(j);
-      graphDP1.dstNodes[j] = first.dstNode(j);
-      graphDP1.weights[j] = first.weight(j);
-    }
-  }
-
-  for (auto i : first.numNodes()) {
-    int offset = graphDP1.inEdgeOffset[i];
-
-    for (auto j : first.in(i)) {
-      graphDP1.inEdges[offset] = j;
-      offset++;
-    }
-  }
 
 }
 
