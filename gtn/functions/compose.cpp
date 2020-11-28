@@ -6,8 +6,8 @@
  */
 
 #include <algorithm>
-#include <queue>
 #include <cassert>
+#include <queue>
 
 #include "gtn/functions/compose.h"
 
@@ -457,25 +457,25 @@ namespace detail {
 namespace dataparallel {
 // Change AOS to SOA
 struct GraphDataParallel {
-    std::vector<int> accept;
-    std::vector<int> start;
+  std::vector<int> accept;
+  std::vector<int> start;
 
-    // One value per node
-    // i-th value corresponds to i-th node
-    std::vector<int> inArcOffset;
-    std::vector<int> outArcOffset.
+  // One value per node
+  // i-th value corresponds to i-th node
+  std::vector<int> inArcOffset;
+  std::vector<int> outArcOffset;
 
-    // One value per arc
-    std::vector<int> inArcs;  
-    std::vector<int> outArcs;
+  // One value per arc
+  std::vector<int> inArcs;
+  std::vector<int> outArcs;
 
-    // One value per arc
-    // i-th value corresponds to i-th arc
-    std::vector<int> ilabels;
-    std::vector<int> olabels;
-    std::vector<int> srcNodes;
-    std::vector<int> dstNodes;
-    std::vector<float> weights;
+  // One value per arc
+  // i-th value corresponds to i-th arc
+  std::vector<int> ilabels;
+  std::vector<int> olabels;
+  std::vector<int> srcNodes;
+  std::vector<int> dstNodes;
+  std::vector<float> weights;
 };
 
 namespace {
@@ -510,10 +510,12 @@ inline bool checkAnyTrue(const std::vector<bool>& flags) {
   }
   return false;
 }
-}
+} // namespace
 
 // Convert bool array two pairs for true flags
-std::vector<std::pair<int, int>> convertToNodePair(const std::vector<bool>& flags, int extent) {
+std::vector<std::pair<int, int>> convertToNodePair(
+    const std::vector<bool>& flags,
+    int extent) {
   std::vector<std::pair<int, int>> toExploreNodePair;
   for (size_t i = 0; i < flags.size(); ++i) {
     if (flags[i] == true) {
@@ -525,22 +527,20 @@ std::vector<std::pair<int, int>> convertToNodePair(const std::vector<bool>& flag
 }
 
 // Convert from AOS to SOA
-GraphDataParaellel convertToDataParallel(
-    const Graph& graph) {
-
+GraphDataParaellel convertToDataParallel(const Graph& graph) {
   GraphDataParallel graphDP;
 
   graphDP.inArcOffset.resize(graph.numNodes());
   graphDP.outArcOffset.resize(graph.numNodes());
 
-  graphDP.inArcs.resize(graph.numArcs()); `
-  graphDP.outArcs.resize(graph.numArcs()); `
+  graphDP.inArcs.resize(graph.numArcs());
+  graphDP.outArcs.resize(graph.numArcs());
 
-  graphDP.ilabels.resize(graph.numArcs()); `
-  graphDP.olabels.resize(graph.numArcs()); `
-  graphDP.srcNodes.resize(graph.numArcs()); `
-  graphDP.dstNodes.resize(graph.numArcs()); `
-  graphDP.weights.resize(graph.numArcs()); `
+  graphDP.ilabels.resize(graph.numArcs());
+  graphDP.olabels.resize(graph.numArcs());
+  graphDP.srcNodes.resize(graph.numArcs());
+  graphDP.dstNodes.resize(graph.numArcs());
+  graphDP.weights.resize(graph.numArcs());
 
   for (auto i : graph.start()) {
     graphDP.start.push_back(i);
@@ -586,10 +586,7 @@ GraphDataParaellel convertToDataParallel(
   return graphDP;
 }
 
-Graph compose(
-    const Graph& first,
-    const Graph& second) {
-
+Graph compose(const Graph& first, const Graph& second) {
   GraphDataParallel graphDP1, graphDP2;
   // Convert from AOS to SOA
   graphDP1 = convertToDataParallel(first);
@@ -597,29 +594,38 @@ Graph compose(
 
   // A first attempt at data parallel findReachable
   std::vector<bool> toExplore(first.numNodes() * second.numNodes(), false);
+  std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
+
+  const int numNodesFirst = first.numNodes();
 
   for (auto f : graphDP1.accept()) {
     for (auto s : graphDP2.accept()) {
-      toExplore[TwoDToOneDIndex(f, s, first.numNodes())] = true;
+      toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
     }
   }
 
   // This is the outer control loop that would spawn DP kernels
   while (checkAnyTrue(toExplore)) {
+    // Convert bits set in toExplore to node pairs
+    auto toExploreNodePair = convertToNodePair(toExplore, numNodesFirst);
 
-    auto toExploreNodePair = convertToNodePair(toExplore, first.numNodes());
+    // Reset so pristine state for next frontier to epxlore
+    // No dependence between iterations
+    std::fill(toExplore.begin(), toExplore.end(), false);
 
     // Calculate number of threads we have to spawn
-    std::vector<int> toExploreNumEdge(toExploreNodePair.size());
+    std::vector<std::pair<int.int>> toExploreNumEdge(toExploreNodePair.size());
     std::vector<int> edgeMulOffset(toExploreNodePair.size());
 
     // No dependence between iterations
-    for (int i = 0; i < toExplore.size(); ++i) {
-      int node = toExplore[i].first;
-      const int numEdgesFirst = graphDP1.inArcOffset[node+1] - graphDP1.inArcOffset[node];
+    for (int i = 0; i < toExploreNodePair.size(); ++i) {
+      int node = toExploreNodePair[i].first;
+      const int numEdgesFirst =
+          graphDP1.inArcOffset[node + 1] - graphDP1.inArcOffset[node];
 
-      node = toExplore[i].second;
-      const int numEdgesSecond = graphDP2.inArcOffset[node+1] - graphDP2.inArcOffset[node];
+      node = toExploreNodePair[i].second;
+      const int numEdgesSecond =
+          graphDP2.inArcOffset[node + 1] - graphDP2.inArcOffset[node];
 
       toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
       edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
@@ -627,22 +633,42 @@ Graph compose(
 
     sumScan(edgeMullOffset);
     assert(!edgeMulOffset.empty());
-    const int totalEdges = edgeMullOffset[edgeMullOffset.size()-1];
+    const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
 
-    // No dependence between iterations
+    // No dependence between iterations. tid is thread-id
     for (int tid = 0; tid < totalEdges; ++tid) {
+      // Node pair
+      std::pair<int, int> nodePair;
+      std::pair<int, int> edgePair;
 
-        // Search to find which node pair this tid will fall into
-        // Linear search for now (edgeMullOffset is sorted by definition)
-        int nodeFirst;
-        for (int i = 0; i < edgeMullOffset.size(); ++i) {
+      // Map tid to corresponding node and edge pair
+      // Search to find which node pair this tid will fall into
+      // Linear search for now (edgeMullOffset is sorted by definition)
+      for (size_t i = 0; i < edgeMullOffset.size() - 1; ++i) {
+        const int lVal = edgeMullOffset[i];
+        const int rVal = edgeMullOffset[i + 1];
+
+        if ((lVal <= i) && (i < rVal)) {
+          nodePair = toExploreNodePair[i];
+          const int numEdges = edgeMullOffset[i + 1] - edgeMullOffset[i];
+          edgePair = OneDToTwoDIndex(numEdges, toExploreNumEdges[i].first);
         }
+      }
 
+      // Does this node pair match?
+      if (graphDP1.ilabels[edgePair.first] =
+              graphDP2.olabels[edgePair.second]) {
+        const int idx = TwoDToOneDIndex(
+            graphDP1.srcNodes[edgePair.first],
+            graphDP2.srcNodes[edgePair.second],
+            numNodesFirst);
+        if (!reachable[idx]) {
+          toExplore[idx] = true;
+        }
+        reachable[idx] = true;
+      }
     }
   }
-
-
-
 }
 
 } // namespace dataparallel
