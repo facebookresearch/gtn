@@ -489,6 +489,39 @@ void sumScan(std::vector<int>& input) {
   }
   input.push_back(sum);
 }
+
+// TODO: Duplicate - should be removed
+inline int TwoDToOneDIndex(int n1, int n2, int n1Extent) {
+  return n1 + n2 * n1Extent;
+}
+
+inline std::pair<int, int> OneDToTwoDIndex(int n, int n1Extent) {
+  assert(n1Extent > 0);
+  const int n2 = n / n1Extent;
+  const int n1 = n % n1Extent;
+  return std::make_pair(n1, n2);
+}
+
+inline bool checkAnyTrue(const std::vector<bool>& flags) {
+  for (auto i : flags) {
+    if (i == true) {
+      return i;
+    }
+  }
+  return false;
+}
+}
+
+// Convert bool array two pairs for true flags
+std::vector<std::pair<int, int>> convertToNodePair(const std::vector<bool>& flags, int extent) {
+  std::vector<std::pair<int, int>> toExploreNodePair;
+  for (size_t i = 0; i < flags.size(); ++i) {
+    if (flags[i] == true) {
+      toExploreNodePair.push_back(OneDToTwoDIndex(i, extent));
+    }
+  }
+
+  return toExploreNodePair;
 }
 
 // Convert from AOS to SOA
@@ -563,23 +596,24 @@ Graph compose(
   graphDP2 = convertToDataParallel(second);
 
   // A first attempt at data parallel findReachable
-  // toExplorePair is a cross prodct 
-  std::vector<std::pair<int, int>> toExplore;
-  std::vector<int> toExploreNumEdge;
+  std::vector<bool> toExplore(first.numNodes() * second.numNodes(), false);
 
   for (auto f : graphDP1.accept()) {
     for (auto s : graphDP2.accept()) {
-      toExplore.push_back(std::make_pair(f, s));
+      toExplore[TwoDToOneDIndex(f, s, first.numNodes())] = true;
     }
   }
 
   // This is the outer control loop that would spawn DP kernels
-  while (!toExplore.empty()) {
+  while (checkAnyTrue(toExplore)) {
+
+    auto toExploreNodePair = convertToNodePair(toExplore, first.numNodes());
 
     // Calculate number of threads we have to spawn
-    toExploreNumEdge.resize(toExplore.size());
-    std::vector<int> edgeMulOffset(toExplore.size());
+    std::vector<int> toExploreNumEdge(toExploreNodePair.size());
+    std::vector<int> edgeMulOffset(toExploreNodePair.size());
 
+    // No dependence between iterations
     for (int i = 0; i < toExplore.size(); ++i) {
       int node = toExplore[i].first;
       const int numEdgesFirst = graphDP1.inArcOffset[node+1] - graphDP1.inArcOffset[node];
@@ -592,6 +626,19 @@ Graph compose(
     }
 
     sumScan(edgeMullOffset);
+    assert(!edgeMulOffset.empty());
+    const int totalEdges = edgeMullOffset[edgeMullOffset.size()-1];
+
+    // No dependence between iterations
+    for (int tid = 0; tid < totalEdges; ++tid) {
+
+        // Search to find which node pair this tid will fall into
+        // Linear search for now (edgeMullOffset is sorted by definition)
+        int nodeFirst;
+        for (int i = 0; i < edgeMullOffset.size(); ++i) {
+        }
+
+    }
   }
 
 
