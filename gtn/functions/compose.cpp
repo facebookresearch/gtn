@@ -595,6 +595,7 @@ Graph compose(const Graph& first, const Graph& second) {
   // A first attempt at data parallel findReachable
   std::vector<bool> toExplore(first.numNodes() * second.numNodes(), false);
   std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
+  std::vector<bool> epsilonMatched(first.numNodes() * second.numNodes(), false);
 
   const int numNodesFirst = first.numNodes();
 
@@ -612,6 +613,7 @@ Graph compose(const Graph& first, const Graph& second) {
     // Reset so pristine state for next frontier to epxlore
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
+    std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
     // Calculate number of threads we have to spawn
     std::vector<std::pair<int.int>> toExploreNumEdge(toExploreNodePair.size());
@@ -636,6 +638,7 @@ Graph compose(const Graph& first, const Graph& second) {
     const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
 
     // No dependence between iterations. tid is thread-id
+    // Only do non epsilon case for this kernel
     for (int tid = 0; tid < totalEdges; ++tid) {
       // Node pair
       std::pair<int, int> nodePair;
@@ -656,8 +659,8 @@ Graph compose(const Graph& first, const Graph& second) {
       }
 
       // Does this node pair match?
-      if (graphDP1.ilabels[edgePair.first] =
-              graphDP2.olabels[edgePair.second]) {
+      if (graphDP1.olabels[edgePair.first] ==
+          graphDP2.ilabels[edgePair.second]) {
         const int idx = TwoDToOneDIndex(
             graphDP1.srcNodes[edgePair.first],
             graphDP2.srcNodes[edgePair.second],
@@ -666,9 +669,62 @@ Graph compose(const Graph& first, const Graph& second) {
           toExplore[idx] = true;
         }
         reachable[idx] = true;
+
+        if (graphDP1.olabels[edgePair.first] == epsilon) {
+          epsilonMatched[TwoDToOneDIndex(
+              nodePair.first, nodePair.second, numNodesFirst)] = true;
+        }
       }
     }
-  }
+
+    // No dependence between iterations. tid is thread-id
+    // Do epsilon match case in this kernel launch
+    for (int tid = 0; tid < totalEdges; ++tid) {
+      // Node pair
+      std::pair<int, int> nodePair;
+      std::pair<int, int> edgePair;
+
+      // Map tid to corresponding node and edge pair
+      // Search to find which node pair this tid will fall into
+      // Linear search for now (edgeMullOffset is sorted by definition)
+      for (size_t i = 0; i < edgeMullOffset.size() - 1; ++i) {
+        const int lVal = edgeMullOffset[i];
+        const int rVal = edgeMullOffset[i + 1];
+
+        if ((lVal <= i) && (i < rVal)) {
+          nodePair = toExploreNodePair[i];
+          const int numEdges = edgeMullOffset[i + 1] - edgeMullOffset[i];
+          edgePair = OneDToTwoDIndex(numEdges, toExploreNumEdges[i].first);
+        }
+      }
+
+      const bool matched = epsilonMatched[TwoDToOneDIndex(
+          nodePair.first, nodePair.second, numNodesFirst)];
+      // Note that when this loop body is threaded - multiple threads will
+      // write to the same location. They will write the same value so
+      // this is fine
+      if (graphDP1.olabels[edgePair.first] == epsilon && !matched) {
+        const int idx = TwoDToOneDIndex(
+            graphDP1.srcNodes[edgePair.first], nodePair.second, numNodesFirst);
+        if (!reachable[idx]) {
+          toExplore[idx] = true;
+        }
+        reachable[idx] = true;
+      }
+
+      // Note that when this loop body is threaded - multiple threads will
+      // write to the same location. They will write the same value so
+      // this is fine
+      if (graphDP1.ilabels[edgePair.second] == epsilon && !matched) {
+        const int idx = TwoDToOneDIndex(
+            nodePair.first, graphDP2.srcNodes[edgePair.second], numNodesFirst);
+        if (!reachable[idx]) {
+          toExplore[idx] = true;
+        }
+        reachable[idx] = true;
+      }
+    }
+  } // end while for findReachable
 }
 
 } // namespace dataparallel
