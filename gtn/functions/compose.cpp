@@ -479,7 +479,7 @@ struct GraphDataParallel {
 };
 
 namespace {
-// Exclusive
+// Exclusive prefix sum
 void sumScan(std::vector<int>& input) {
   int sum = 0;
   for (auto i : input.size()) {
@@ -509,6 +509,29 @@ inline bool checkAnyTrue(const std::vector<bool>& flags) {
     }
   }
   return false;
+}
+
+// Map thread id to corresponding node and edge pair
+// Search to find which node pair this tid will fall into
+// Linear search for now (edgeMullOffset is sorted by definition)
+std::pair<std::pair<int, int>, std::pair<int, int>> computeNodeAndEdgePair(
+    int tid,
+    const std::vector<int>& edgeMullOffset,
+    const std::vector<std::pair<int, int>>& toExploreNodePair) {
+  std::pair<int, int> nodePair;
+  std::pair<int, int> edgePair;
+  for (size_t i = 0; i < edgeMullOffset.size() - 1; ++i) {
+    const int lVal = edgeMullOffset[i];
+    const int rVal = edgeMullOffset[i + 1];
+
+    if ((lVal <= tid) && (tid < rVal)) {
+      nodePair = toExploreNodePair[i];
+      const int numEdges = edgeMullOffset[i + 1] - edgeMullOffset[i];
+      edgePair = OneDToTwoDIndex(numEdges, toExploreNumEdges[i].first);
+    }
+  }
+
+  return std::make_pair(nodePair, edgePair);
 }
 } // namespace
 
@@ -599,8 +622,8 @@ Graph compose(const Graph& first, const Graph& second) {
 
   const int numNodesFirst = first.numNodes();
 
-  for (auto f : graphDP1.accept()) {
-    for (auto s : graphDP2.accept()) {
+  for (auto f : graphDP1.accept) {
+    for (auto s : graphDP2.accept) {
       toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
     }
   }
@@ -610,7 +633,7 @@ Graph compose(const Graph& first, const Graph& second) {
     // Convert bits set in toExplore to node pairs
     auto toExploreNodePair = convertToNodePair(toExplore, numNodesFirst);
 
-    // Reset so pristine state for next frontier to epxlore
+    // Reset so pristine state for next frontier to explore
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
     std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
@@ -647,16 +670,10 @@ Graph compose(const Graph& first, const Graph& second) {
       // Map tid to corresponding node and edge pair
       // Search to find which node pair this tid will fall into
       // Linear search for now (edgeMullOffset is sorted by definition)
-      for (size_t i = 0; i < edgeMullOffset.size() - 1; ++i) {
-        const int lVal = edgeMullOffset[i];
-        const int rVal = edgeMullOffset[i + 1];
-
-        if ((lVal <= i) && (i < rVal)) {
-          nodePair = toExploreNodePair[i];
-          const int numEdges = edgeMullOffset[i + 1] - edgeMullOffset[i];
-          edgePair = OneDToTwoDIndex(numEdges, toExploreNumEdges[i].first);
-        }
-      }
+      std::vector<int, int> nodePair;
+      std::vector<int, int> edgePair;
+      std::tie(nodePair, edgePair) =
+          computeNodeAndEdgePair(tid, edgeMullOffset, toExploreNodePair);
 
       // Does this node pair match?
       if (graphDP1.olabels[edgePair.first] ==
@@ -687,16 +704,10 @@ Graph compose(const Graph& first, const Graph& second) {
       // Map tid to corresponding node and edge pair
       // Search to find which node pair this tid will fall into
       // Linear search for now (edgeMullOffset is sorted by definition)
-      for (size_t i = 0; i < edgeMullOffset.size() - 1; ++i) {
-        const int lVal = edgeMullOffset[i];
-        const int rVal = edgeMullOffset[i + 1];
-
-        if ((lVal <= i) && (i < rVal)) {
-          nodePair = toExploreNodePair[i];
-          const int numEdges = edgeMullOffset[i + 1] - edgeMullOffset[i];
-          edgePair = OneDToTwoDIndex(numEdges, toExploreNumEdges[i].first);
-        }
-      }
+      std::vector<int, int> nodePair;
+      std::vector<int, int> edgePair;
+      std::tie(nodePair, edgePair) =
+          computeNodeAndEdgePair(tid, edgeMullOffset, toExploreNodePair);
 
       const bool matched = epsilonMatched[TwoDToOneDIndex(
           nodePair.first, nodePair.second, numNodesFirst)];
@@ -725,6 +736,89 @@ Graph compose(const Graph& first, const Graph& second) {
       }
     }
   } // end while for findReachable
+
+
+  // Begin first pass to generate metadata for valid nodes and edges. This
+  // is needed before we can generate the nodes and edges themselves.
+  std::fill(toExplore.begin(), toExplore.end(), false);
+
+  // This vector tracks the nodes that are going to be present in the combined
+  // graph
+  std::vector<bool> newNodes(first.numNodes() * second.numNodes(), false);
+  std::vector<int> numOutArcs(first.numNodes() * second.numNodes(), 0);
+
+  for (auto f : graphDP1.start) {
+    for (auto s : graphDP2.start) {
+      toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+      newNodes[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+    }
+  }
+
+  // This is the outer control loop that would spawn DP kernels
+  while (checkAnyTrue(toExplore)) {
+    // Convert bits set in toExplore to node pairs
+    auto toExploreNodePair = convertToNodePair(toExplore, numNodesFirst);
+
+    // Reset so pristine state for next frontier to epxlore
+    // No dependence between iterations
+    std::fill(toExplore.begin(), toExplore.end(), false);
+    // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
+
+    // Calculate number of threads we have to spawn
+    std::vector<std::pair<int.int>> toExploreNumEdge(toExploreNodePair.size());
+    std::vector<int> edgeMulOffset(toExploreNodePair.size());
+
+    // No dependence between iterations
+    for (int i = 0; i < toExploreNodePair.size(); ++i) {
+      int node = toExploreNodePair[i].first;
+      const int numEdgesFirst =
+          graphDP1.outArcOffset[node + 1] - graphDP1.outArcOffset[node];
+
+      node = toExploreNodePair[i].second;
+      const int numEdgesSecond =
+          graphDP2.inArcOffset[node + 1] - graphDP2.outArcOffset[node];
+
+      toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
+      edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
+    }
+
+    sumScan(edgeMullOffset);
+    assert(!edgeMulOffset.empty());
+    const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
+
+    for (int tid = 0; tid < totalEdges; ++tid) {
+      // Node pair
+      std::pair<int, int> nodePair;
+      std::pair<int, int> edgePair;
+
+      // Map tid to corresponding node and edge pair
+      // Search to find which node pair this tid will fall into
+      // Linear search for now (edgeMullOffset is sorted by definition)
+      std::vector<int, int> nodePair;
+      std::vector<int, int> edgePair;
+      std::tie(nodePair, edgePair) =
+          computeNodeAndEdgePair(tid, edgeMullOffset, toExploreNodePair);
+
+      // Does this node pair match?
+      if (graphDP1.olabels[edgePair.first] ==
+          graphDP2.ilabels[edgePair.second]) {
+        const int dstIdx = TwoDToOneDIndex(
+            graphDP1.dstNodes[edgePair.first],
+            graphDP2.dstNodes[edgePair.second],
+            numNodesFirst);
+        const int curIdx = TwoDToOneDIndex(
+            nodePair.first, nodePair.second, numNodesFirst);
+        if (reachable[dstIdx]) {
+          if (!newNodes[dstIdx]) {
+            newNodes[idx] = true;
+            toExplore[idx] = true;
+          }
+          // This is an atomic increment
+          numOutArcs[curIdx]++;
+        }
+      }
+    }
+  }
 }
 
 } // namespace dataparallel
