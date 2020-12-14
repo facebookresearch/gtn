@@ -460,8 +460,10 @@ struct GraphDataParallel {
   std::vector<int> accept;
   std::vector<int> start;
 
-  // One value per node
-  // i-th value corresponds to i-th node
+  // Has one more element than the number of nodes
+  // One value per node - i-th value corresponds to i-th node
+  // Last element is the total number of arcs, so that
+  // each element and its neighbor forms a range 
   std::vector<int> inArcOffset;
   std::vector<int> outArcOffset;
 
@@ -479,8 +481,9 @@ struct GraphDataParallel {
 };
 
 namespace {
-// Exclusive prefix sum
-void sumScan(std::vector<int>& input) {
+// Exclusive/Inclusive prefix sum. The returned vector
+// has one more element 
+void prefixSumScan(std::vector<int>& input) {
   int sum = 0;
   for (auto i : input.size()) {
     auto count = input[i];
@@ -488,6 +491,19 @@ void sumScan(std::vector<int>& input) {
     sum += count;
   }
   input.push_back(sum);
+}
+
+// Removes all elements that match toRemove from a vector
+std::vector<int> streamCompact(const std::vector<int>& input, int toRemove) {
+  std::vector<int> output;
+
+  for (auto i : input.size()) {
+    if (input[i] != toRemove) {
+      output.push_back(input[i]);
+    }
+  }
+
+  return output;
 }
 
 // TODO: Duplicate - should be removed
@@ -656,7 +672,7 @@ Graph compose(const Graph& first, const Graph& second) {
       edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
     }
 
-    sumScan(edgeMullOffset);
+    prefixSumScan(edgeMullOffset);
     assert(!edgeMulOffset.empty());
     const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
 
@@ -697,10 +713,6 @@ Graph compose(const Graph& first, const Graph& second) {
     // No dependence between iterations. tid is thread-id
     // Do epsilon match case in this kernel launch
     for (int tid = 0; tid < totalEdges; ++tid) {
-      // Node pair
-      std::pair<int, int> nodePair;
-      std::pair<int, int> edgePair;
-
       // Map tid to corresponding node and edge pair
       // Search to find which node pair this tid will fall into
       // Linear search for now (edgeMullOffset is sorted by definition)
@@ -738,6 +750,10 @@ Graph compose(const Graph& first, const Graph& second) {
   } // end while for findReachable
 
 
+  //////////////////////////////////////////////////////////////////////////
+  // First pass to count number of in and out edges per node in the cmoposed
+  // graph
+  
   // Begin first pass to generate metadata for valid nodes and edges. This
   // is needed before we can generate the nodes and edges themselves.
   std::fill(toExplore.begin(), toExplore.end(), false);
@@ -746,6 +762,7 @@ Graph compose(const Graph& first, const Graph& second) {
   // graph
   std::vector<bool> newNodes(first.numNodes() * second.numNodes(), false);
   std::vector<int> numOutArcs(first.numNodes() * second.numNodes(), 0);
+  std::vector<int> numInArcs(first.numNodes() * second.numNodes(), 0);
 
   for (auto f : graphDP1.start) {
     for (auto s : graphDP2.start) {
@@ -782,15 +799,11 @@ Graph compose(const Graph& first, const Graph& second) {
       edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
     }
 
-    sumScan(edgeMullOffset);
+    prefixSumScan(edgeMullOffset);
     assert(!edgeMulOffset.empty());
     const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
 
     for (int tid = 0; tid < totalEdges; ++tid) {
-      // Node pair
-      std::pair<int, int> nodePair;
-      std::pair<int, int> edgePair;
-
       // Map tid to corresponding node and edge pair
       // Search to find which node pair this tid will fall into
       // Linear search for now (edgeMullOffset is sorted by definition)
@@ -813,12 +826,48 @@ Graph compose(const Graph& first, const Graph& second) {
             newNodes[idx] = true;
             toExplore[idx] = true;
           }
-          // This is an atomic increment
+          // These are atomic increments
           numOutArcs[curIdx]++;
+          numInArcs[dstIdx]++;
         }
       }
     }
   }
+
+
+  //////////////////////////////////////////////////////////////////////////
+  // Generate offsets for nodes and arcs
+  std::vector<int> newNodesOffset(newNodes.size(), 0);
+  for (size_t i = 0; i < newNodes.size(); ++i) {
+    if (newNodes[i]) {
+      newNodesOffset[i] = 1;
+    }
+  }
+
+  prefixSumScan(newNodesOffset);
+
+  std::vector<int> outArcOffset;
+  std::vector<int> inArcOffset;
+
+  outArcOffset = streamCompact(numOutArcs, 0);
+  inArcOffset = streamCompact(numInArcs, 0);
+
+  // Prefix sum to generate offsets
+  prefixSumScan(outArcOffset);
+  prefixSumScan(inArcOffset);
+
+
+
+  //////////////////////////////////////////////////////////////////////////
+  // Second pass to generate nodes in the cmoposed graph
+  
+  // Begin first pass to generate metadata for valid nodes and edges. This
+  // is needed before we can generate the nodes and edges themselves.
+  std::fill(toExplore.begin(), toExplore.end(), false);
+
+
+
+  
 }
 
 } // namespace dataparallel
