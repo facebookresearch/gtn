@@ -823,8 +823,8 @@ Graph compose(const Graph& first, const Graph& second) {
             nodePair.first, nodePair.second, numNodesFirst);
         if (reachable[dstIdx]) {
           if (!newNodes[dstIdx]) {
-            newNodes[idx] = true;
-            toExplore[idx] = true;
+            newNodes[dstIdx] = true;
+            toExplore[dstIdx] = true;
           }
           // These are atomic increments
           numOutArcs[curIdx]++;
@@ -837,6 +837,8 @@ Graph compose(const Graph& first, const Graph& second) {
 
   //////////////////////////////////////////////////////////////////////////
   // Generate offsets for nodes and arcs
+  GraphDataParallel newGraphDP;
+
   std::vector<int> newNodesOffset(newNodes.size(), 0);
   for (size_t i = 0; i < newNodes.size(); ++i) {
     if (newNodes[i]) {
@@ -846,16 +848,23 @@ Graph compose(const Graph& first, const Graph& second) {
 
   prefixSumScan(newNodesOffset);
 
-  std::vector<int> outArcOffset;
-  std::vector<int> inArcOffset;
-
-  outArcOffset = streamCompact(numOutArcs, 0);
-  inArcOffset = streamCompact(numInArcs, 0);
+  newGraphDP.outArcOffset = streamCompact(numOutArcs, 0);
+  newGraphDP.inArcOffset = streamCompact(numInArcs, 0);
 
   // Prefix sum to generate offsets
   prefixSumScan(outArcOffset);
   prefixSumScan(inArcOffset);
 
+  // This is the total number of edges
+  assert(outArcOffset.back() == inArcOffset.back());
+
+  newGraphDP.inArcs.resize(inArcOffset.back());
+  newGraphDP.outArcs.resize(outArcOffset.back());
+  newGraphDP.ilabels.resize(outArcOffset.back());
+  newGraphDP.olabels.resize(outArcOffset.back());
+  newGraphDP.srcNodes.resize(outArcOffset.back());
+  newGraphDP.dstNodes.resize(outArcOffset.back());
+  newGraphDP.weights.resize(outArcOffset.back());
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -864,6 +873,88 @@ Graph compose(const Graph& first, const Graph& second) {
   // Begin first pass to generate metadata for valid nodes and edges. This
   // is needed before we can generate the nodes and edges themselves.
   std::fill(toExplore.begin(), toExplore.end(), false);
+  std::vector<bool> newNodesVisited(first.numNodes() * second.numNodes(), false);
+
+  for (auto f : graphDP1.start) {
+    for (auto s : graphDP2.start) {
+      toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+    }
+  }
+
+  // This is the outer control loop that would spawn DP kernels
+  while (checkAnyTrue(toExplore)) {
+    // Convert bits set in toExplore to node pairs
+    auto toExploreNodePair = convertToNodePair(toExplore, numNodesFirst);
+
+    // Reset so pristine state for next frontier to epxlore
+    // No dependence between iterations
+    std::fill(toExplore.begin(), toExplore.end(), false);
+
+    // Calculate number of threads we have to spawn
+    std::vector<std::pair<int.int>> toExploreNumEdge(toExploreNodePair.size());
+    std::vector<int> edgeMulOffset(toExploreNodePair.size());
+
+    // No dependence between iterations
+    for (int i = 0; i < toExploreNodePair.size(); ++i) {
+      int node = toExploreNodePair[i].first;
+      const int numEdgesFirst =
+          graphDP1.outArcOffset[node + 1] - graphDP1.outArcOffset[node];
+
+      node = toExploreNodePair[i].second;
+      const int numEdgesSecond =
+          graphDP2.inArcOffset[node + 1] - graphDP2.outArcOffset[node];
+
+      toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
+      edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
+    }
+
+    prefixSumScan(edgeMullOffset);
+    assert(!edgeMulOffset.empty());
+    const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
+
+    for (int tid = 0; tid < totalEdges; ++tid) {
+      // Map tid to corresponding node and edge pair
+      // Search to find which node pair this tid will fall into
+      // Linear search for now (edgeMullOffset is sorted by definition)
+      std::vector<int, int> nodePair;
+      std::vector<int, int> edgePair;
+      std::tie(nodePair, edgePair) =
+          computeNodeAndEdgePair(tid, edgeMullOffset, toExploreNodePair);
+
+      // Does this node pair match?
+      if (graphDP1.olabels[edgePair.first] ==
+          graphDP2.ilabels[edgePair.second]) {
+        const int dstIdx = TwoDToOneDIndex(
+            graphDP1.dstNodes[edgePair.first],
+            graphDP2.dstNodes[edgePair.second],
+            numNodesFirst);
+        const int curIdx = TwoDToOneDIndex(
+            nodePair.first, nodePair.second, numNodesFirst);
+        if (reachable[dstIdx]) {
+          if (!newNodesVisited[dstIdx]) {
+            newNodesVisited[dstIdx] = true;
+            toExplore[dstIdx] = true;
+          }
+
+          int inArcIdx;
+          int outArcIdx;
+          // Following has to be guarded by a mutex
+          {
+            inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
+            outArcIdx = newGraphDP.outArcOffset[newNodesOffset[srcIdx]]++;
+          }
+
+          // outArcIdx is also the edge identifier
+          newGraphDP.outArcs[outArcIdx] = outArcIdx;
+          newGraphDP.inArcs[inArcIdx] = outArcIdx;
+
+          // Fill in the everything else for this arc
+          newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
+          newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
+        }
+      }
+    }
+  }
 
 
 
