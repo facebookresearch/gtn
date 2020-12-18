@@ -939,6 +939,8 @@ Graph compose(const Graph& first, const Graph& second) {
           int inArcIdx;
           int outArcIdx;
           // Following has to be guarded by a mutex
+          // This is going to be tricky since it can't be one mutex
+          // but one for every pair
           {
             inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
             outArcIdx = newGraphDP.outArcOffset[newNodesOffset[srcIdx]]++;
@@ -949,8 +951,11 @@ Graph compose(const Graph& first, const Graph& second) {
           newGraphDP.inArcs[inArcIdx] = outArcIdx;
 
           // Fill in the everything else for this arc
+          newGraphDP.ilabels[outArcIdx] = graphDP1.ilabels[edgePair.first];
+          newGraphDP.olabels[outArcIdx] = graphDP1.olabels[edgePair.second];
           newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
           newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
+          newGraphDP.weights[outArcIdx] = graphDP1.weights[edgePair.first] + graphDP2.weights[edgePair.second]
         }
       }
     }
