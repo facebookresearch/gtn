@@ -764,6 +764,12 @@ Graph compose(const Graph& first, const Graph& second) {
   std::vector<int> numOutArcs(first.numNodes() * second.numNodes(), 0);
   std::vector<int> numInArcs(first.numNodes() * second.numNodes(), 0);
 
+  std::pair<std::vector<bool>, std::vector<bool>> epsilonArcExists;
+  epsilonArcExists.first.resize(first.numNodes() * second.numNodes());
+  epsilonArcExists.second.resize(first.numNodes() * second.numNodes());
+  std::fill(epsilonArcExists.first.begin(), epsilonArcExists.first.end(), false);
+  std::fill(epsilonArcExists.second.begin(), epsilonArcExists.second.end(), false);
+
   for (auto f : graphDP1.start) {
     for (auto s : graphDP2.start) {
       toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
@@ -779,7 +785,6 @@ Graph compose(const Graph& first, const Graph& second) {
     // Reset so pristine state for next frontier to epxlore
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
-    // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
     // Calculate number of threads we have to spawn
     std::vector<std::pair<int.int>> toExploreNumEdge(toExploreNodePair.size());
@@ -822,6 +827,7 @@ Graph compose(const Graph& first, const Graph& second) {
         const int curIdx = TwoDToOneDIndex(
             nodePair.first, nodePair.second, numNodesFirst);
         if (reachable[dstIdx]) {
+          // Atomic test and set for newNodes
           if (!newNodes[dstIdx]) {
             newNodes[dstIdx] = true;
             toExplore[dstIdx] = true;
@@ -829,6 +835,57 @@ Graph compose(const Graph& first, const Graph& second) {
           // These are atomic increments
           numOutArcs[curIdx]++;
           numInArcs[dstIdx]++;
+        }
+      }
+
+      if ((graphDP1.olabels[edgePair.first] == epsilon) &&
+          (graphDP2.ilabels[edgePair.second] != epsilon)) {
+        const int dstIdx = TwoDToOneDIndex(
+            graphDP1.dstNodes[edgePair.first],
+            nodePair.second, numNodesFirst);
+        const int curIdx = TwoDToOneDIndex(
+            nodePair.first, nodePair.second, numNodesFirst);
+        // This needs to be an atomic test and set for epsilonArcExists
+        if (!epsilonArcExists.first[curIdx]) {
+          epsilonArcExists.first[curIdx] = true;
+
+          if (reachable[dstIdx]) {
+            // Atomic test and set for newNodes
+            if (!newNodes[dstIdx]) {
+              newNodes[dstIdx] = true;
+              toExplore[dstIdx] = true;
+            }
+
+            // These are atomic increments
+            numOutArcs[curIdx]++;
+            numInArcs[dstIdx]++;
+          }
+        }
+      }
+
+      if ((graphDP1.olabels[edgePair.first] != epsilon) &&
+          (graphDP2.ilabels[edgePair.second] == epsilon)) {
+        const int dstIdx = TwoDToOneDIndex(
+            nodePair.first,
+            graphDP2.dstNodes[edgePair.second],
+            numNodesFirst);
+        const int curIdx = TwoDToOneDIndex(
+            nodePair.first, nodePair.second, numNodesFirst);
+        // This needs to be an atomic test and set for epsilonArcExists
+        if (!epsilonArcExists.second[curIdx]) {
+          epsilonArcExists.second[curIdx] = true;
+
+          if (reachable[dstIdx]) {
+            // Atomic test and set for newNodes
+            if (!newNodes[dstIdx]) {
+              newNodes[dstIdx] = true;
+              toExplore[dstIdx] = true;
+            }
+
+            // These are atomic increments
+            numOutArcs[curIdx]++;
+            numInArcs[dstIdx]++;
+          }
         }
       }
     }
@@ -875,6 +932,9 @@ Graph compose(const Graph& first, const Graph& second) {
   std::fill(toExplore.begin(), toExplore.end(), false);
   std::vector<bool> newNodesVisited(first.numNodes() * second.numNodes(), false);
 
+  std::fill(epsilonArcExists.first.begin(), epsilonArcExists.first.end(), false);
+  std::fill(epsilonArcExists.second.begin(), epsilonArcExists.second.end(), false);
+
   for (auto f : graphDP1.start) {
     for (auto s : graphDP2.start) {
       toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
@@ -931,6 +991,7 @@ Graph compose(const Graph& first, const Graph& second) {
         const int curIdx = TwoDToOneDIndex(
             nodePair.first, nodePair.second, numNodesFirst);
         if (reachable[dstIdx]) {
+          // Atomic test and set for newNodesVisited
           if (!newNodesVisited[dstIdx]) {
             newNodesVisited[dstIdx] = true;
             toExplore[dstIdx] = true;
@@ -950,7 +1011,7 @@ Graph compose(const Graph& first, const Graph& second) {
           newGraphDP.outArcs[outArcIdx] = outArcIdx;
           newGraphDP.inArcs[inArcIdx] = outArcIdx;
 
-          // Fill in the everything else for this arc
+          // Fill in everything else for this arc
           newGraphDP.ilabels[outArcIdx] = graphDP1.ilabels[edgePair.first];
           newGraphDP.olabels[outArcIdx] = graphDP1.olabels[edgePair.second];
           newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
@@ -958,12 +1019,95 @@ Graph compose(const Graph& first, const Graph& second) {
           newGraphDP.weights[outArcIdx] = graphDP1.weights[edgePair.first] + graphDP2.weights[edgePair.second]
         }
       }
+
+      // The epsilon matches
+      if ((graphDP1.olabels[edgePair.first] == epsilon) &&
+          (graphDP2.ilabels[edgePair.second] != epsilon)) {
+        const int dstIdx = TwoDToOneDIndex(
+            graphDP1.dstNodes[edgePair.first],
+            nodePair.second, numNodesFirst);
+        const int curIdx = TwoDToOneDIndex(
+            nodePair.first, nodePair.second, numNodesFirst);
+        // This needs to be an atomic test and set for epsilonArcExists
+        if (!epsilonArcExists.first[curIdx]) {
+          epsilonArcExists.first[curIdx] = true;
+
+          if (reachable[dstIdx]) {
+            // Atomic test and set for newNodesVisited
+            if (!newNodesVisited[dstIdx]) {
+              newNodesVisited[dstIdx] = true;
+              toExplore[dstIdx] = true;
+            }
+
+            int inArcIdx;
+            int outArcIdx;
+            // Following has to be guarded by a mutex
+            // This is going to be tricky since it can't be one mutex
+            // but one for every pair
+            {
+              inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
+              outArcIdx = newGraphDP.outArcOffset[newNodesOffset[srcIdx]]++;
+            }
+
+            // outArcIdx is also the edge identifier
+            newGraphDP.outArcs[outArcIdx] = outArcIdx;
+            newGraphDP.inArcs[inArcIdx] = outArcIdx;
+
+            // Fill in everything else for this arc
+            newGraphDP.ilabels[outArcIdx] = graphDP1.ilabels[edgePair.first];
+            newGraphDP.olabels[outArcIdx] = epsilon;
+            newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
+            newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
+            newGraphDP.weights[outArcIdx] = graphDP1.weights[edgePair.first];
+          }
+        }
+      }
+
+      // The epsilon matches
+      if ((graphDP1.olabels[edgePair.first] != epsilon) &&
+          (graphDP2.ilabels[edgePair.second] == epsilon)) {
+        const int dstIdx = TwoDToOneDIndex(
+            nodePair.first,
+            graphDP2.dstNodes[edgePair.second],
+            numNodesFirst);
+        const int curIdx = TwoDToOneDIndex(
+            nodePair.first, nodePair.second, numNodesFirst);
+        // This needs to be an atomic test and set for epsilonArcExists
+        if (!epsilonArcExists.first[curIdx]) {
+          epsilonArcExists.first[curIdx] = true;
+
+          if (reachable[dstIdx]) {
+            // Atomic test and set for newNodesVisited
+            if (!newNodesVisited[dstIdx]) {
+              newNodesVisited[dstIdx] = true;
+              toExplore[dstIdx] = true;
+            }
+
+            int inArcIdx;
+            int outArcIdx;
+            // Following has to be guarded by a mutex
+            // This is going to be tricky since it can't be one mutex
+            // but one for every pair
+            {
+              inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
+              outArcIdx = newGraphDP.outArcOffset[newNodesOffset[srcIdx]]++;
+            }
+
+            // outArcIdx is also the edge identifier
+            newGraphDP.outArcs[outArcIdx] = outArcIdx;
+            newGraphDP.inArcs[inArcIdx] = outArcIdx;
+
+            // Fill in everything else for this arc
+            newGraphDP.ilabels[outArcIdx] = epsilon;
+            newGraphDP.olabels[outArcIdx] = graphDP2.olabels[edgePair.second];
+            newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
+            newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
+            newGraphDP.weights[outArcIdx] = graphDP2.weights[edgePair.second];
+          }
+        }
+      }
     }
   }
-
-
-
-  
 }
 
 } // namespace dataparallel
