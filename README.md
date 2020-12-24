@@ -23,6 +23,8 @@ acceptors (WFSAs) or transducers (WFSTs). With `gtn` you can dynamically constru
 graphs from operations on simpler graphs. Automatic differentiation gives gradients with respect to any input or intermediate graph
 with a single call to `gtn.backward`.
 
+Also checkout the repository [gtn_applications](https://github.com/facebookresearch/gtn_applications) which consists of GTN applications to Handwriting Recognition (HWR), Automatic Speech Recognition (ASR) etc.   
+
 ## Quickstart
 
 First [install](#installation) the python bindings.
