@@ -688,6 +688,8 @@ Graph compose(const Graph& first, const Graph& second) {
         calculateEdgeCrossProductOffset(toExploreNodePair, graphDP1, graphDP2);
 
     prefixSumScan(edgeCrossProductOffset);
+    // TODO: FIXME: This assert is problematic - there should be a valid
+    // stopping condition when we reach a set of nodes with no incoming arcs
     assert(!edgeCrossProductOffset.empty());
     const int totalEdges =
         edgeCrossProductOffset[edgeCrossProductOffset.size() - 1];
@@ -699,9 +701,7 @@ Graph compose(const Graph& first, const Graph& second) {
       std::pair<int, int> nodePair;
       std::pair<int, int> edgePair;
 
-      // Map tid to corresponding node and edge pair
-      // Search to find which node pair this tid will fall into
-      // Linear search for now (edgeMullOffset is sorted by definition)
+      // Map tid to corresponding node and edge pair via search
       std::vector<int, int> nodePair;
       std::vector<int, int> edgePair;
       std::tie(nodePair, edgePair) = computeNodeAndEdgePair(
@@ -714,11 +714,17 @@ Graph compose(const Graph& first, const Graph& second) {
             graphDP1.srcNodes[edgePair.first],
             graphDP2.srcNodes[edgePair.second],
             numNodesFirst);
+        // idx may not be unique amongst all threads. In particular
+        // if two pairs of arcs that have same olabel and ilabel then idx
+        // won't be unique and this is a race but both would mark the
+        // destination node as reachable
         if (!reachable[idx]) {
           toExplore[idx] = true;
         }
         reachable[idx] = true;
 
+        // We track if any two arcs incoming to this pair of nodes matched
+        // on epsilon
         if (graphDP1.olabels[edgePair.first] == epsilon) {
           epsilonMatched[TwoDToOneDIndex(
               nodePair.first, nodePair.second, numNodesFirst)] = true;
@@ -729,9 +735,7 @@ Graph compose(const Graph& first, const Graph& second) {
     // No dependence between iterations. tid is thread-id
     // Do epsilon match case in this kernel launch
     for (int tid = 0; tid < totalEdges; ++tid) {
-      // Map tid to corresponding node and edge pair
-      // Search to find which node pair this tid will fall into
-      // Linear search for now (edgeMullOffset is sorted by definition)
+      // Map tid to corresponding node and edge pair via search
       std::vector<int, int> nodePair;
       std::vector<int, int> edgePair;
       std::tie(nodePair, edgePair) =
