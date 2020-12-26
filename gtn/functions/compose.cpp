@@ -463,7 +463,7 @@ struct GraphDataParallel {
   // Has one more element than the number of nodes
   // One value per node - i-th value corresponds to i-th node
   // Last element is the total number of arcs, so that
-  // each element and its neighbor forms a range 
+  // each element and its neighbor forms a range
   std::vector<int> inArcOffset;
   std::vector<int> outArcOffset;
 
@@ -482,7 +482,7 @@ struct GraphDataParallel {
 
 namespace {
 // Exclusive/Inclusive prefix sum. The returned vector
-// has one more element 
+// has one more element
 void prefixSumScan(std::vector<int>& input) {
   int sum = 0;
   for (auto i : input.size()) {
@@ -532,23 +532,53 @@ inline bool checkAnyTrue(const std::vector<bool>& flags) {
 // Linear search for now (edgeMullOffset is sorted by definition)
 std::pair<std::pair<int, int>, std::pair<int, int>> computeNodeAndEdgePair(
     int tid,
-    const std::vector<int>& edgeMullOffset,
+    const std::vector<int>& edgeCrossProductOffset,
     const std::vector<std::pair<int, int>>& toExploreNodePair) {
   std::pair<int, int> nodePair;
   std::pair<int, int> edgePair;
   for (size_t i = 0; i < edgeMullOffset.size() - 1; ++i) {
-    const int lVal = edgeMullOffset[i];
-    const int rVal = edgeMullOffset[i + 1];
+    const int lVal = edgeCrossProductOffset[i];
+    const int rVal = edgeCrossProductOffset[i + 1];
 
     if ((lVal <= tid) && (tid < rVal)) {
       nodePair = toExploreNodePair[i];
-      const int numEdges = edgeMullOffset[i + 1] - edgeMullOffset[i];
+      const int numEdges =
+          edgeCrossProductOffset[i + 1] - edgeCrossProductOffset[i];
       edgePair = OneDToTwoDIndex(numEdges, toExploreNumEdges[i].first);
     }
   }
 
   return std::make_pair(nodePair, edgePair);
 }
+
+// Takes a pair of nodes, where each member of pair comes from a different
+// graph and calculate a vector of number of arcs in the cross product of
+// arcs outgoing from each pair.
+// This should be a kernel call
+std::vector<int> calculateEdgeCrossProductOffset(
+    const std::vector<int>& toExploreNodePair,
+    const GraphDataParallel& graphDP1,
+    const GraphDataParallel& graphDP2) {
+  std::vector<std::pair<int, int>> toExploreNumEdge(toExploreNodePair.size());
+  std::vector<int> edgeCrossProductOffset(toExploreNodePair.size());
+
+  // No dependence between iterations
+  for (int i = 0; i < toExploreNodePair.size(); ++i) {
+    int node = toExploreNodePair[i].first;
+    const int numEdgesFirst =
+        graphDP1.inArcOffset[node + 1] - graphDP1.inArcOffset[node];
+
+    node = toExploreNodePair[i].second;
+    const int numEdgesSecond =
+        graphDP2.inArcOffset[node + 1] - graphDP2.inArcOffset[node];
+
+    toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
+    edgeCrossProductOffset[i] = numEdgesFirst * numEdgesSecond;
+  }
+
+  return edgeCrossProductOffset;
+}
+
 } // namespace
 
 // Convert bool array two pairs for true flags
@@ -654,27 +684,13 @@ Graph compose(const Graph& first, const Graph& second) {
     std::fill(toExplore.begin(), toExplore.end(), false);
     std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
-    // Calculate number of threads we have to spawn
-    std::vector<std::pair<int.int>> toExploreNumEdge(toExploreNodePair.size());
-    std::vector<int> edgeMulOffset(toExploreNodePair.size());
+    std::vector<int> edgeCrossProductOffset =
+        calculateEdgeCrossProductOffset(toExploreNodePair, graphDP1, graphDP2);
 
-    // No dependence between iterations
-    for (int i = 0; i < toExploreNodePair.size(); ++i) {
-      int node = toExploreNodePair[i].first;
-      const int numEdgesFirst =
-          graphDP1.inArcOffset[node + 1] - graphDP1.inArcOffset[node];
-
-      node = toExploreNodePair[i].second;
-      const int numEdgesSecond =
-          graphDP2.inArcOffset[node + 1] - graphDP2.inArcOffset[node];
-
-      toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
-      edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
-    }
-
-    prefixSumScan(edgeMullOffset);
-    assert(!edgeMulOffset.empty());
-    const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
+    prefixSumScan(edgeCrossProductOffset);
+    assert(!edgeCrossProductOffset.empty());
+    const int totalEdges =
+        edgeCrossProductOffset[edgeCrossProductOffset.size() - 1];
 
     // No dependence between iterations. tid is thread-id
     // Only do non epsilon case for this kernel
@@ -688,8 +704,8 @@ Graph compose(const Graph& first, const Graph& second) {
       // Linear search for now (edgeMullOffset is sorted by definition)
       std::vector<int, int> nodePair;
       std::vector<int, int> edgePair;
-      std::tie(nodePair, edgePair) =
-          computeNodeAndEdgePair(tid, edgeMullOffset, toExploreNodePair);
+      std::tie(nodePair, edgePair) = computeNodeAndEdgePair(
+          tid, edgeCrossProductOffset, toExploreNodePair);
 
       // Does this node pair match?
       if (graphDP1.olabels[edgePair.first] ==
@@ -719,7 +735,7 @@ Graph compose(const Graph& first, const Graph& second) {
       std::vector<int, int> nodePair;
       std::vector<int, int> edgePair;
       std::tie(nodePair, edgePair) =
-          computeNodeAndEdgePair(tid, edgeMullOffset, toExploreNodePair);
+          computeNodeAndEdgePair(tid, edgeCrossProductOffset, toExploreNodePair);
 
       const bool matched = epsilonMatched[TwoDToOneDIndex(
           nodePair.first, nodePair.second, numNodesFirst)];
@@ -749,11 +765,10 @@ Graph compose(const Graph& first, const Graph& second) {
     }
   } // end while for findReachable
 
-
   //////////////////////////////////////////////////////////////////////////
   // First pass to count number of in and out edges per node in the cmoposed
   // graph
-  
+
   // Begin first pass to generate metadata for valid nodes and edges. This
   // is needed before we can generate the nodes and edges themselves.
   std::fill(toExplore.begin(), toExplore.end(), false);
@@ -767,8 +782,10 @@ Graph compose(const Graph& first, const Graph& second) {
   std::pair<std::vector<bool>, std::vector<bool>> epsilonArcExists;
   epsilonArcExists.first.resize(first.numNodes() * second.numNodes());
   epsilonArcExists.second.resize(first.numNodes() * second.numNodes());
-  std::fill(epsilonArcExists.first.begin(), epsilonArcExists.first.end(), false);
-  std::fill(epsilonArcExists.second.begin(), epsilonArcExists.second.end(), false);
+  std::fill(
+      epsilonArcExists.first.begin(), epsilonArcExists.first.end(), false);
+  std::fill(
+      epsilonArcExists.second.begin(), epsilonArcExists.second.end(), false);
 
   for (auto f : graphDP1.start) {
     for (auto s : graphDP2.start) {
@@ -824,8 +841,8 @@ Graph compose(const Graph& first, const Graph& second) {
             graphDP1.dstNodes[edgePair.first],
             graphDP2.dstNodes[edgePair.second],
             numNodesFirst);
-        const int curIdx = TwoDToOneDIndex(
-            nodePair.first, nodePair.second, numNodesFirst);
+        const int curIdx =
+            TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
         if (reachable[dstIdx]) {
           // Atomic test and set for newNodes
           if (!newNodes[dstIdx]) {
@@ -841,10 +858,9 @@ Graph compose(const Graph& first, const Graph& second) {
       if ((graphDP1.olabels[edgePair.first] == epsilon) &&
           (graphDP2.ilabels[edgePair.second] != epsilon)) {
         const int dstIdx = TwoDToOneDIndex(
-            graphDP1.dstNodes[edgePair.first],
-            nodePair.second, numNodesFirst);
-        const int curIdx = TwoDToOneDIndex(
-            nodePair.first, nodePair.second, numNodesFirst);
+            graphDP1.dstNodes[edgePair.first], nodePair.second, numNodesFirst);
+        const int curIdx =
+            TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
         // This needs to be an atomic test and set for epsilonArcExists
         if (!epsilonArcExists.first[curIdx]) {
           epsilonArcExists.first[curIdx] = true;
@@ -866,11 +882,9 @@ Graph compose(const Graph& first, const Graph& second) {
       if ((graphDP1.olabels[edgePair.first] != epsilon) &&
           (graphDP2.ilabels[edgePair.second] == epsilon)) {
         const int dstIdx = TwoDToOneDIndex(
-            nodePair.first,
-            graphDP2.dstNodes[edgePair.second],
-            numNodesFirst);
-        const int curIdx = TwoDToOneDIndex(
-            nodePair.first, nodePair.second, numNodesFirst);
+            nodePair.first, graphDP2.dstNodes[edgePair.second], numNodesFirst);
+        const int curIdx =
+            TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
         // This needs to be an atomic test and set for epsilonArcExists
         if (!epsilonArcExists.second[curIdx]) {
           epsilonArcExists.second[curIdx] = true;
@@ -890,7 +904,6 @@ Graph compose(const Graph& first, const Graph& second) {
       }
     }
   }
-
 
   //////////////////////////////////////////////////////////////////////////
   // Generate offsets for nodes and arcs
@@ -923,17 +936,19 @@ Graph compose(const Graph& first, const Graph& second) {
   newGraphDP.dstNodes.resize(outArcOffset.back());
   newGraphDP.weights.resize(outArcOffset.back());
 
-
   //////////////////////////////////////////////////////////////////////////
   // Second pass to generate nodes in the cmoposed graph
-  
+
   // Begin first pass to generate metadata for valid nodes and edges. This
   // is needed before we can generate the nodes and edges themselves.
   std::fill(toExplore.begin(), toExplore.end(), false);
-  std::vector<bool> newNodesVisited(first.numNodes() * second.numNodes(), false);
+  std::vector<bool> newNodesVisited(
+      first.numNodes() * second.numNodes(), false);
 
-  std::fill(epsilonArcExists.first.begin(), epsilonArcExists.first.end(), false);
-  std::fill(epsilonArcExists.second.begin(), epsilonArcExists.second.end(), false);
+  std::fill(
+      epsilonArcExists.first.begin(), epsilonArcExists.first.end(), false);
+  std::fill(
+      epsilonArcExists.second.begin(), epsilonArcExists.second.end(), false);
 
   for (auto f : graphDP1.start) {
     for (auto s : graphDP2.start) {
@@ -988,8 +1003,8 @@ Graph compose(const Graph& first, const Graph& second) {
             graphDP1.dstNodes[edgePair.first],
             graphDP2.dstNodes[edgePair.second],
             numNodesFirst);
-        const int curIdx = TwoDToOneDIndex(
-            nodePair.first, nodePair.second, numNodesFirst);
+        const int curIdx =
+            TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
         if (reachable[dstIdx]) {
           // Atomic test and set for newNodesVisited
           if (!newNodesVisited[dstIdx]) {
@@ -1016,7 +1031,8 @@ Graph compose(const Graph& first, const Graph& second) {
           newGraphDP.olabels[outArcIdx] = graphDP1.olabels[edgePair.second];
           newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
           newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
-          newGraphDP.weights[outArcIdx] = graphDP1.weights[edgePair.first] + graphDP2.weights[edgePair.second]
+          newGraphDP.weights[outArcIdx] = graphDP1.weights[edgePair.first] +
+              graphDP2.weights[edgePair.second]
         }
       }
 
@@ -1024,10 +1040,9 @@ Graph compose(const Graph& first, const Graph& second) {
       if ((graphDP1.olabels[edgePair.first] == epsilon) &&
           (graphDP2.ilabels[edgePair.second] != epsilon)) {
         const int dstIdx = TwoDToOneDIndex(
-            graphDP1.dstNodes[edgePair.first],
-            nodePair.second, numNodesFirst);
-        const int curIdx = TwoDToOneDIndex(
-            nodePair.first, nodePair.second, numNodesFirst);
+            graphDP1.dstNodes[edgePair.first], nodePair.second, numNodesFirst);
+        const int curIdx =
+            TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
         // This needs to be an atomic test and set for epsilonArcExists
         if (!epsilonArcExists.first[curIdx]) {
           epsilonArcExists.first[curIdx] = true;
@@ -1067,11 +1082,9 @@ Graph compose(const Graph& first, const Graph& second) {
       if ((graphDP1.olabels[edgePair.first] != epsilon) &&
           (graphDP2.ilabels[edgePair.second] == epsilon)) {
         const int dstIdx = TwoDToOneDIndex(
-            nodePair.first,
-            graphDP2.dstNodes[edgePair.second],
-            numNodesFirst);
-        const int curIdx = TwoDToOneDIndex(
-            nodePair.first, nodePair.second, numNodesFirst);
+            nodePair.first, graphDP2.dstNodes[edgePair.second], numNodesFirst);
+        const int curIdx =
+            TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
         // This needs to be an atomic test and set for epsilonArcExists
         if (!epsilonArcExists.first[curIdx]) {
           epsilonArcExists.first[curIdx] = true;
