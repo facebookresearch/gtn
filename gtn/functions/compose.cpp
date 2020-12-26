@@ -529,54 +529,61 @@ inline bool checkAnyTrue(const std::vector<bool>& flags) {
 
 // Map thread id to corresponding node and edge pair
 // Search to find which node pair this tid will fall into
-// Linear search for now (edgeMullOffset is sorted by definition)
-std::pair<std::pair<int, int>, std::pair<int, int>> computeNodeAndEdgePair(
+// Linear search for now (edgeCrossProductOffset is sorted by definition)
+std::pair<std::pair<int, int>, std::pair<int, int>> computeNodeAndArcPair(
     int tid,
-    const std::vector<int>& edgeCrossProductOffset,
+    const std::vector<int>& arcCrossProductOffset,
+    const std::vector<int>& toExploreNumArcs,
     const std::vector<std::pair<int, int>>& toExploreNodePair) {
   std::pair<int, int> nodePair;
-  std::pair<int, int> edgePair;
+  std::pair<int, int> arcPair;
   for (size_t i = 0; i < edgeMullOffset.size() - 1; ++i) {
-    const int lVal = edgeCrossProductOffset[i];
-    const int rVal = edgeCrossProductOffset[i + 1];
+    const int lVal = arcCrossProductOffset[i];
+    const int rVal = arcCrossProductOffset[i + 1];
 
     if ((lVal <= tid) && (tid < rVal)) {
       nodePair = toExploreNodePair[i];
-      const int numEdges =
-          edgeCrossProductOffset[i + 1] - edgeCrossProductOffset[i];
-      edgePair = OneDToTwoDIndex(numEdges, toExploreNumEdges[i].first);
+      const int numArcs =
+          arcCrossProductOffset[i + 1] - arcCrossProductOffset[i];
+      arcPair = OneDToTwoDIndex(numArcs, toExploreNumArcs[i].first);
+      break;
     }
   }
 
-  return std::make_pair(nodePair, edgePair);
+  return std::make_pair(nodePair, arcPair);
 }
 
 // Takes a pair of nodes, where each member of pair comes from a different
 // graph and calculate a vector of number of arcs in the cross product of
 // arcs outgoing from each pair.
 // This should be a kernel call
-std::vector<int> calculateEdgeCrossProductOffset(
+std::pair(std::vector<int>, std::vector<int>> calculateArcCrossProductOffset(
     const std::vector<int>& toExploreNodePair,
     const GraphDataParallel& graphDP1,
-    const GraphDataParallel& graphDP2) {
-  std::vector<std::pair<int, int>> toExploreNumEdge(toExploreNodePair.size());
-  std::vector<int> edgeCrossProductOffset(toExploreNodePair.size());
+    const GraphDataParallel& graphDP2,
+    bool inOrOutArc) {
+  std::vector<std::pair<int, int>> toExploreNumArcs(toExploreNodePair.size());
+  std::vector<int> arcCrossProductOffset(toExploreNodePair.size());
 
   // No dependence between iterations
-  for (int i = 0; i < toExploreNodePair.size(); ++i) {
+  for (size_t i = 0; i < toExploreNodePair.size(); ++i) {
     int node = toExploreNodePair[i].first;
-    const int numEdgesFirst =
-        graphDP1.inArcOffset[node + 1] - graphDP1.inArcOffset[node];
+    const int numArcsFirst =
+        inOrOutArc ?
+        graphDP1.inArcOffset[node + 1] - graphDP1.inArcOffset[node] :
+        graphDP1.outArcOffset[node + 1] - graphDP1.outArcOffset[node];
 
     node = toExploreNodePair[i].second;
-    const int numEdgesSecond =
-        graphDP2.inArcOffset[node + 1] - graphDP2.inArcOffset[node];
+    const int numArcsSecond =
+        inOrOutArc ?
+        graphDP2.inArcOffset[node + 1] - graphDP2.inArcOffset[node] :
+        graphDP2.outArcOffset[node + 1] - graphDP2.outArcOffset[node];
 
-    toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
-    edgeCrossProductOffset[i] = numEdgesFirst * numEdgesSecond;
+    toExploreNumArcs[i] = std::make_pair(numArcsFirst, numArcsSecond);
+    arcCrossProductOffset[i] = numArcsFirst * numArcsSecond;
   }
 
-  return edgeCrossProductOffset;
+  return std::make_pair(arcCrossProductOffset, toExploreNumArcs);
 }
 
 } // namespace
@@ -684,35 +691,37 @@ Graph compose(const Graph& first, const Graph& second) {
     std::fill(toExplore.begin(), toExplore.end(), false);
     std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
-    std::vector<int> edgeCrossProductOffset =
-        calculateEdgeCrossProductOffset(toExploreNodePair, graphDP1, graphDP2);
+    std::vector<int> arcCrossProductOffset;
+    std::vector<int> toExploreNumArcs;
+    std::tie(arcCrossProductOffset, toExploreNumArcs) =
+        calculateArcCrossProductOffset(toExploreNodePair, graphDP1, graphDP2, true);
 
-    prefixSumScan(edgeCrossProductOffset);
+    prefixSumScan(arcCrossProductOffset);
     // TODO: FIXME: This assert is problematic - there should be a valid
     // stopping condition when we reach a set of nodes with no incoming arcs
-    assert(!edgeCrossProductOffset.empty());
-    const int totalEdges =
-        edgeCrossProductOffset[edgeCrossProductOffset.size() - 1];
+    assert(!arcCrossProductOffset.empty());
+    const int totalArcs =
+        arcCrossProductOffset[arcCrossProductOffset.size() - 1];
 
     // No dependence between iterations. tid is thread-id
     // Only do non epsilon case for this kernel
     for (int tid = 0; tid < totalEdges; ++tid) {
       // Node pair
       std::pair<int, int> nodePair;
-      std::pair<int, int> edgePair;
+      std::pair<int, int> arcPair;
 
       // Map tid to corresponding node and edge pair via search
       std::vector<int, int> nodePair;
-      std::vector<int, int> edgePair;
-      std::tie(nodePair, edgePair) = computeNodeAndEdgePair(
-          tid, edgeCrossProductOffset, toExploreNodePair);
+      std::vector<int, int> arcPair;
+      std::tie(nodePair, arcPair) = computeNodeAndArcPair(
+          tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
 
       // Does this node pair match?
-      if (graphDP1.olabels[edgePair.first] ==
-          graphDP2.ilabels[edgePair.second]) {
+      if (graphDP1.olabels[arcPair.first] ==
+          graphDP2.ilabels[arcPair.second]) {
         const int idx = TwoDToOneDIndex(
-            graphDP1.srcNodes[edgePair.first],
-            graphDP2.srcNodes[edgePair.second],
+            graphDP1.srcNodes[arcPair.first],
+            graphDP2.srcNodes[arcPair.second],
             numNodesFirst);
         // idx may not be unique amongst all threads. In particular
         // if two pairs of arcs that have same olabel and ilabel then idx
@@ -725,7 +734,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
         // We track if any two arcs incoming to this pair of nodes matched
         // on epsilon
-        if (graphDP1.olabels[edgePair.first] == epsilon) {
+        if (graphDP1.olabels[arcPair.first] == epsilon) {
           epsilonMatched[TwoDToOneDIndex(
               nodePair.first, nodePair.second, numNodesFirst)] = true;
         }
@@ -734,11 +743,11 @@ Graph compose(const Graph& first, const Graph& second) {
 
     // No dependence between iterations. tid is thread-id
     // Do epsilon match case in this kernel launch
-    for (int tid = 0; tid < totalEdges; ++tid) {
+    for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and edge pair via search
       std::vector<int, int> nodePair;
-      std::vector<int, int> edgePair;
-      std::tie(nodePair, edgePair) =
+      std::vector<int, int> arcPair;
+      std::tie(nodePair, arcPair) =
           computeNodeAndEdgePair(tid, edgeCrossProductOffset, toExploreNodePair);
 
       const bool matched = epsilonMatched[TwoDToOneDIndex(
@@ -746,9 +755,9 @@ Graph compose(const Graph& first, const Graph& second) {
       // Note that when this loop body is threaded - multiple threads will
       // write to the same location. They will write the same value so
       // this is fine
-      if (graphDP1.olabels[edgePair.first] == epsilon && !matched) {
+      if (graphDP1.olabels[arcPair.first] == epsilon && !matched) {
         const int idx = TwoDToOneDIndex(
-            graphDP1.srcNodes[edgePair.first], nodePair.second, numNodesFirst);
+            graphDP1.srcNodes[arcPair.first], nodePair.second, numNodesFirst);
         if (!reachable[idx]) {
           toExplore[idx] = true;
         }
@@ -758,9 +767,9 @@ Graph compose(const Graph& first, const Graph& second) {
       // Note that when this loop body is threaded - multiple threads will
       // write to the same location. They will write the same value so
       // this is fine
-      if (graphDP1.ilabels[edgePair.second] == epsilon && !matched) {
+      if (graphDP1.ilabels[arcPair.second] == epsilon && !matched) {
         const int idx = TwoDToOneDIndex(
-            nodePair.first, graphDP2.srcNodes[edgePair.second], numNodesFirst);
+            nodePair.first, graphDP2.srcNodes[arcPair.second], numNodesFirst);
         if (!reachable[idx]) {
           toExplore[idx] = true;
         }
@@ -768,6 +777,7 @@ Graph compose(const Graph& first, const Graph& second) {
       }
     }
   } // end while for findReachable
+
 
   //////////////////////////////////////////////////////////////////////////
   // First pass to count number of in and out edges per node in the cmoposed
@@ -777,9 +787,10 @@ Graph compose(const Graph& first, const Graph& second) {
   // is needed before we can generate the nodes and edges themselves.
   std::fill(toExplore.begin(), toExplore.end(), false);
 
-  // This vector tracks the nodes that are going to be present in the combined
-  // graph
+  // Tracks the nodes that are going to be present in the combined graph
   std::vector<bool> newNodes(first.numNodes() * second.numNodes(), false);
+
+  // Number of in and out arcs per node
   std::vector<int> numOutArcs(first.numNodes() * second.numNodes(), 0);
   std::vector<int> numInArcs(first.numNodes() * second.numNodes(), 0);
 
@@ -807,27 +818,12 @@ Graph compose(const Graph& first, const Graph& second) {
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
 
-    // Calculate number of threads we have to spawn
-    std::vector<std::pair<int.int>> toExploreNumEdge(toExploreNodePair.size());
-    std::vector<int> edgeMulOffset(toExploreNodePair.size());
+    std::vector<int> edgeCrossProductOffset =
+        calculateEdgeCrossProductOffset(toExploreNodePair, graphDP1, graphDP2, false);
 
-    // No dependence between iterations
-    for (int i = 0; i < toExploreNodePair.size(); ++i) {
-      int node = toExploreNodePair[i].first;
-      const int numEdgesFirst =
-          graphDP1.outArcOffset[node + 1] - graphDP1.outArcOffset[node];
-
-      node = toExploreNodePair[i].second;
-      const int numEdgesSecond =
-          graphDP2.inArcOffset[node + 1] - graphDP2.outArcOffset[node];
-
-      toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
-      edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
-    }
-
-    prefixSumScan(edgeMullOffset);
-    assert(!edgeMulOffset.empty());
-    const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
+    prefixSumScan(edgeCrossProductOffset);
+    assert(!edgeCrossProductOffset.empty());
+    const int totalEdges = edgeMullOffset[edgeCrossProductOffset.size() - 1];
 
     for (int tid = 0; tid < totalEdges; ++tid) {
       // Map tid to corresponding node and edge pair
@@ -836,7 +832,7 @@ Graph compose(const Graph& first, const Graph& second) {
       std::vector<int, int> nodePair;
       std::vector<int, int> edgePair;
       std::tie(nodePair, edgePair) =
-          computeNodeAndEdgePair(tid, edgeMullOffset, toExploreNodePair);
+          computeNodeAndEdgePair(tid, edgeCrossProductOffset, toExploreNodePair);
 
       // Does this node pair match?
       if (graphDP1.olabels[edgePair.first] ==
