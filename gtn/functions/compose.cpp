@@ -557,7 +557,7 @@ std::pair<std::pair<int, int>, std::pair<int, int>> computeNodeAndArcPair(
 // graph and calculate a vector of number of arcs in the cross product of
 // arcs outgoing from each pair.
 // This should be a kernel call
-std::pair(std::vector<int>, std::vector<int>> calculateArcCrossProductOffset(
+std::pair<std::vector<int>, std::vector<int>> calculateArcCrossProductOffset(
     const std::vector<int>& toExploreNodePair,
     const GraphDataParallel& graphDP1,
     const GraphDataParallel& graphDP2,
@@ -586,13 +586,13 @@ std::pair(std::vector<int>, std::vector<int>> calculateArcCrossProductOffset(
 
 // This function needs to be thread safe since multiple threads can
 // can call it and they will overlap on curIdx and dstIdx
-void calculateNumArcsAndNodesToExplore(
-  int curIdx, int dstIdx,
-  const std::vector<bool>& reachable,
-  std::vector<bool>& newNodes;
-  std::vector<bool>& toExplore,
-  std::vector<int> numOutArcs,
-  std::vector<int> numInArcs) {
+void calculateNumArcsAndNodesToExplore(int curIdx,
+                                       int dstIdx,
+                                       const std::vector<bool>& reachable,
+                                       std::vector<bool>& newNodes;
+                                       std::vector<bool> & toExplore,
+                                       std::vector<int> numOutArcs,
+                                       std::vector<int> numInArcs) {
   if (reachable[dstIdx]) {
     // Atomic test and set for newNodes
     if (!newNodes[dstIdx]) {
@@ -603,6 +603,49 @@ void calculateNumArcsAndNodesToExplore(
     // These are atomic increments
     numOutArcs[curIdx]++;
     numInArcs[dstIdx]++;
+  }
+}
+
+// This function needs to be thread safe since multiple threads can
+// can call it and they will overlap on curIdx and dstIdx
+void generateCombinedGraphNodesAndArcs(
+    int dstIdx,
+    int curIdx,
+    const std::vector<bool>& reachable,
+    const std::vector<int>& newNodesOffset,
+    std::vector<bool>& newNodesVisited,
+    std::vector<bool>& toExplore,
+    GraphDataParallel& newGraphDP,
+    int ilabel,
+    int olabel,
+    int weight) {
+  if (reachable[dstIdx]) {
+    // Atomic test and set for newNodesVisited
+    if (!newNodesVisited[dstIdx]) {
+      newNodesVisited[dstIdx] = true;
+      toExplore[dstIdx] = true;
+    }
+
+    int inArcIdx;
+    int outArcIdx;
+    // Following has to be guarded by a mutex
+    // This is going to be tricky since it can't be one mutex
+    // but one for every pair
+    {
+      inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
+      outArcIdx = newGraphDP.outArcOffset[newNodesOffset[curIdx]]++;
+    }
+
+    // outArcIdx is also the arc identifier
+    newGraphDP.outArcs[outArcIdx] = outArcIdx;
+    newGraphDP.inArcs[inArcIdx] = outArcIdx;
+
+    // Fill in everything else for this arc
+    newGraphDP.ilabels[outArcIdx] = ilabel;
+    newGraphDP.olabels[outArcIdx] = olabel;
+    newGraphDP.srcNodes[outArcIdx] = newNodesOffset[curIdx];
+    newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
+    newGraphDP.weights[outArcIdx] = weight;
   }
 }
 
@@ -688,6 +731,7 @@ Graph compose(const Graph& first, const Graph& second) {
   graphDP1 = convertToDataParallel(first);
   graphDP2 = convertToDataParallel(second);
 
+  //////////////////////////////////////////////////////////////////////////
   // Step 1: Data parallel findReachable
   //////////////////////////////////////////////////////////////////////////
   std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
@@ -799,6 +843,7 @@ Graph compose(const Graph& first, const Graph& second) {
     }
   } // end while for findReachable
 
+  //////////////////////////////////////////////////////////////////////////
   // Step 2: Compute a) valid nodes in combined graph
   //                 b) Number of in and out arcs in combined graph
   // This information would be used to generate offsets for nodes and arcs
@@ -917,6 +962,7 @@ Graph compose(const Graph& first, const Graph& second) {
     }
   }
 
+  //////////////////////////////////////////////////////////////////////////
   // Step 3: Generate offsets for nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   // Generate offsets for nodes and arcs
@@ -950,6 +996,7 @@ Graph compose(const Graph& first, const Graph& second) {
   newGraphDP.dstNodes.resize(outArcOffset.back());
   newGraphDP.weights.resize(outArcOffset.back());
 
+  //////////////////////////////////////////////////////////////////////////
   // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
 
@@ -1007,35 +1054,18 @@ Graph compose(const Graph& first, const Graph& second) {
             numNodesFirst);
         const int curIdx =
             TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
-        if (reachable[dstIdx]) {
-          // Atomic test and set for newNodesVisited
-          if (!newNodesVisited[dstIdx]) {
-            newNodesVisited[dstIdx] = true;
-            toExplore[dstIdx] = true;
-          }
 
-          int inArcIdx;
-          int outArcIdx;
-          // Following has to be guarded by a mutex
-          // This is going to be tricky since it can't be one mutex
-          // but one for every pair
-          {
-            inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
-            outArcIdx = newGraphDP.outArcOffset[newNodesOffset[srcIdx]]++;
-          }
-
-          // outArcIdx is also the arc identifier
-          newGraphDP.outArcs[outArcIdx] = outArcIdx;
-          newGraphDP.inArcs[inArcIdx] = outArcIdx;
-
-          // Fill in everything else for this arc
-          newGraphDP.ilabels[outArcIdx] = graphDP1.ilabels[arcPair.first];
-          newGraphDP.olabels[outArcIdx] = graphDP1.olabels[arcPair.second];
-          newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
-          newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
-          newGraphDP.weights[outArcIdx] =
-              graphDP1.weights[arcPair.first] + graphDP2.weights[arcPair.second]
-        }
+        generateCombinedGraphNodesAndArcs(
+            dstIdx,
+            curIdx,
+            reachable,
+            newNodesOffset,
+            newNodesVisited,
+            toExplore,
+            newGraphDP,
+            graphDP1.ilabels[arcPair.first],
+            graphDP1.olabels[arcPair.second],
+            graphDP1.weights[arcPair.first] + graphDP2.weights[arcPair.second]);
       }
 
       // The epsilon matches
@@ -1045,38 +1075,22 @@ Graph compose(const Graph& first, const Graph& second) {
             graphDP1.dstNodes[arcPair.first], nodePair.second, numNodesFirst);
         const int curIdx =
             TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
+
         // This needs to be an atomic test and set for epsilonArcExists
         if (!epsilonArcExists.first[curIdx]) {
           epsilonArcExists.first[curIdx] = true;
 
-          if (reachable[dstIdx]) {
-            // Atomic test and set for newNodesVisited
-            if (!newNodesVisited[dstIdx]) {
-              newNodesVisited[dstIdx] = true;
-              toExplore[dstIdx] = true;
-            }
-
-            int inArcIdx;
-            int outArcIdx;
-            // Following has to be guarded by a mutex
-            // This is going to be tricky since it can't be one mutex
-            // but one for every pair
-            {
-              inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
-              outArcIdx = newGraphDP.outArcOffset[newNodesOffset[srcIdx]]++;
-            }
-
-            // outArcIdx is also the arc identifier
-            newGraphDP.outArcs[outArcIdx] = outArcIdx;
-            newGraphDP.inArcs[inArcIdx] = outArcIdx;
-
-            // Fill in everything else for this arc
-            newGraphDP.ilabels[outArcIdx] = graphDP1.ilabels[arcPair.first];
-            newGraphDP.olabels[outArcIdx] = epsilon;
-            newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
-            newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
-            newGraphDP.weights[outArcIdx] = graphDP1.weights[arcPair.first];
-          }
+          generateCombinedGraphNodesAndArcs(
+              dstIdx,
+              curIdx,
+              reachable,
+              newNodesOffset,
+              newNodesVisited,
+              toExplore,
+              newGraphDP,
+              graphDP1.ilabels[arcPair.first],
+              epsilon,
+              graphDP1.weights[arcPair.first]);
         }
       }
 
@@ -1091,34 +1105,17 @@ Graph compose(const Graph& first, const Graph& second) {
         if (!epsilonArcExists.first[curIdx]) {
           epsilonArcExists.first[curIdx] = true;
 
-          if (reachable[dstIdx]) {
-            // Atomic test and set for newNodesVisited
-            if (!newNodesVisited[dstIdx]) {
-              newNodesVisited[dstIdx] = true;
-              toExplore[dstIdx] = true;
-            }
-
-            int inArcIdx;
-            int outArcIdx;
-            // Following has to be guarded by a mutex
-            // This is going to be tricky since it can't be one mutex
-            // but one for every pair
-            {
-              inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
-              outArcIdx = newGraphDP.outArcOffset[newNodesOffset[srcIdx]]++;
-            }
-
-            // outArcIdx is also the arc identifier
-            newGraphDP.outArcs[outArcIdx] = outArcIdx;
-            newGraphDP.inArcs[inArcIdx] = outArcIdx;
-
-            // Fill in everything else for this arc
-            newGraphDP.ilabels[outArcIdx] = epsilon;
-            newGraphDP.olabels[outArcIdx] = graphDP2.olabels[arcPair.second];
-            newGraphDP.srcNodes[outArcIdx] = newNodesOffset[srcIdx];
-            newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
-            newGraphDP.weights[outArcIdx] = graphDP2.weights[arcPair.second];
-          }
+          generateCombinedGraphNodesAndArcs(
+              dstIdx,
+              curIdx,
+              reachable,
+              newNodesOffset,
+              newNodesVisited,
+              toExplore,
+              newGraphDP,
+              epsilon,
+              graphDP2.olabels[arcPair.second],
+              graphDP2.weights[arcPair.second]);
         }
       }
     }
