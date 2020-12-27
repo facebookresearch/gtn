@@ -568,16 +568,14 @@ std::pair(std::vector<int>, std::vector<int>> calculateArcCrossProductOffset(
   // No dependence between iterations
   for (size_t i = 0; i < toExploreNodePair.size(); ++i) {
     int node = toExploreNodePair[i].first;
-    const int numArcsFirst =
-        inOrOutArc ?
-        graphDP1.inArcOffset[node + 1] - graphDP1.inArcOffset[node] :
-        graphDP1.outArcOffset[node + 1] - graphDP1.outArcOffset[node];
+    const int numArcsFirst = inOrOutArc
+        ? graphDP1.inArcOffset[node + 1] - graphDP1.inArcOffset[node]
+        : graphDP1.outArcOffset[node + 1] - graphDP1.outArcOffset[node];
 
     node = toExploreNodePair[i].second;
-    const int numArcsSecond =
-        inOrOutArc ?
-        graphDP2.inArcOffset[node + 1] - graphDP2.inArcOffset[node] :
-        graphDP2.outArcOffset[node + 1] - graphDP2.outArcOffset[node];
+    const int numArcsSecond = inOrOutArc
+        ? graphDP2.inArcOffset[node + 1] - graphDP2.inArcOffset[node]
+        : graphDP2.outArcOffset[node + 1] - graphDP2.outArcOffset[node];
 
     toExploreNumArcs[i] = std::make_pair(numArcsFirst, numArcsSecond);
     arcCrossProductOffset[i] = numArcsFirst * numArcsSecond;
@@ -595,7 +593,6 @@ void calculateNumArcsAndNodesToExplore(
   std::vector<bool>& toExplore,
   std::vector<int> numOutArcs,
   std::vector<int> numInArcs) {
-  
   if (reachable[dstIdx]) {
     // Atomic test and set for newNodes
     if (!newNodes[dstIdx]) {
@@ -717,7 +714,8 @@ Graph compose(const Graph& first, const Graph& second) {
     std::vector<int> arcCrossProductOffset;
     std::vector<int> toExploreNumArcs;
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
-        calculateArcCrossProductOffset(toExploreNodePair, graphDP1, graphDP2, true);
+        calculateArcCrossProductOffset(
+            toExploreNodePair, graphDP1, graphDP2, true);
 
     prefixSumScan(arcCrossProductOffset);
     // TODO: FIXME: This assert is problematic - there should be a valid
@@ -740,8 +738,7 @@ Graph compose(const Graph& first, const Graph& second) {
           tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
 
       // Does this node pair match?
-      if (graphDP1.olabels[arcPair.first] ==
-          graphDP2.ilabels[arcPair.second]) {
+      if (graphDP1.olabels[arcPair.first] == graphDP2.ilabels[arcPair.second]) {
         const int idx = TwoDToOneDIndex(
             graphDP1.srcNodes[arcPair.first],
             graphDP2.srcNodes[arcPair.second],
@@ -770,8 +767,8 @@ Graph compose(const Graph& first, const Graph& second) {
       // Map tid to corresponding node and edge pair via search
       std::vector<int, int> nodePair;
       std::vector<int, int> arcPair;
-      std::tie(nodePair, arcPair) =
-          computeNodeAndEdgePair(tid, edgeCrossProductOffset, toExploreNodePair);
+      std::tie(nodePair, arcPair) = computeNodeAndEdgePair(
+          tid, edgeCrossProductOffset, toExploreNodePair);
 
       const bool matched = epsilonMatched[TwoDToOneDIndex(
           nodePair.first, nodePair.second, numNodesFirst)];
@@ -800,7 +797,6 @@ Graph compose(const Graph& first, const Graph& second) {
       }
     }
   } // end while for findReachable
-
 
   //////////////////////////////////////////////////////////////////////////
   // First pass to count number of in and out edges per node in the cmoposed
@@ -844,11 +840,13 @@ Graph compose(const Graph& first, const Graph& second) {
     std::vector<int> arcCrossProductOffset;
     std::vector<int> toExploreNumArcs;
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
-        calculateArcCrossProductOffset(toExploreNodePair, graphDP1, graphDP2, false);
+        calculateArcCrossProductOffset(
+            toExploreNodePair, graphDP1, graphDP2, false);
 
     prefixSumScan(arcCrossProductOffset);
     assert(!arcCrossProductOffset.empty());
-    const int totalArcs = arcCrossProductOffset[arcCrossProductOffset.size() - 1];
+    const int totalArcs =
+        arcCrossProductOffset[arcCrossProductOffset.size() - 1];
 
     for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and edge pair
@@ -860,16 +858,21 @@ Graph compose(const Graph& first, const Graph& second) {
           computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNodePair);
 
       // Does this node pair match?
-      if (graphDP1.olabels[arcPair.first] ==
-          graphDP2.ilabels[arcPair.second]) {
+      if (graphDP1.olabels[arcPair.first] == graphDP2.ilabels[arcPair.second]) {
         const int dstIdx = TwoDToOneDIndex(
             graphDP1.dstNodes[arcPair.first],
             graphDP2.dstNodes[arcPair.second],
             numNodesFirst);
         const int curIdx =
             TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
-        calculateNumArcsAndNodesToExplore(curIdx, dstIdx, reachable,
-          newNodes, toExplore, numOutArcs, numInArcs);
+        calculateNumArcsAndNodesToExplore(
+            curIdx,
+            dstIdx,
+            reachable,
+            newNodes,
+            toExplore,
+            numOutArcs,
+            numInArcs);
       }
 
       if ((graphDP1.olabels[arcPair.first] == epsilon) &&
@@ -882,8 +885,14 @@ Graph compose(const Graph& first, const Graph& second) {
         if (!epsilonArcExists.first[curIdx]) {
           epsilonArcExists.first[curIdx] = true;
 
-          calculateNumArcsAndNodesToExplore(curIdx, dstIdx, reachable,
-            newNodes, toExplore, numOutArcs, numInArcs);
+          calculateNumArcsAndNodesToExplore(
+              curIdx,
+              dstIdx,
+              reachable,
+              newNodes,
+              toExplore,
+              numOutArcs,
+              numInArcs);
         }
       }
 
@@ -897,8 +906,14 @@ Graph compose(const Graph& first, const Graph& second) {
         if (!epsilonArcExists.second[curIdx]) {
           epsilonArcExists.second[curIdx] = true;
 
-          calculateNumArcsAndNodesToExplore(curIdx, dstIdx, reachable,
-            newNodes, toExplore, numOutArcs, numInArcs);
+          calculateNumArcsAndNodesToExplore(
+              curIdx,
+              dstIdx,
+              reachable,
+              newNodes,
+              toExplore,
+              numOutArcs,
+              numInArcs);
         }
       }
     }
