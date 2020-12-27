@@ -586,6 +586,29 @@ std::pair(std::vector<int>, std::vector<int>> calculateArcCrossProductOffset(
   return std::make_pair(arcCrossProductOffset, toExploreNumArcs);
 }
 
+// This function needs to be thread safe since multiple threads can
+// can call it and they will overlap on curIdx and dstIdx
+void calculateNumArcsAndNodesToExplore(
+  int curIdx, int dstIdx,
+  const std::vector<bool>& reachable,
+  std::vector<bool>& newNodes;
+  std::vector<bool>& toExplore,
+  std::vector<int> numOutArcs,
+  std::vector<int> numInArcs) {
+  
+  if (reachable[dstIdx]) {
+    // Atomic test and set for newNodes
+    if (!newNodes[dstIdx]) {
+      newNodes[dstIdx] = true;
+      toExplore[dstIdx] = true;
+    }
+
+    // These are atomic increments
+    numOutArcs[curIdx]++;
+    numInArcs[dstIdx]++;
+  }
+}
+
 } // namespace
 
 // Convert bool array two pairs for true flags
@@ -818,88 +841,64 @@ Graph compose(const Graph& first, const Graph& second) {
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
 
-    std::vector<int> edgeCrossProductOffset =
-        calculateEdgeCrossProductOffset(toExploreNodePair, graphDP1, graphDP2, false);
+    std::vector<int> arcCrossProductOffset;
+    std::vector<int> toExploreNumArcs;
+    std::tie(arcCrossProductOffset, toExploreNumArcs) =
+        calculateArcCrossProductOffset(toExploreNodePair, graphDP1, graphDP2, false);
 
-    prefixSumScan(edgeCrossProductOffset);
-    assert(!edgeCrossProductOffset.empty());
-    const int totalEdges = edgeMullOffset[edgeCrossProductOffset.size() - 1];
+    prefixSumScan(arcCrossProductOffset);
+    assert(!arcCrossProductOffset.empty());
+    const int totalArcs = arcCrossProductOffset[arcCrossProductOffset.size() - 1];
 
-    for (int tid = 0; tid < totalEdges; ++tid) {
+    for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and edge pair
       // Search to find which node pair this tid will fall into
       // Linear search for now (edgeMullOffset is sorted by definition)
       std::vector<int, int> nodePair;
-      std::vector<int, int> edgePair;
-      std::tie(nodePair, edgePair) =
-          computeNodeAndEdgePair(tid, edgeCrossProductOffset, toExploreNodePair);
+      std::vector<int, int> arcPair;
+      std::tie(nodePair, arcPair) =
+          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNodePair);
 
       // Does this node pair match?
-      if (graphDP1.olabels[edgePair.first] ==
-          graphDP2.ilabels[edgePair.second]) {
+      if (graphDP1.olabels[arcPair.first] ==
+          graphDP2.ilabels[arcPair.second]) {
         const int dstIdx = TwoDToOneDIndex(
-            graphDP1.dstNodes[edgePair.first],
-            graphDP2.dstNodes[edgePair.second],
+            graphDP1.dstNodes[arcPair.first],
+            graphDP2.dstNodes[arcPair.second],
             numNodesFirst);
         const int curIdx =
             TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
-        if (reachable[dstIdx]) {
-          // Atomic test and set for newNodes
-          if (!newNodes[dstIdx]) {
-            newNodes[dstIdx] = true;
-            toExplore[dstIdx] = true;
-          }
-          // These are atomic increments
-          numOutArcs[curIdx]++;
-          numInArcs[dstIdx]++;
-        }
+        calculateNumArcsAndNodesToExplore(curIdx, dstIdx, reachable,
+          newNodes, toExplore, numOutArcs, numInArcs);
       }
 
-      if ((graphDP1.olabels[edgePair.first] == epsilon) &&
-          (graphDP2.ilabels[edgePair.second] != epsilon)) {
+      if ((graphDP1.olabels[arcPair.first] == epsilon) &&
+          (graphDP2.ilabels[arcPair.second] != epsilon)) {
         const int dstIdx = TwoDToOneDIndex(
-            graphDP1.dstNodes[edgePair.first], nodePair.second, numNodesFirst);
+            graphDP1.dstNodes[arcPair.first], nodePair.second, numNodesFirst);
         const int curIdx =
             TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
         // This needs to be an atomic test and set for epsilonArcExists
         if (!epsilonArcExists.first[curIdx]) {
           epsilonArcExists.first[curIdx] = true;
 
-          if (reachable[dstIdx]) {
-            // Atomic test and set for newNodes
-            if (!newNodes[dstIdx]) {
-              newNodes[dstIdx] = true;
-              toExplore[dstIdx] = true;
-            }
-
-            // These are atomic increments
-            numOutArcs[curIdx]++;
-            numInArcs[dstIdx]++;
-          }
+          calculateNumArcsAndNodesToExplore(curIdx, dstIdx, reachable,
+            newNodes, toExplore, numOutArcs, numInArcs);
         }
       }
 
-      if ((graphDP1.olabels[edgePair.first] != epsilon) &&
-          (graphDP2.ilabels[edgePair.second] == epsilon)) {
+      if ((graphDP1.olabels[arcPair.first] != epsilon) &&
+          (graphDP2.ilabels[arcPair.second] == epsilon)) {
         const int dstIdx = TwoDToOneDIndex(
-            nodePair.first, graphDP2.dstNodes[edgePair.second], numNodesFirst);
+            nodePair.first, graphDP2.dstNodes[arcPair.second], numNodesFirst);
         const int curIdx =
             TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
         // This needs to be an atomic test and set for epsilonArcExists
         if (!epsilonArcExists.second[curIdx]) {
           epsilonArcExists.second[curIdx] = true;
 
-          if (reachable[dstIdx]) {
-            // Atomic test and set for newNodes
-            if (!newNodes[dstIdx]) {
-              newNodes[dstIdx] = true;
-              toExplore[dstIdx] = true;
-            }
-
-            // These are atomic increments
-            numOutArcs[curIdx]++;
-            numInArcs[dstIdx]++;
-          }
+          calculateNumArcsAndNodesToExplore(curIdx, dstIdx, reachable,
+            newNodes, toExplore, numOutArcs, numInArcs);
         }
       }
     }
