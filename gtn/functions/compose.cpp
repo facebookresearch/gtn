@@ -688,9 +688,13 @@ Graph compose(const Graph& first, const Graph& second) {
   graphDP1 = convertToDataParallel(first);
   graphDP2 = convertToDataParallel(second);
 
-  // A first attempt at data parallel findReachable
-  std::vector<bool> toExplore(first.numNodes() * second.numNodes(), false);
+
+
+  // Step 1: Data parallel findReachable
+  //////////////////////////////////////////////////////////////////////////
   std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
+
+  std::vector<bool> toExplore(first.numNodes() * second.numNodes(), false);
   std::vector<bool> epsilonMatched(first.numNodes() * second.numNodes(), false);
 
   const int numNodesFirst = first.numNodes();
@@ -721,8 +725,7 @@ Graph compose(const Graph& first, const Graph& second) {
     // TODO: FIXME: This assert is problematic - there should be a valid
     // stopping condition when we reach a set of nodes with no incoming arcs
     assert(!arcCrossProductOffset.empty());
-    const int totalArcs =
-        arcCrossProductOffset[arcCrossProductOffset.size() - 1];
+    const int totalArcs = arcCrossProductOffset.back();
 
     // No dependence between iterations. tid is thread-id
     // Only do non epsilon case for this kernel
@@ -798,20 +801,20 @@ Graph compose(const Graph& first, const Graph& second) {
     }
   } // end while for findReachable
 
-  //////////////////////////////////////////////////////////////////////////
-  // First pass to count number of in and out edges per node in the cmoposed
-  // graph
 
-  // Begin first pass to generate metadata for valid nodes and edges. This
-  // is needed before we can generate the nodes and edges themselves.
-  std::fill(toExplore.begin(), toExplore.end(), false);
+  // Step 2: Compute a) valid nodes in combined graph
+  //                 b) Number of in and out arcs in combined graph
+  // This information would be used to generate offsets for nodes and arcs
+  // in the combined graph
+  //////////////////////////////////////////////////////////////////////////
 
   // Tracks the nodes that are going to be present in the combined graph
   std::vector<bool> newNodes(first.numNodes() * second.numNodes(), false);
-
   // Number of in and out arcs per node
   std::vector<int> numOutArcs(first.numNodes() * second.numNodes(), 0);
   std::vector<int> numInArcs(first.numNodes() * second.numNodes(), 0);
+
+  std::fill(toExplore.begin(), toExplore.end(), false);
 
   std::pair<std::vector<bool>, std::vector<bool>> epsilonArcExists;
   epsilonArcExists.first.resize(first.numNodes() * second.numNodes());
@@ -845,8 +848,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
     prefixSumScan(arcCrossProductOffset);
     assert(!arcCrossProductOffset.empty());
-    const int totalArcs =
-        arcCrossProductOffset[arcCrossProductOffset.size() - 1];
+    const int totalArcs = arcCrossProductOffset.back();
 
     for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and edge pair
@@ -919,6 +921,8 @@ Graph compose(const Graph& first, const Graph& second) {
     }
   }
 
+
+  // Step 3: Generate offsets for nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   // Generate offsets for nodes and arcs
   GraphDataParallel newGraphDP;
@@ -932,6 +936,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
   prefixSumScan(newNodesOffset);
 
+  // Throw out all nodes with no in or out arcs
   newGraphDP.outArcOffset = streamCompact(numOutArcs, 0);
   newGraphDP.inArcOffset = streamCompact(numInArcs, 0);
 
@@ -939,7 +944,7 @@ Graph compose(const Graph& first, const Graph& second) {
   prefixSumScan(outArcOffset);
   prefixSumScan(inArcOffset);
 
-  // This is the total number of edges
+  // This is the total number of arcs
   assert(outArcOffset.back() == inArcOffset.back());
 
   newGraphDP.inArcs.resize(inArcOffset.back());
@@ -950,8 +955,9 @@ Graph compose(const Graph& first, const Graph& second) {
   newGraphDP.dstNodes.resize(outArcOffset.back());
   newGraphDP.weights.resize(outArcOffset.back());
 
+
+  // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
-  // Second pass to generate nodes in the cmoposed graph
 
   // Begin first pass to generate metadata for valid nodes and edges. This
   // is needed before we can generate the nodes and edges themselves.
@@ -979,29 +985,19 @@ Graph compose(const Graph& first, const Graph& second) {
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
 
-    // Calculate number of threads we have to spawn
-    std::vector<std::pair<int.int>> toExploreNumEdge(toExploreNodePair.size());
-    std::vector<int> edgeMulOffset(toExploreNodePair.size());
+    std::vector<int> arcCrossProductOffset;
+    std::vector<int> toExploreNumArcs;
+    std::tie(arcCrossProductOffset, toExploreNumArcs) =
+        calculateArcCrossProductOffset(
+            toExploreNodePair, graphDP1, graphDP2, false);
 
-    // No dependence between iterations
-    for (int i = 0; i < toExploreNodePair.size(); ++i) {
-      int node = toExploreNodePair[i].first;
-      const int numEdgesFirst =
-          graphDP1.outArcOffset[node + 1] - graphDP1.outArcOffset[node];
+    prefixSumScan(arcCrossProductOffset);
 
-      node = toExploreNodePair[i].second;
-      const int numEdgesSecond =
-          graphDP2.inArcOffset[node + 1] - graphDP2.outArcOffset[node];
+    prefixSumScan(arcCrossProductOffset);
+    assert(!arcCrossProduct.empty());
+    const int totalArcs = arcCrossProductOffset.back();
 
-      toExploreNumEdge[i] = std::make_pair(numEdgesFirst, numEdgesSecond);
-      edgeMulOffset[i] = numEdgesFirst * numEdgesSecond;
-    }
-
-    prefixSumScan(edgeMullOffset);
-    assert(!edgeMulOffset.empty());
-    const int totalEdges = edgeMullOffset[edgeMullOffset.size() - 1];
-
-    for (int tid = 0; tid < totalEdges; ++tid) {
+    for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and edge pair
       // Search to find which node pair this tid will fall into
       // Linear search for now (edgeMullOffset is sorted by definition)
