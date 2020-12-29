@@ -1014,11 +1014,15 @@ Graph compose(const Graph& first, const Graph& second) {
   std::tie(newGraphDP.inArcOffset, newGraphDP.outArcOffset) =
       removeUnreachableNodes(numInArcs, numOutArcs);
 
+  // Check that number of nodes match
+  assert(newGraphDP.inArcOffset.length() == newGraphDP.outArcOffset.length());
+  assert(newNodesOffset.back() == newGraphDP.inArcOffset.length());
+
   // Prefix sum to generate offsets
   prefixSumScan(newGraphDP.inArcOffset);
   prefixSumScan(newGraphDP.outArcOffset);
 
-  // This is the total number of arcs
+  // This is the total number of arcs and they must be equal
   assert(outArcOffset.back() == inArcOffset.back());
 
   newGraphDP.inArcs.resize(inArcOffset.back());
