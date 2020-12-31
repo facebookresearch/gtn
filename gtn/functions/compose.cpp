@@ -641,15 +641,9 @@ void generateCombinedGraphNodesAndArcs(
       toExplore[dstIdx] = true;
     }
 
-    int inArcIdx;
-    int outArcIdx;
-    // Following has to be guarded by a mutex
-    // This is going to be tricky since it can't be one mutex
-    // but one for every pair
-    {
-      inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
-      outArcIdx = newGraphDP.outArcOffset[newNodesOffset[curIdx]]++;
-    }
+    // Both of these increments are atomic
+    int inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
+    int outArcIdx = newGraphDP.outArcOffset[newNodesOffset[curIdx]]++;
 
     // outArcIdx is also the arc identifier
     newGraphDP.outArcs[outArcIdx] = outArcIdx;
@@ -873,7 +867,6 @@ Graph compose(const Graph& first, const Graph& second) {
   // This information is used to generate offsets for nodes and arcs
   // in the combined graph
   //////////////////////////////////////////////////////////////////////////
-
   // Tracks the nodes that are going to be present in the combined graph
   std::vector<bool> newNodes(first.numNodes() * second.numNodes(), false);
   // Number of in and out arcs per node
@@ -1058,7 +1051,7 @@ Graph compose(const Graph& first, const Graph& second) {
     // Convert bits set in toExplore to node pairs
     auto toExploreNodePair = convertToNodePair(toExplore, numNodesFirst);
 
-    // Reset so pristine state for next frontier to epxlore
+    // Reset so pristine state for next frontier to explore
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
 
@@ -1068,10 +1061,13 @@ Graph compose(const Graph& first, const Graph& second) {
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, false);
 
-    prefixSumScan(arcCrossProductOffset);
+    // If no arcs to process we are done
+    if (arcCrossProductOffset.size() == 0) {
+      break;
+    }
 
     prefixSumScan(arcCrossProductOffset);
-    assert(!arcCrossProduct.empty());
+
     const int totalArcs = arcCrossProductOffset.back();
 
     for (int tid = 0; tid < totalArcs; ++tid) {
