@@ -488,14 +488,18 @@ struct GraphDataParallel {
 namespace {
 // Exclusive/Inclusive prefix sum. The returned vector
 // has one more element
-void prefixSumScan(std::vector<int>& input) {
+int prefixSumScan(std::vector<int>& input, bool appendSum) {
   int sum = 0;
   for (size_t i = 0; i < input.size(); ++i) {
     auto count = input[i];
     input[i] = sum;
     sum += count;
   }
-  input.push_back(sum);
+  if (appendSum) {
+    input.push_back(sum);
+  }
+
+  return sum;
 }
 
 // Remove all nodes that have 0 in and out arcs - these nodes are unreachable
@@ -742,8 +746,9 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
   }
 
   // Scan of offsets
-  prefixSumScan(graphDP.inArcOffset);
-  prefixSumScan(graphDP.outArcOffset);
+  const int totalInArcs = prefixSumScan(graphDP.inArcOffset, false);
+  const int totalOutArcs = prefixSumScan(graphDP.outArcOffset, false);
+  assert(totalInArcs == totalOutArcs);
 
   for (int i = 0; i < graph.numNodes(); ++i) {
     int offset = graphDP.outArcOffset[i];
@@ -770,6 +775,10 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
   }
 
   return graphDP;
+}
+
+// Convert from SOA to AOS
+Graph convertFromDataParallel(const GraphDataParallel& graph) {
 }
 
 Graph compose(const Graph& first, const Graph& second) {
@@ -815,9 +824,7 @@ Graph compose(const Graph& first, const Graph& second) {
       break;
     }
 
-    prefixSumScan(arcCrossProductOffset);
-
-    const int totalArcs = arcCrossProductOffset.back();
+    const int totalArcs = prefixSumScan(arcCrossProductOffset, true);
 
     // No dependence between iterations. tid is thread-id
     // Only do non epsilon case for this kernel
@@ -939,9 +946,7 @@ Graph compose(const Graph& first, const Graph& second) {
       break;
     }
 
-    prefixSumScan(arcCrossProductOffset);
-
-    const int totalArcs = arcCrossProductOffset.back();
+    const int totalArcs = prefixSumScan(arcCrossProductOffset, true);
 
     for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and arc pair
@@ -1016,6 +1021,7 @@ Graph compose(const Graph& first, const Graph& second) {
   // Generate offsets for nodes and arcs
   GraphDataParallel newGraphDP;
 
+  // Convert bool array to int for prefix sum
   std::vector<int> newNodesOffset(newNodes.size(), 0);
   for (size_t i = 0; i < newNodes.size(); ++i) {
     if (newNodes[i]) {
@@ -1023,35 +1029,35 @@ Graph compose(const Graph& first, const Graph& second) {
     }
   }
 
-  prefixSumScan(newNodesOffset);
+  const int totalNodes = prefixSumScan(newNodesOffset, false);
 
   // Throw out all nodes with no in or out arcs
   std::tie(newGraphDP.inArcOffset, newGraphDP.outArcOffset) =
       removeUnreachableNodes(numInArcs, numOutArcs);
 
   // Check that number of nodes match
+  assert(totalNodes == newGraphDP.inArcOffset.length());
   assert(newGraphDP.inArcOffset.length() == newGraphDP.outArcOffset.length());
-  assert(newNodesOffset.back() == newGraphDP.inArcOffset.length());
 
   // Prefix sum to generate offsets
-  prefixSumScan(newGraphDP.inArcOffset);
-  prefixSumScan(newGraphDP.outArcOffset);
+  const int totalInArcs = prefixSumScan(newGraphDP.inArcOffset, false);
+  const int totalOutArcs = prefixSumScan(newGraphDP.outArcOffset, false);
 
   // This is the total number of arcs and they must be equal
-  assert(outArcOffset.back() == inArcOffset.back());
+  assert(totalInArcs = totaloutArcs);
 
-  newGraphDP.inArcs.resize(inArcOffset.back());
-  newGraphDP.outArcs.resize(outArcOffset.back());
-  newGraphDP.ilabels.resize(outArcOffset.back());
-  newGraphDP.olabels.resize(outArcOffset.back());
-  newGraphDP.srcNodes.resize(outArcOffset.back());
-  newGraphDP.dstNodes.resize(outArcOffset.back());
-  newGraphDP.weights.resize(outArcOffset.back());
+  newGraphDP.inArcs.resize(totalInArcs);
+  newGraphDP.outArcs.resize(totalOutArcs);
+  newGraphDP.ilabels.resize(totalOutArcs);
+  newGraphDP.olabels.resize(totalOutArcs);
+  newGraphDP.srcNodes.resize(totalOutArcs);
+  newGraphDP.dstNodes.resize(totalOutArcs);
+  newGraphDP.weights.resize(totalOutArcs);
 
   // SOA for gradInfo
   std::pair<std::vector<int>, std::vector<int>> gradInfo;
-  gradInfo.first.resize(outArcOffset.back());
-  gradInfo.second.resize(outArcOffset.back());
+  gradInfo.first.resize(totalOutArcs);
+  gradInfo.second.resize(totalOutArcs);
 
   //////////////////////////////////////////////////////////////////////////
   // Step 4: Generate nodes and arcs in combined graph
@@ -1088,9 +1094,7 @@ Graph compose(const Graph& first, const Graph& second) {
       break;
     }
 
-    prefixSumScan(arcCrossProductOffset);
-
-    const int totalArcs = arcCrossProductOffset.back();
+    const int totalArcs = prefixSumScan(arcCrossProductOffset, true);
 
     for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and arc pair
