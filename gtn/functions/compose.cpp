@@ -170,7 +170,11 @@ void addEpsilonReachableNodes(
         ngraph);
 
     if (isReachable) {
-      gradInfo.emplace_back(-1, i);
+      if (secondOrFirst) {
+        gradInfo.emplace_back(i, -1);
+      } else {
+        gradInfo.emplace_back(-1, i);
+      }
     }
   }
 }
@@ -651,7 +655,7 @@ void calculateNumArcsAndNodesToExplore(int curIdx,
 }
 
 // This function needs to be thread safe since multiple threads can
-// can call it and they will overlap on curIdx and dstIdx
+// can call it
 void generateCombinedGraphNodesAndArcs(
     int dstIdx,
     int curIdx,
@@ -1112,6 +1116,7 @@ Graph compose(const Graph& first, const Graph& second) {
           generateCombinedGraphNodesAndArcs(
               dstIdx,
               curIdx,
+              arcPair,
               reachable,
               newNodesOffset,
               newNodesVisited,
@@ -1134,6 +1139,7 @@ Graph compose(const Graph& first, const Graph& second) {
           generateCombinedGraphNodesAndArcs(
               dstIdx,
               curIdx,
+              std::make_pair(arcPair.first, -1),
               reachable,
               newNodesOffset,
               newNodesVisited,
@@ -1155,6 +1161,7 @@ Graph compose(const Graph& first, const Graph& second) {
           generateCombinedGraphNodesAndArcs(
               dstIdx,
               curIdx,
+              std::make_pair(-1, arcPair.second),
               reachable,
               newNodesOffset,
               newNodesVisited,
