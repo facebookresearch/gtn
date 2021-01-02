@@ -871,10 +871,8 @@ Graph compose(const Graph& first, const Graph& second) {
       if (isValid) {
         const bool matched = epsilonMatched[TwoDToOneDIndex(
             nodePair.first, nodePair.second, numNodesFirst)];
-        // Note that when this loop body is threaded - multiple threads will
-        // write to the same location. They will write the same value so
-        // this is fine
-        if (graphDP1.olabels[arcPair.first] == epsilon && !matched) {
+        if (!matched && checkEpsilonArcPair.first &&
+            (graphDP1.olabels[arcPair.first] == epsilon)) {
           const int idx = TwoDToOneDIndex(
               graphDP1.srcNodes[arcPair.first], nodePair.second, numNodesFirst);
           if (!reachable[idx]) {
@@ -883,10 +881,8 @@ Graph compose(const Graph& first, const Graph& second) {
           reachable[idx] = true;
         }
 
-        // Note that when this loop body is threaded - multiple threads will
-        // write to the same location. They will write the same value so
-        // this is fine
-        if (graphDP1.ilabels[arcPair.second] == epsilon && !matched) {
+        if (!matched && checkEpsilonArcPair.second &&
+            (graphDP2.ilabels[arcPair.second] == epsilon)) {
           const int idx = TwoDToOneDIndex(
               nodePair.first, graphDP2.srcNodes[arcPair.second], numNodesFirst);
           if (!reachable[idx]) {
