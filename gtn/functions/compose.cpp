@@ -465,7 +465,6 @@ struct GraphDataParallel {
   std::vector<int> accept;
   std::vector<int> start;
 
-  // Has one more element than the number of nodes
   // One value per node - i-th value corresponds to i-th node
   // Last element is the total number of arcs, so that
   // each element and its neighbor forms a range
@@ -778,7 +777,58 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
 }
 
 // Convert from SOA to AOS
-Graph convertFromDataParallel(const GraphDataParallel& graph) {
+// The Graph is supposed to have no nodes and arcs and only supposed to have
+// inputs set
+void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
+
+  // Some sanity checks
+  assert(graph.numArcs() == 0);
+  assert(graph.numNodes() == 0);
+  assert(graph.inputs().size() == 2);
+
+  assert(graphDP.inArcOffset.size() > 0);
+  assert(graphDP.inArcOffset.size() == graphDP.outArcOffset.size());
+  assert(graphDP.inArcs.size() == graphDP.outArcs.size());
+  assert(graphDP.inArcs.size() == graphDP.ilabels.size());
+  assert(graphDP.ilabels.size() == graphDP.olabels.size());
+  assert(graphDP.ilabels.size() == graphDP.srcNodes.size());
+  assert(graphDP.ilabels.size() == graphDP.dstNodes.size());
+  assert(graphDP.ilabels.size() == graphDP.weights.size());
+
+  const size_t numNodes = graphDP.inArcOffset.size();
+  const size_t numArcs = graphDP.inArcs.size();
+
+  std::vector<bool> isAccept(numNodes, false);
+  std::vector<bool> isStart(numNodes, false);
+
+  for (auto i: graphDP.accept) {
+    isAccept[i] = true;
+  }
+
+  for (auto i: graphDP.start) {
+    isStart[i] = true;
+  }
+
+  for (size_t i = 0; i < numNodes, ++i) {
+    const int node = graph.addNode(isStart[i], isAccept[i]);
+    assert(node >= 0);
+    assert(node == i);
+  }
+
+  for (size_t i = 0; i < numNodes, ++i) {
+    const int start = graphDP.outArcOffset[i];
+    const int end = (i == (numNodes-1)) ? numArcs : graphDP.outArcOffset[i+1];
+
+    for (int j = start; j < end; ++j) {
+      const int dstNode = graphDP.dstNodes[graphDP.outArcs[j]];
+      const int ilabel = graphDP.ilabels[graphDP.outArcs[j]];
+      const int olabel = graphDP.olabels[graphDP.outArcs[j]];
+      const float weight = graphDP.weight[graphDP.outArcs[j]];
+
+      auto newarc =
+        graph.addArc(i, dstNode, ilabel, olabel, weight);
+    }
+  }
 }
 
 Graph compose(const Graph& first, const Graph& second) {
@@ -1036,8 +1086,8 @@ Graph compose(const Graph& first, const Graph& second) {
       removeUnreachableNodes(numInArcs, numOutArcs);
 
   // Check that number of nodes match
-  assert(totalNodes == newGraphDP.inArcOffset.length());
-  assert(newGraphDP.inArcOffset.length() == newGraphDP.outArcOffset.length());
+  assert(totalNodes == newGraphDP.inArcOffset.size());
+  assert(newGraphDP.inArcOffset.size() == newGraphDP.outArcOffset.size());
 
   // Prefix sum to generate offsets
   const int totalInArcs = prefixSumScan(newGraphDP.inArcOffset, false);
