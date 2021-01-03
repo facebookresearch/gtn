@@ -716,6 +716,8 @@ std::vector<std::pair<int, int>> convertToNodePair(
 } // namespace
 
 // Convert from AOS to SOA
+// Assumption: nodes are numbered [0..graph.numNodes())
+//           : arcs are numbered [0..graph.numArcs())
 GraphDataParallel convertToDataParallel(const Graph& graph) {
   GraphDataParallel graphDP;
 
@@ -732,10 +734,14 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
   graphDP.weights.resize(graph.numArcs());
 
   for (auto i : graph.start()) {
+    assert(i >= 0);
+    assert(i < graph.numNodes());
     graphDP.start.push_back(i);
   }
 
   for (auto i : graph.accept()) {
+    assert(i >= 0);
+    assert(i < graph.numNodes());
     graphDP.accept.push_back(i);
   }
 
@@ -748,11 +754,14 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
   const int totalInArcs = prefixSumScan(graphDP.inArcOffset, false);
   const int totalOutArcs = prefixSumScan(graphDP.outArcOffset, false);
   assert(totalInArcs == totalOutArcs);
+  assert(totalInArcs = graph.numArcs());
 
   for (int i = 0; i < graph.numNodes(); ++i) {
     int offset = graphDP.outArcOffset[i];
 
     for (auto j : graph.out(i)) {
+      assert(j >= 0);
+      assert(j < graphDP.numArcs());
       graphDP1.outArcs[offset] = j;
       offset++;
 
@@ -768,6 +777,8 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
     int offset = graphDP.inArcOffset[i];
 
     for (auto j : graph.in(i)) {
+      assert(j >= 0);
+      assert(j < graphDP.numArcs());
       graphDP.inArcs[offset] = j;
       offset++;
     }
@@ -779,8 +790,9 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
 // Convert from SOA to AOS
 // The Graph is supposed to have no nodes and arcs and only supposed to have
 // inputs set
+// Assumption: nodes are numbered [0..graph.numNodes())
+//           : arcs are numbered [0..graph.numArcs())
 void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
-
   // Some sanity checks
   assert(graph.numArcs() == 0);
   assert(graph.numNodes() == 0);
@@ -801,11 +813,11 @@ void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
   std::vector<bool> isAccept(numNodes, false);
   std::vector<bool> isStart(numNodes, false);
 
-  for (auto i: graphDP.accept) {
+  for (auto i : graphDP.accept) {
     isAccept[i] = true;
   }
 
-  for (auto i: graphDP.start) {
+  for (auto i : graphDP.start) {
     isStart[i] = true;
   }
 
@@ -817,7 +829,8 @@ void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
 
   for (size_t i = 0; i < numNodes, ++i) {
     const int start = graphDP.outArcOffset[i];
-    const int end = (i == (numNodes-1)) ? numArcs : graphDP.outArcOffset[i+1];
+    const int end =
+        (i == (numNodes - 1)) ? numArcs : graphDP.outArcOffset[i + 1];
 
     for (int j = start; j < end; ++j) {
       const int dstNode = graphDP.dstNodes[graphDP.outArcs[j]];
@@ -825,8 +838,7 @@ void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
       const int olabel = graphDP.olabels[graphDP.outArcs[j]];
       const float weight = graphDP.weight[graphDP.outArcs[j]];
 
-      auto newarc =
-        graph.addArc(i, dstNode, ilabel, olabel, weight);
+      auto newarc = graph.addArc(i, dstNode, ilabel, olabel, weight);
     }
   }
 }
