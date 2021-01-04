@@ -462,8 +462,9 @@ namespace detail {
 namespace dataparallel {
 // Change AOS to SOA
 struct GraphDataParallel {
-  std::vector<int> accept;
-  std::vector<int> start;
+  // True if a node is accept or start, false otherwise
+  std::vector<bool> accept;
+  std::vector<bool> start;
 
   // One value per node - i-th value corresponds to i-th node
   // Last element is the total number of arcs, so that
@@ -713,6 +714,20 @@ std::vector<std::pair<int, int>> convertToNodePair(
   return toExploreNodePair;
 }
 
+// Takes a bool array with flags set for nodes to pick and returns
+// an array with indices that were set as true
+std::vector<int> convertToNodes(const std::vector<bool>& flags) {
+  std::vector<int> nodes;
+
+  for (size_t i = 0; i < flags.size(); ++i) {
+    if (flags[i]) {
+      nodes.push_back(i);
+    }
+  }
+
+  return nodes;
+}
+
 } // namespace
 
 // Convert from AOS to SOA
@@ -720,6 +735,11 @@ std::vector<std::pair<int, int>> convertToNodePair(
 //           : arcs are numbered [0..graph.numArcs())
 GraphDataParallel convertToDataParallel(const Graph& graph) {
   GraphDataParallel graphDP;
+
+  graphDP.accept.resize(graph.numNodes());
+  graphDP.start.resize(graph.numNodes());
+  std::fill(graphDP.accept.start(), graphDP.accept.end(), false);
+  std::fill(graphDP.start.start(), graphDP.start.end(), false);
 
   graphDP.inArcOffset.resize(graph.numNodes());
   graphDP.outArcOffset.resize(graph.numNodes());
@@ -733,16 +753,16 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
   graphDP.dstNodes.resize(graph.numArcs());
   graphDP.weights.resize(graph.numArcs());
 
-  for (auto i : graph.start()) {
-    assert(i >= 0);
-    assert(i < graph.numNodes());
-    graphDP.start.push_back(i);
-  }
-
   for (auto i : graph.accept()) {
     assert(i >= 0);
     assert(i < graph.numNodes());
-    graphDP.accept.push_back(i);
+    graphDP.accept[i] = true;
+  }
+
+  for (auto i : graph.start()) {
+    assert(i >= 0);
+    assert(i < graph.numNodes());
+    graphDP.start[i] = true;
   }
 
   for (int i = 0; i < graph.numNodes(); ++i) {
@@ -810,19 +830,8 @@ void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
   const size_t numNodes = graphDP.inArcOffset.size();
   const size_t numArcs = graphDP.inArcs.size();
 
-  std::vector<bool> isAccept(numNodes, false);
-  std::vector<bool> isStart(numNodes, false);
-
-  for (auto i : graphDP.accept) {
-    isAccept[i] = true;
-  }
-
-  for (auto i : graphDP.start) {
-    isStart[i] = true;
-  }
-
   for (size_t i = 0; i < numNodes, ++i) {
-    const int node = graph.addNode(isStart[i], isAccept[i]);
+    const int node = graph.addNode(graphDP.start[i], graphDP.accept[i]);
     assert(node >= 0);
     assert(node == i);
   }
@@ -859,9 +868,14 @@ Graph compose(const Graph& first, const Graph& second) {
 
   const int numNodesFirst = first.numNodes();
 
-  for (auto f : graphDP1.accept) {
-    for (auto s : graphDP2.accept) {
-      toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+  {
+    std::vector<int> acceptDP1 = convertToNodes(graphDP1.accept);
+    std::vector<int> acceptDP2 = convertToNodes(graphDP2.accept);
+
+    for (auto f : acceptDP1) {
+      for (auto s : acceptDP2) {
+        toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+      }
     }
   }
 
@@ -981,10 +995,15 @@ Graph compose(const Graph& first, const Graph& second) {
 
   std::fill(toExplore.begin(), toExplore.end(), false);
 
-  for (auto f : graphDP1.start) {
-    for (auto s : graphDP2.start) {
-      toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
-      newNodes[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+  {
+    std::vector<int> startDP1 = convertToNodes(graphDP1.start);
+    std::vector<int> startDP2 = convertToNodes(graphDP2.start);
+
+    for (auto f : startDP1) {
+      for (auto s : startDP2) {
+        toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+        newNodes[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+      }
     }
   }
 
@@ -1130,9 +1149,14 @@ Graph compose(const Graph& first, const Graph& second) {
   std::vector<bool> newNodesVisited(
       first.numNodes() * second.numNodes(), false);
 
-  for (auto f : graphDP1.start) {
-    for (auto s : graphDP2.start) {
-      toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+  {
+    std::vector<int> startDP1 = convertToNodes(graphDP1.start);
+    std::vector<int> startDP2 = convertToNodes(graphDP2.start);
+
+    for (auto f : startDP1) {
+      for (auto s : startDP2 {
+        toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+      }
     }
   }
 
