@@ -875,6 +875,7 @@ Graph compose(const Graph& first, const Graph& second) {
     for (auto f : acceptDP1) {
       for (auto s : acceptDP2) {
         toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+        reachable[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
       }
     }
   }
@@ -1156,6 +1157,7 @@ Graph compose(const Graph& first, const Graph& second) {
     for (auto f : startDP1) {
       for (auto s : startDP2 {
         toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+        newNodesVisited[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
       }
     }
   }
