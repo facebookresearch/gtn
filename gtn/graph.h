@@ -297,12 +297,18 @@ class Graph {
   }
 
   /**
-   * Get the vector of inputs used to compute the graph. Intended for use by
-   * the autograd.
+   * Get the vector of inputs used in the autograd computation graph. Intended
+   * for use by the autograd.
    */
-  std::vector<Graph>& inputs() {
+  std::vector<Graph>& inputs() const {
     return sharedGrad_->inputs;
   };
+
+  /**
+   * Sets the vector of inputs used in the autograd computation graph. Intended
+   * for use by the autograd.
+   */
+  void setInputs(std::vector<Graph> inputs);
 
   /**
    * Clear the weights on a graph if they are no longer needed. Intended for
