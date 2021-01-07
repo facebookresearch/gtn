@@ -680,6 +680,12 @@ void generateCombinedGraphNodesAndArcs(
       toExplore[dstIdx] = true;
     }
 
+    // Set accept and start nodes
+    /*
+    newGraphDP.start[newNodesOffset[nodeIdx]] = graphDP1.accept[f] &&
+    graphDP1.accept[s]; newGraphDP.accept[newNodesOffset[nodeIdx]] =
+            graphDP1.accept[f] && graphDP1.accept[s];*/
+
     // Both of these increments are atomic
     int inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
     int outArcIdx = newGraphDP.outArcOffset[newNodesOffset[curIdx]]++;
@@ -726,6 +732,24 @@ std::vector<int> convertToNodes(const std::vector<bool>& flags) {
   }
 
   return nodes;
+}
+
+std::tuple<std::pair<bool, bool>, std::pair<bool, bool>> getStartAndAccept(
+    const GraphDataParallel& graphDP1,
+    const GraphDataParallel& graphDP2,
+    const std::pair<int, int>& srcNodePair,
+    const std::pair<int, int>& dstNodePair) {
+  const std::pair<bool, bool> srcNodeStartAndAccept = std::make_pair(
+      graphDP1.start[srcNodePair.first] && graphDP2.start[srcNodePair.second],
+      graphDP1.accept[srcNodePair.first] &&
+          graphDP2.accept[srcNodePair.second]);
+
+  const std::pair<bool, bool> dstNodeStartAndAccept = std::make_pair(
+      graphDP1.start[dstNodePair.first] && graphDP2.start[dstNodePair.second],
+      graphDP1.accept[dstNodePair.first] &&
+          graphDP2.accept[dstNodePair.second]);
+
+  return std::make_tuple(srcNodeStartAndAccept, dstNodeStartAndAccept);
 }
 
 } // namespace
@@ -1125,6 +1149,12 @@ Graph compose(const Graph& first, const Graph& second) {
   const int totalInArcs = prefixSumScan(newGraphDP.inArcOffset, false);
   const int totalOutArcs = prefixSumScan(newGraphDP.outArcOffset, false);
 
+  // Allocate space for start and accept nodes
+  assert(newGraphDP.start.empty());
+  assert(newGraphDP.accept.empty());
+  newGraphDP.start.resize(totalNodes, false);
+  newGraphDP.accept.resize(totalNodes, false);
+
   // This is the total number of arcs and they must be equal
   assert(totalInArcs = totaloutArcs);
 
@@ -1156,8 +1186,12 @@ Graph compose(const Graph& first, const Graph& second) {
 
     for (auto f : startDP1) {
       for (auto s : startDP2 {
-        toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
-        newNodesVisited[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+        const int nodeIdx = TwoDToOneDIndex(f, s, numNodesFirst);
+        toExplore[nodeIdx] = true;
+        newNodesVisited[nodeIdx] = true;
+        newGraphDP.start[newNodesOffset[nodeIdx]] = true;
+        newGraphDP.accept[newNodesOffset[nodeIdx]] =
+            graphDP1.accept[f] && graphDP1.accept[s];
       }
     }
   }
@@ -1187,23 +1221,29 @@ Graph compose(const Graph& first, const Graph& second) {
     for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and arc pair
       // Search to find which node pair this tid will fall into
-      std::pair<int, int> nodePair;
+      std::pair<int, int> srcNodePair;
       std::pair<int, int> arcPair;
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
-      std::tie(isValid, nodePair, arcPair, checkEpsilonArcPair) =
+      std::tie(isValid, srcNodePair, arcPair, checkEpsilonArcPair) =
           computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNodePair);
+      std::pair<int, int> dstNodePair = std::make_pair(
+          graphDP1.dstNodes[arcPair.first], graphDP2.dstNodes[arcPair.second]);
 
       if (isValid) {
         // Does this node pair match?
         if (graphDP1.olabels[arcPair.first] ==
             graphDP2.ilabels[arcPair.second]) {
           const int dstIdx = TwoDToOneDIndex(
-              graphDP1.dstNodes[arcPair.first],
-              graphDP2.dstNodes[arcPair.second],
-              numNodesFirst);
+              dstNodePair.first, dstNodePair.second, numNodesFirst);
           const int curIdx =
               TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
+
+          std::pair<bool, bool> srcNodeStartAndAccept;
+          std::pair<bool, bool> dstNodeStartAndAccept;
+
+          std::tie(srcNodeStartAndAccept, dstNodeStartAndAccept) =
+              getStartAndAccept(graphDP1, graphDP2, srcNodePair, dstNodePair);
 
           generateCombinedGraphNodesAndArcs(
               dstIdx,
@@ -1214,6 +1254,8 @@ Graph compose(const Graph& first, const Graph& second) {
               newNodesVisited,
               toExplore,
               newGraphDP,
+              srcNodeStartAndAccept,
+              dstNodeStartAndAccept,
               graphDP1.ilabels[arcPair.first],
               graphDP2.olabels[arcPair.second],
               graphDP1.weights[arcPair.first] +
@@ -1224,9 +1266,15 @@ Graph compose(const Graph& first, const Graph& second) {
         if (checkEpsilonArcPair.first &&
             (graphDP1.olabels[arcPair.first] == epsilon)) {
           const int dstIdx = TwoDToOneDIndex(
-              graphDP1.dstNodes[arcPair.first], nodePair.second, numNodesFirst);
-          const int curIdx =
-              TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
+              dstNodePair.first, srcNodePair.second, numNodesFirst);
+          const int curIdx = TwoDToOneDIndex(
+              srcNodePair.first, srcNodePair.second, numNodesFirst);
+
+          std::pair<bool, bool> srcNodeStartAndAccept;
+          std::pair<bool, bool> dstNodeStartAndAccept;
+
+          std::tie(srcNodeStartAndAccept, dstNodeStartAndAccept) =
+              getStartAndAccept(graphDP1, graphDP2, srcNodePair, dstNodePair);
 
           generateCombinedGraphNodesAndArcs(
               dstIdx,
@@ -1237,6 +1285,8 @@ Graph compose(const Graph& first, const Graph& second) {
               newNodesVisited,
               toExplore,
               newGraphDP,
+              srcNodeStartAndAccept,
+              dstNodeStartAndAccept,
               graphDP1.ilabels[arcPair.first],
               epsilon,
               graphDP1.weights[arcPair.first]);
@@ -1246,9 +1296,15 @@ Graph compose(const Graph& first, const Graph& second) {
         if (checkEpsilonArcPair.second &&
             (graphDP2.ilabels[arcPair.second] == epsilon)) {
           const int dstIdx = TwoDToOneDIndex(
-              nodePair.first, graphDP2.dstNodes[arcPair.second], numNodesFirst);
-          const int curIdx =
-              TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
+              srcNodePair.first, dstNodePair.second, numNodesFirst);
+          const int curIdx = TwoDToOneDIndex(
+              srcNodePair.first, srcNodePair.second, numNodesFirst);
+
+          std::pair<bool, bool> srcNodeStartAndAccept;
+          std::pair<bool, bool> dstNodeStartAndAccept;
+
+          std::tie(srcNodeStartAndAccept, dstNodeStartAndAccept) =
+              getStartAndAccept(graphDP1, graphDP2, srcNodePair, dstNodePair);
 
           generateCombinedGraphNodesAndArcs(
               dstIdx,
@@ -1259,6 +1315,8 @@ Graph compose(const Graph& first, const Graph& second) {
               newNodesVisited,
               toExplore,
               newGraphDP,
+              srcNodeStartAndAccept,
+              dstNodeStartAndAccept,
               epsilon,
               graphDP2.olabels[arcPair.second],
               graphDP2.weights[arcPair.second]);
