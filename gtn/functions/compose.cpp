@@ -670,6 +670,8 @@ void generateCombinedGraphNodesAndArcs(
     std::vector<bool>& toExplore,
     std::pair<std::vector<int>, std::vector<int>>& gradInfo,
     GraphDataParallel& newGraphDP,
+    std::pair<bool, bool> srcNodeStartAndAccept,
+    std::pair<bool, bool> dstNodeStartAndAccept,
     int ilabel,
     int olabel,
     int weight) {
@@ -681,10 +683,12 @@ void generateCombinedGraphNodesAndArcs(
     }
 
     // Set accept and start nodes
-    /*
-    newGraphDP.start[newNodesOffset[nodeIdx]] = graphDP1.accept[f] &&
-    graphDP1.accept[s]; newGraphDP.accept[newNodesOffset[nodeIdx]] =
-            graphDP1.accept[f] && graphDP1.accept[s];*/
+    // I think I only need it for dst nodes and src nodes
+    // Note: Multiple threads can have the same dstIdx and write to the same
+    //       location and collide. This _should_ be fine since they are going
+    //       to write the same value
+    newGraphDP.start[newNodesOffset[dstIdx]] = dstNodeStartAndAccept.first;
+    newGraphDP.accept[newNodesOffset[dstIdx]] = dstNodeStartAndAccept.second;
 
     // Both of these increments are atomic
     int inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
@@ -1253,6 +1257,7 @@ Graph compose(const Graph& first, const Graph& second) {
               newNodesOffset,
               newNodesVisited,
               toExplore,
+              gradInfo,
               newGraphDP,
               srcNodeStartAndAccept,
               dstNodeStartAndAccept,
@@ -1284,6 +1289,7 @@ Graph compose(const Graph& first, const Graph& second) {
               newNodesOffset,
               newNodesVisited,
               toExplore,
+              gradInfo,
               newGraphDP,
               srcNodeStartAndAccept,
               dstNodeStartAndAccept,
@@ -1314,6 +1320,7 @@ Graph compose(const Graph& first, const Graph& second) {
               newNodesOffset,
               newNodesVisited,
               toExplore,
+              gradInfo,
               newGraphDP,
               srcNodeStartAndAccept,
               dstNodeStartAndAccept,
