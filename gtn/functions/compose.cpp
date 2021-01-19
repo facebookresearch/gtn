@@ -52,14 +52,22 @@ void epsilonReachable(
   }
 }
 
-/* Find any state in the new composed graph which can reach
- * an accepting state. */
+/*
+ * Find any state in the new composed graph which can reach
+ * an accepting state.
+ *
+ * This is accomplished by iteatively following backwards pairwise arc paths
+ * from the first and second graphs, where the arc paths have the invariant
+ * that, for a particular arc pair, the olabel for the first arc == the ilabel
+ * for the second arc.
+ */
 auto findReachable(
     const Graph& first,
     const Graph& second,
     std::shared_ptr<ArcMatcher> matcher) {
   std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
   std::queue<std::pair<int, int>> toExplore;
+  // toExplore -- add accepting node pairs
   for (auto f : first.accept()) {
     for (auto s : second.accept()) {
       toExplore.emplace(f, s);
@@ -74,9 +82,12 @@ auto findReachable(
     bool epsilon_matched = false;
     matcher->match(curr.first, curr.second, true);
     int i, j;
+    // Iterate through arcs that end with the curr node - the first arc's olabel
+    // is the same as the second arc's ilabel per the matcher
     while (matcher->hasNext()) {
-      std::tie(i, j) = matcher->next();
+      std::tie(i, j) = matcher->next(); // arcs ending with curr
       epsilon_matched |= (first.olabel(i) == epsilon);
+      // Starting nodes for i and j arcs
       auto un1 = first.srcNode(i);
       auto un2 = second.srcNode(j);
       auto idx = toIndex(un1, un2, first);
@@ -110,14 +121,16 @@ bool addReachableNodeAndArc(
     std::queue<std::pair<int, int>>& toExplore,
     std::vector<int>& newNodes,
     Graph& ngraph) {
-  // Ignore if we can't get to an accept state.
+  // Prospective new dest node in the composed graph. Ignore if we can't get to
+  // an accept state.
   auto idx = toIndex(dstNodes.first, dstNodes.second, first);
   if (reachable[idx]) {
-    // Build the node
+    // Build the node - val of -1 --> uninitialized
     if (newNodes[idx] < 0) {
       newNodes[idx] = ngraph.addNode(
           first.isStart(dstNodes.first) && second.isStart(dstNodes.second),
           first.isAccept(dstNodes.first) && second.isAccept(dstNodes.second));
+      // Explore forward
       toExplore.emplace(dstNodes.first, dstNodes.second);
     }
     auto newarc =
@@ -126,12 +139,20 @@ bool addReachableNodeAndArc(
   return reachable[idx];
 }
 
+/*
+ * For epsilon arcs in either the first or second graph: an epsilon output for
+ * some arc a in the first graph maps to a (ilabel(a) --> [second graph olabel])
+ * arc in the composed graph, and an epsilon input for some arc a second graph
+ * maps to a ([first graph ilabel] --> olabel(a)) arc in the composed graph.
+ *
+ * The weight of the new arc is equal to the non-epsilon arc's weight.
+ */
 void addEpsilonReachableNodes(
     bool secondOrFirst,
     const Graph& first,
     const Graph& second,
-    int currNode,
-    const std::pair<int, int>& nodePair,
+    int currNode, // in the composed graph
+    const std::pair<int, int>& nodePair, // in the input graphs
     const std::vector<bool>& reachable,
     std::queue<std::pair<int, int>>& toExplore,
     std::vector<int>& newNodes,
@@ -139,19 +160,27 @@ void addEpsilonReachableNodes(
     std::vector<std::pair<int, int>>& gradInfo) {
   auto edges =
       secondOrFirst ? second.out(nodePair.second) : first.out(nodePair.first);
+  // If epsilon is the output of an arc in the first graph's current node,
+  // add an edge from the current node in the composed graph that takes epsilon
+  // --> the second graph's olabel; if the second graph contains an input
+  // epsilon, add an edge that takes the first graph's ilabel --> epsilon.
+  // Traverse the corresponding edge in either graph and explore it forward
+  // since the subgraph reachable from it is valid in the composed graph
   for (auto i : edges) {
     auto label = secondOrFirst ? second.ilabel(i) : first.olabel(i);
     auto isSorted =
         secondOrFirst ? second.ilabelSorted() : first.olabelSorted();
     if (label != epsilon) {
       if (isSorted) {
-        // epsilon < 0
+        // epsilon < 0 - can early-stop since we've reached a non-epsilon node
+        // which will appear after epsilons in the sorted order
         break;
       } else {
-        continue;
+        continue; // might find a future epsilon
       }
     }
 
+    // The destination node in the composed graph
     bool isReachable = addReachableNodeAndArc(
         first,
         second,
@@ -168,7 +197,16 @@ void addEpsilonReachableNodes(
         ngraph);
 
     if (isReachable) {
-      gradInfo.emplace_back(-1, i);
+      // The edge with this corresponding gradInfo index in the composed graph
+      // corresponds to index i in the first/second graph. Wlog, if advancing
+      // along an epsilon edge in the first graph, shouldn't have the gradient
+      // corresponding to the resulting edge in the composed graph applied to it
+      // at backwards time.
+      if (secondOrFirst) {
+        gradInfo.emplace_back(-1, i);
+      } else {
+        gradInfo.emplace_back(i, -1);
+      }
     }
   }
 }
@@ -349,8 +387,12 @@ Graph compose(
 
   // Compose the graphs
   Graph ngraph(nullptr, {first, second});
+  // Flat representation of nodes in both graphs, indexed using toIndex
   std::vector<int> newNodes(first.numNodes() * second.numNodes(), -1);
   std::queue<std::pair<int, int>> toExplore;
+  // Compile starting nodes that are reachable. If any pairs of reachable start
+  // nodes in the input graph are also both accept nodes, make these accept
+  // nodes in the composed graph.
   for (auto s1 : first.start()) {
     for (auto s2 : second.start()) {
       auto idx = toIndex(s1, s2, first);
@@ -361,14 +403,25 @@ Graph compose(
       }
     }
   }
+
+  // The index of a particlar pair entry in gradInfo corresponds to an arc in
+  // the composed graph - at gradient computation time, this facilitates
+  // efficiently mapping an arc in the composed graph to the corresponding arcs
+  // in the first and second graphs
   std::vector<std::pair<int, int>> gradInfo;
+  // Explore the graph starting from the collection of start nodes
   while (!toExplore.empty()) {
     auto curr = toExplore.front();
     toExplore.pop();
+    // A node in the composed graph
     auto currNode = newNodes[toIndex(curr.first, curr.second, first)];
     int i, j;
     matcher->match(curr.first, curr.second);
+    // Each pair of nodes in the initial graph may have multiple outgoing arcs
+    // that should be combined in the composed graph
     while (matcher->hasNext()) {
+      // The matcher invariant remains: arc i's olabel (from the first graph) is
+      // arc j's ilabel (from the second graph)
       std::tie(i, j) = matcher->next();
 
       bool isReachable = addReachableNodeAndArc(
@@ -385,8 +438,7 @@ Graph compose(
           ngraph);
 
       if (isReachable) {
-        // Arcs remember where they came from for
-        // easy gradient computation.
+        // Arcs remember where they came from for easy gradient computation.
         gradInfo.emplace_back(i, j);
       }
     }
@@ -395,8 +447,8 @@ Graph compose(
         false,
         first,
         second,
-        currNode,
-        curr,
+        currNode, // in the composed graph
+        curr, // in the input graphs
         reachable,
         toExplore,
         newNodes,
@@ -407,8 +459,8 @@ Graph compose(
         true,
         first,
         second,
-        currNode,
-        curr,
+        currNode, // in the composed graph
+        curr, // in the input graphs
         reachable,
         toExplore,
         newNodes,
@@ -416,7 +468,8 @@ Graph compose(
         gradInfo);
   }
 
-  /* Here we assume deltas is the output (e.g. ngraph) and we know where
+  /*
+   * Here we assume deltas is the output (e.g. ngraph) and we know where
    * each arc came from. This makes it possible to disambiguate two arcs in the
    * composed graph with the same label and the same src and destination nodes.
    */
