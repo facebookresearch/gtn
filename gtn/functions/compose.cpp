@@ -555,7 +555,7 @@ std::
     computeNodeAndArcPair(
         int tid,
         const std::vector<int>& arcCrossProductOffset,
-        const std::vector<int>& toExploreNumArcs,
+        const std::vector<std::pair<int, int>>& toExploreNumArcs,
         const std::vector<std::pair<int, int>>& toExploreNodePair) {
   std::pair<int, int> nodePair;
   std::pair<int, int> arcPair;
@@ -609,8 +609,8 @@ std::
 // graph and calculate a vector of number of arcs in the cross product of
 // arcs outgoing from each pair.
 // This should be a kernel call
-std::tuple<std::vector<int>, std::vector<int>> calculateArcCrossProductOffset(
-    const std::vector<int>& toExploreNodePair,
+std::tuple<std::vector<int>, std::vector<std::pair<int, int>>> calculateArcCrossProductOffset(
+    const std::vector<std::pair<int, int>>& toExploreNodePair,
     const GraphDataParallel& graphDP1,
     const GraphDataParallel& graphDP2,
     bool inOrOutArc) {
@@ -641,7 +641,7 @@ std::tuple<std::vector<int>, std::vector<int>> calculateArcCrossProductOffset(
 void calculateNumArcsAndNodesToExplore(int curIdx,
                                        int dstIdx,
                                        const std::vector<bool>& reachable,
-                                       std::vector<bool>& newNodes;
+                                       std::vector<bool>& newNodes,
                                        std::vector<bool> & toExplore,
                                        std::vector<int> numOutArcs,
                                        std::vector<int> numInArcs) {
@@ -766,8 +766,8 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
 
   graphDP.accept.resize(graph.numNodes());
   graphDP.start.resize(graph.numNodes());
-  std::fill(graphDP.accept.start(), graphDP.accept.end(), false);
-  std::fill(graphDP.start.start(), graphDP.start.end(), false);
+  std::fill(graphDP.accept.begin(), graphDP.accept.end(), false);
+  std::fill(graphDP.start.begin(), graphDP.start.end(), false);
 
   graphDP.inArcOffset.resize(graph.numNodes());
   graphDP.outArcOffset.resize(graph.numNodes());
@@ -802,15 +802,15 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
   const int totalInArcs = prefixSumScan(graphDP.inArcOffset, false);
   const int totalOutArcs = prefixSumScan(graphDP.outArcOffset, false);
   assert(totalInArcs == totalOutArcs);
-  assert(totalInArcs = graph.numArcs());
+  assert(totalInArcs == graph.numArcs());
 
   for (int i = 0; i < graph.numNodes(); ++i) {
     int offset = graphDP.outArcOffset[i];
 
     for (auto j : graph.out(i)) {
       assert(j >= 0);
-      assert(j < graphDP.numArcs());
-      graphDP1.outArcs[offset] = j;
+      assert(j < graph.numArcs());
+      graphDP.outArcs[offset] = j;
       offset++;
 
       graphDP.ilabels[j] = graph.ilabel(j);
@@ -826,7 +826,7 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
 
     for (auto j : graph.in(i)) {
       assert(j >= 0);
-      assert(j < graphDP.numArcs());
+      assert(j < graph.numArcs());
       graphDP.inArcs[offset] = j;
       offset++;
     }
@@ -858,13 +858,13 @@ void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
   const size_t numNodes = graphDP.inArcOffset.size();
   const size_t numArcs = graphDP.inArcs.size();
 
-  for (size_t i = 0; i < numNodes, ++i) {
+  for (size_t i = 0; i < numNodes; ++i) {
     const int node = graph.addNode(graphDP.start[i], graphDP.accept[i]);
     assert(node >= 0);
     assert(node == i);
   }
 
-  for (size_t i = 0; i < numNodes, ++i) {
+  for (size_t i = 0; i < numNodes; ++i) {
     const int start = graphDP.outArcOffset[i];
     const int end =
         (i == (numNodes - 1)) ? numArcs : graphDP.outArcOffset[i + 1];
@@ -873,7 +873,7 @@ void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
       const int dstNode = graphDP.dstNodes[graphDP.outArcs[j]];
       const int ilabel = graphDP.ilabels[graphDP.outArcs[j]];
       const int olabel = graphDP.olabels[graphDP.outArcs[j]];
-      const float weight = graphDP.weight[graphDP.outArcs[j]];
+      const float weight = graphDP.weights[graphDP.outArcs[j]];
 
       auto newarc = graph.addArc(i, dstNode, ilabel, olabel, weight);
     }
@@ -919,7 +919,7 @@ Graph compose(const Graph& first, const Graph& second) {
     std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
     std::vector<int> arcCrossProductOffset;
-    std::vector<int> toExploreNumArcs;
+    std::vector<std::pair<int, int>> toExploreNumArcs;
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, true);
@@ -934,9 +934,6 @@ Graph compose(const Graph& first, const Graph& second) {
     // No dependence between iterations. tid is thread-id
     // Only do non epsilon case for this kernel
     for (int tid = 0; tid < totalArcs; ++tid) {
-      // Node pair
-      std::pair<int, int> nodePair;
-      std::pair<int, int> arcPair;
 
       // Map tid to corresponding node and arc pair via search
       std::pair<int, int> nodePair;
@@ -1046,7 +1043,7 @@ Graph compose(const Graph& first, const Graph& second) {
     std::fill(toExplore.begin(), toExplore.end(), false);
 
     std::vector<int> arcCrossProductOffset;
-    std::vector<int> toExploreNumArcs;
+    std::vector<std::pair<int, int>> toExploreNumArcs;
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, false);
@@ -1160,7 +1157,7 @@ Graph compose(const Graph& first, const Graph& second) {
   newGraphDP.accept.resize(totalNodes, false);
 
   // This is the total number of arcs and they must be equal
-  assert(totalInArcs = totaloutArcs);
+  assert(totalInArcs == totalOutArcs);
 
   newGraphDP.inArcs.resize(totalInArcs);
   newGraphDP.outArcs.resize(totalOutArcs);
@@ -1189,7 +1186,7 @@ Graph compose(const Graph& first, const Graph& second) {
     std::vector<int> startDP2 = convertToNodes(graphDP2.start);
 
     for (auto f : startDP1) {
-      for (auto s : startDP2 {
+      for (auto s : startDP2) {
         const int nodeIdx = TwoDToOneDIndex(f, s, numNodesFirst);
         toExplore[nodeIdx] = true;
         newNodesVisited[nodeIdx] = true;
@@ -1210,7 +1207,7 @@ Graph compose(const Graph& first, const Graph& second) {
     std::fill(toExplore.begin(), toExplore.end(), false);
 
     std::vector<int> arcCrossProductOffset;
-    std::vector<int> toExploreNumArcs;
+    std::vector<std::pair<int, int>> toExploreNumArcs;
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, false);
