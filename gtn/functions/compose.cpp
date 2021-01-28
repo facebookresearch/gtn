@@ -979,7 +979,7 @@ Graph compose(const Graph& first, const Graph& second) {
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
       std::tie(isValid, nodePair, arcPair, checkEpsilonArcPair) =
-          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNodePair);
+          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
 
       if (isValid) {
         const bool matched = epsilonMatched[TwoDToOneDIndex(
@@ -1063,7 +1063,7 @@ Graph compose(const Graph& first, const Graph& second) {
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
       std::tie(isValid, nodePair, arcPair, checkEpsilonArcPair) =
-          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNodePair);
+          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
 
       if (isValid) {
         // Does this node pair match?
@@ -1227,7 +1227,7 @@ Graph compose(const Graph& first, const Graph& second) {
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
       std::tie(isValid, srcNodePair, arcPair, checkEpsilonArcPair) =
-          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNodePair);
+          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
       std::pair<int, int> dstNodePair = std::make_pair(
           graphDP1.dstNodes[arcPair.first], graphDP2.dstNodes[arcPair.second]);
 
@@ -1238,7 +1238,7 @@ Graph compose(const Graph& first, const Graph& second) {
           const int dstIdx = TwoDToOneDIndex(
               dstNodePair.first, dstNodePair.second, numNodesFirst);
           const int curIdx =
-              TwoDToOneDIndex(nodePair.first, nodePair.second, numNodesFirst);
+              TwoDToOneDIndex(srcNodePair.first, srcNodePair.second, numNodesFirst);
 
           std::pair<bool, bool> srcNodeStartAndAccept;
           std::pair<bool, bool> dstNodeStartAndAccept;
