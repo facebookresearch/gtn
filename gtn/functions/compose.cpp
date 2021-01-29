@@ -609,7 +609,8 @@ std::
 // graph and calculate a vector of number of arcs in the cross product of
 // arcs outgoing from each pair.
 // This should be a kernel call
-std::tuple<std::vector<int>, std::vector<std::pair<int, int>>> calculateArcCrossProductOffset(
+std::tuple<std::vector<int>, std::vector<std::pair<int, int>>>
+calculateArcCrossProductOffset(
     const std::vector<std::pair<int, int>>& toExploreNodePair,
     const GraphDataParallel& graphDP1,
     const GraphDataParallel& graphDP2,
@@ -638,13 +639,14 @@ std::tuple<std::vector<int>, std::vector<std::pair<int, int>>> calculateArcCross
 
 // This function needs to be thread safe since multiple threads can
 // can call it and they will overlap on curIdx and dstIdx
-void calculateNumArcsAndNodesToExplore(int curIdx,
-                                       int dstIdx,
-                                       const std::vector<bool>& reachable,
-                                       std::vector<bool>& newNodes,
-                                       std::vector<bool> & toExplore,
-                                       std::vector<int> numOutArcs,
-                                       std::vector<int> numInArcs) {
+void calculateNumArcsAndNodesToExplore(
+    int curIdx,
+    int dstIdx,
+    const std::vector<bool>& reachable,
+    std::vector<bool>& newNodes,
+    std::vector<bool>& toExplore,
+    std::vector<int> numOutArcs,
+    std::vector<int> numInArcs) {
   if (reachable[dstIdx]) {
     // Atomic test and set for newNodes
     if (!newNodes[dstIdx]) {
@@ -934,7 +936,6 @@ Graph compose(const Graph& first, const Graph& second) {
     // No dependence between iterations. tid is thread-id
     // Only do non epsilon case for this kernel
     for (int tid = 0; tid < totalArcs; ++tid) {
-
       // Map tid to corresponding node and arc pair via search
       std::pair<int, int> nodePair;
       std::pair<int, int> arcPair;
@@ -979,7 +980,8 @@ Graph compose(const Graph& first, const Graph& second) {
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
       std::tie(isValid, nodePair, arcPair, checkEpsilonArcPair) =
-          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
+          computeNodeAndArcPair(
+              tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
 
       if (isValid) {
         const bool matched = epsilonMatched[TwoDToOneDIndex(
@@ -1063,7 +1065,8 @@ Graph compose(const Graph& first, const Graph& second) {
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
       std::tie(isValid, nodePair, arcPair, checkEpsilonArcPair) =
-          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
+          computeNodeAndArcPair(
+              tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
 
       if (isValid) {
         // Does this node pair match?
@@ -1227,7 +1230,8 @@ Graph compose(const Graph& first, const Graph& second) {
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
       std::tie(isValid, srcNodePair, arcPair, checkEpsilonArcPair) =
-          computeNodeAndArcPair(tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
+          computeNodeAndArcPair(
+              tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
       std::pair<int, int> dstNodePair = std::make_pair(
           graphDP1.dstNodes[arcPair.first], graphDP2.dstNodes[arcPair.second]);
 
@@ -1237,8 +1241,8 @@ Graph compose(const Graph& first, const Graph& second) {
             graphDP2.ilabels[arcPair.second]) {
           const int dstIdx = TwoDToOneDIndex(
               dstNodePair.first, dstNodePair.second, numNodesFirst);
-          const int curIdx =
-              TwoDToOneDIndex(srcNodePair.first, srcNodePair.second, numNodesFirst);
+          const int curIdx = TwoDToOneDIndex(
+              srcNodePair.first, srcNodePair.second, numNodesFirst);
 
           std::pair<bool, bool> srcNodeStartAndAccept;
           std::pair<bool, bool> dstNodeStartAndAccept;
