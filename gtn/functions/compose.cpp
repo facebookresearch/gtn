@@ -1261,10 +1261,10 @@ Graph compose(const Graph& first, const Graph& second) {
           graphDP1.dstNodes[arcPair.first], graphDP2.dstNodes[arcPair.second]);
 
       if (isValid) {
-        int outArcOffset = graphDP1.outArcOffset[nodePair.first];
+        int outArcOffset = graphDP1.outArcOffset[srcNodePair.first];
         const int firstArcIdx = graphDP1.outArcs[outArcOffset + arcPair.first];
 
-        outArcOffset = graphDP2.outArcOffset[nodePair.second];
+        outArcOffset = graphDP2.outArcOffset[srcNodePair.second];
         const int secondArcIdx =
             graphDP2.outArcs[outArcOffset + arcPair.second];
 
@@ -1293,8 +1293,8 @@ Graph compose(const Graph& first, const Graph& second) {
               newGraphDP,
               srcNodeStartAndAccept,
               dstNodeStartAndAccept,
-              graphDP1.ilabels[firsArcIdxt],
-              graphDP2.olabels[seconArcIdxd],
+              graphDP1.ilabels[firstArcIdx],
+              graphDP2.olabels[secondArcIdx],
               graphDP1.weights[firstArcIdx] + graphDP2.weights[secondArcIdx]);
         }
 
@@ -1362,6 +1362,11 @@ Graph compose(const Graph& first, const Graph& second) {
       }
     }
   }
+
+  // Convert back before returning
+  Graph nGraph(nullptr, {first, second});
+  convertFromDataParallel(newGraphDP, nGraph);
+  return nGraph;
 }
 
 } // namespace dataparallel
