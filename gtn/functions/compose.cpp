@@ -963,27 +963,33 @@ Graph compose(const Graph& first, const Graph& second) {
               tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
 
       // Does this node pair match?
-      if (isValid &&
-          (graphDP1.olabels[arcPair.first] ==
-           graphDP2.ilabels[arcPair.second])) {
-        const int idx = TwoDToOneDIndex(
-            graphDP1.srcNodes[arcPair.first],
-            graphDP2.srcNodes[arcPair.second],
-            numNodesFirst);
-        // idx may not be unique amongst all threads. In particular
-        // if two pairs of arcs that have same olabel and ilabel then idx
-        // won't be unique and this is a race but both would mark the
-        // destination node as reachable
-        if (!reachable[idx]) {
-          toExplore[idx] = true;
-        }
-        reachable[idx] = true;
+      if (isValid) {
+        int inArcOffset = graphDP1.inArcOffset[nodePair.first];
+        const int firstArcIdx = graphDP1.inArcs[inArcOffset + arcPair.first];
 
-        // We track if any two arcs incoming to this pair of nodes matched
-        // on epsilon
-        if (graphDP1.olabels[arcPair.first] == epsilon) {
-          epsilonMatched[TwoDToOneDIndex(
-              nodePair.first, nodePair.second, numNodesFirst)] = true;
+        inArcOffset = graphDP2.inArcOffset[nodePair.second];
+        const int secondArcIdx = graphDP2.inArcs[inArcOffset + arcPair.second];
+
+        if (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx]) {
+          const int idx = TwoDToOneDIndex(
+              graphDP1.srcNodes[firstArcIdx],
+              graphDP2.srcNodes[secondArcIdx],
+              numNodesFirst);
+          // idx may not be unique amongst all threads. In particular
+          // if two pairs of arcs that have same olabel and ilabel then idx
+          // won't be unique and this is a race but both would mark the
+          // destination node as reachable
+          if (!reachable[idx]) {
+            toExplore[idx] = true;
+          }
+          reachable[idx] = true;
+
+          // We track if any two arcs incoming to this pair of nodes matched
+          // on epsilon
+          if (graphDP1.olabels[firstArcIdx] == epsilon) {
+            epsilonMatched[TwoDToOneDIndex(
+                nodePair.first, nodePair.second, numNodesFirst)] = true;
+          }
         }
       }
     }
@@ -1003,11 +1009,17 @@ Graph compose(const Graph& first, const Graph& second) {
           nodePair.first, nodePair.second, numNodesFirst)];
 
       if (isValid && !matched) {
+        int inArcOffset = graphDP1.inArcOffset[nodePair.first];
+        const int firstArcIdx = graphDP1.inArcs[inArcOffset + arcPair.first];
+
+        inArcOffset = graphDP2.inArcOffset[nodePair.second];
+        const int secondArcIdx = graphDP2.inArcs[inArcOffset + arcPair.second];
+
         // Only valid for arcs incoming to node from first graph
         if (checkEpsilonArcPair.first &&
-            (graphDP1.olabels[arcPair.first] == epsilon)) {
+            (graphDP1.olabels[firstArcIdx] == epsilon)) {
           const int idx = TwoDToOneDIndex(
-              graphDP1.srcNodes[arcPair.first], nodePair.second, numNodesFirst);
+              graphDP1.srcNodes[firstArcIdx], nodePair.second, numNodesFirst);
           if (!reachable[idx]) {
             toExplore[idx] = true;
           }
@@ -1016,9 +1028,9 @@ Graph compose(const Graph& first, const Graph& second) {
 
         // Only valid for arcs incoming to node from second graph
         if (checkEpsilonArcPair.second &&
-            (graphDP2.ilabels[arcPair.second] == epsilon)) {
+            (graphDP2.ilabels[secondArcIdx] == epsilon)) {
           const int idx = TwoDToOneDIndex(
-              nodePair.first, graphDP2.srcNodes[arcPair.second], numNodesFirst);
+              nodePair.first, graphDP2.srcNodes[secondArcIdx], numNodesFirst);
           if (!reachable[idx]) {
             toExplore[idx] = true;
           }
