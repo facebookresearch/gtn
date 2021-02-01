@@ -1301,7 +1301,7 @@ Graph compose(const Graph& first, const Graph& second) {
           generateCombinedGraphNodesAndArcs(
               dstIdx,
               curIdx,
-              arcPair,
+              std::make_pair(firstArcIdx, secondArcIdx),
               reachable,
               newNodesOffset,
               newNodesVisited,
@@ -1332,7 +1332,7 @@ Graph compose(const Graph& first, const Graph& second) {
           generateCombinedGraphNodesAndArcs(
               dstIdx,
               curIdx,
-              std::make_pair(arcPair.first, -1),
+              std::make_pair(firstArcIdx, -1),
               reachable,
               newNodesOffset,
               newNodesVisited,
@@ -1363,7 +1363,7 @@ Graph compose(const Graph& first, const Graph& second) {
           generateCombinedGraphNodesAndArcs(
               dstIdx,
               curIdx,
-              std::make_pair(-1, arcPair.second),
+              std::make_pair(-1, secondArcIdx),
               reachable,
               newNodesOffset,
               newNodesVisited,
