@@ -519,7 +519,8 @@ std::tuple<std::vector<int>, std::vector<int>> removeUnreachableNodes(
     }
   }
 
-  return std::make_pair(outputInArcs, outputOutArcs);
+  assert(outputInArcs.size() == outputOutArcs.size());
+  return std::make_tuple(outputInArcs, outputOutArcs);
 }
 
 // TODO: Duplicate - should be removed
@@ -785,8 +786,8 @@ std::tuple<std::pair<bool, bool>, std::pair<bool, bool>> getStartAndAccept(
 GraphDataParallel convertToDataParallel(const Graph& graph) {
   GraphDataParallel graphDP;
 
-  assert(graphDP.accept.size() == 0);
-  assert(graphDP.start.size() == 0);
+  assert(graphDP.accept.empty());
+  assert(graphDP.start.empty());
 
   // Safe since sizes are asserted to 0
   graphDP.accept.resize(graph.numNodes(), false);
@@ -1219,8 +1220,6 @@ Graph compose(const Graph& first, const Graph& second) {
   //////////////////////////////////////////////////////////////////////////
   // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
-  // Begin first pass to generate metadata for valid nodes and arcs. This
-  // is needed before we can generate the nodes and arcs themselves.
   std::fill(toExplore.begin(), toExplore.end(), false);
   std::vector<bool> newNodesVisited(
       first.numNodes() * second.numNodes(), false);
@@ -1263,6 +1262,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
     const int totalArcs = prefixSumScan(arcCrossProductOffset, true);
 
+    // No dependence between iterations
     for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and arc pair
       // Search to find which node pair this tid will fall into
@@ -1273,8 +1273,6 @@ Graph compose(const Graph& first, const Graph& second) {
       std::tie(isValid, srcNodePair, arcPair, checkEpsilonArcPair) =
           computeNodeAndArcPair(
               tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
-      std::pair<int, int> dstNodePair = std::make_pair(
-          graphDP1.dstNodes[arcPair.first], graphDP2.dstNodes[arcPair.second]);
 
       if (isValid) {
         int outArcOffset = graphDP1.outArcOffset[srcNodePair.first];
@@ -1283,6 +1281,9 @@ Graph compose(const Graph& first, const Graph& second) {
         outArcOffset = graphDP2.outArcOffset[srcNodePair.second];
         const int secondArcIdx =
             graphDP2.outArcs[outArcOffset + arcPair.second];
+
+        std::pair<int, int> dstNodePair = std::make_pair(
+            graphDP1.dstNodes[firstArcIdx], graphDP2.dstNodes[secondArcIdx]);
 
         // Does this node pair match?
         if (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx]) {
