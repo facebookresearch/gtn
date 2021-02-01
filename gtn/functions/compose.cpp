@@ -524,6 +524,7 @@ std::tuple<std::vector<int>, std::vector<int>> removeUnreachableNodes(
 
 // TODO: Duplicate - should be removed
 inline int TwoDToOneDIndex(int n1, int n2, int n1Extent) {
+  assert(n1 < n1Extent);
   return n1 + n2 * n1Extent;
 }
 
@@ -663,8 +664,8 @@ void calculateNumArcsAndNodesToExplore(
     const std::vector<bool>& reachable,
     std::vector<bool>& newNodes,
     std::vector<bool>& toExplore,
-    std::vector<int> numOutArcs,
-    std::vector<int> numInArcs) {
+    std::vector<int>& numOutArcs,
+    std::vector<int>& numInArcs) {
   if (reachable[dstIdx]) {
     // Atomic test and set for newNodes
     if (!newNodes[dstIdx]) {
@@ -784,10 +785,12 @@ std::tuple<std::pair<bool, bool>, std::pair<bool, bool>> getStartAndAccept(
 GraphDataParallel convertToDataParallel(const Graph& graph) {
   GraphDataParallel graphDP;
 
-  graphDP.accept.resize(graph.numNodes());
-  graphDP.start.resize(graph.numNodes());
-  std::fill(graphDP.accept.begin(), graphDP.accept.end(), false);
-  std::fill(graphDP.start.begin(), graphDP.start.end(), false);
+  assert(graphDP.accept.size() == 0);
+  assert(graphDP.start.size() == 0);
+
+  // Safe since sizes are asserted to 0
+  graphDP.accept.resize(graph.numNodes(), false);
+  graphDP.start.resize(graph.numNodes(), false);
 
   graphDP.inArcOffset.resize(graph.numNodes());
   graphDP.outArcOffset.resize(graph.numNodes());
@@ -1071,8 +1074,7 @@ Graph compose(const Graph& first, const Graph& second) {
     // Convert bits set in toExplore to node pairs
     auto toExploreNodePair = convertToNodePair(toExplore, numNodesFirst);
 
-    // Reset so pristine state for next frontier to epxlore
-    // No dependence between iterations
+    // Reset to pristine state for next frontier to explore
     std::fill(toExplore.begin(), toExplore.end(), false);
 
     std::vector<int> arcCrossProductOffset;
@@ -1081,13 +1083,15 @@ Graph compose(const Graph& first, const Graph& second) {
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, false);
 
-    // If no arcs to process we are done
+    // If no arcs to process we are done. This can happen if we have
+    // reached a set of nodes with no outgoing arc
     if (arcCrossProductOffset.empty() == 0) {
       break;
     }
 
     const int totalArcs = prefixSumScan(arcCrossProductOffset, true);
 
+    // No dependence between iterations
     for (int tid = 0; tid < totalArcs; ++tid) {
       // Map tid to corresponding node and arc pair
       // Search to find which node pair this tid will fall into
