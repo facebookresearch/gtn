@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <queue>
 #include <tuple>
 
 #include "parallel_compose.h"
@@ -400,13 +399,8 @@ GraphDataParallel convertToDataParallel(const Graph& graph) {
 // inputs set
 // Assumption: nodes are numbered [0..graph.numNodes())
 //           : arcs are numbered [0..graph.numArcs())
-void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
-  // Some sanity checks
-  assert(graph.numArcs() == 0);
-  assert(graph.numNodes() == 0);
-  //assert(graph.inputs().size() == 2);
+Graph convertFromDataParallel(const GraphDataParallel& graphDP) {
 
-  assert(graphDP.inArcOffset.size() > 0);
   assert(graphDP.inArcOffset.size() == graphDP.outArcOffset.size());
   assert(graphDP.inArcs.size() == graphDP.outArcs.size());
   assert(graphDP.inArcs.size() == graphDP.ilabels.size());
@@ -418,6 +412,7 @@ void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
   const size_t numNodes = graphDP.inArcOffset.size();
   const size_t numArcs = graphDP.inArcs.size();
 
+  Graph graph;
   for (size_t i = 0; i < numNodes; ++i) {
     const int node = graph.addNode(graphDP.start[i], graphDP.accept[i]);
     assert(node == i);
@@ -437,6 +432,7 @@ void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph) {
       auto newarc = graph.addArc(i, dstNode, ilabel, olabel, weight);
     }
   }
+  return graph;
 }
 
 Graph compose(const Graph& first, const Graph& second) {
@@ -915,8 +911,8 @@ Graph compose(const Graph& first, const Graph& second) {
     }
   }
   // Convert back before returning
-  Graph nGraph(nullptr, {first, second});
-  convertFromDataParallel(newGraphDP, nGraph);
+  auto nGraph = convertFromDataParallel(newGraphDP);
+  nGraph.setInputs({first, second});
   return nGraph;
 }
 

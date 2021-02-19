@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <utility>
 #include <vector>
 
 #include "gtn/graph.h"
@@ -44,7 +43,7 @@ struct GraphDataParallel {
 
 GraphDataParallel convertToDataParallel(const Graph& graph);
 
-void convertFromDataParallel(const GraphDataParallel& graphDP, Graph& graph);
+Graph convertFromDataParallel(const GraphDataParallel& graphDP);
 
 Graph compose(const Graph& first, const Graph& second);
 
