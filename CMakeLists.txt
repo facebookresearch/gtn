@@ -12,6 +12,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 option(GTN_BUILD_TESTS "Build tests for gtn" ON)
 option(GTN_BUILD_BENCHMARKS "Build benchmarks for gtn" ON)
 option(GTN_BUILD_EXAMPLES "Build examples for gtn" ON)
+option(GTN_BUILD_EXPERIMENTAL "Build experimental for gtn" ON)
 option(GTN_BUILD_PYTHON_BINDINGS "Build python bindings for gtn" OFF)
 
 # ----------------------------- Dependencies -----------------------------
@@ -60,6 +61,12 @@ endif()
 if (GTN_BUILD_EXAMPLES)
   add_subdirectory(${PROJECT_SOURCE_DIR}/examples)
 endif()
+
+# Experimental
+if (GTN_BUILD_EXPERIMENTAL)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/experimental)
+endif()
+
 
 # ----------------------------- Installation -----------------------------
 # Installation directories

@@ -6,7 +6,9 @@
  */
 
 #include <algorithm>
+#include <cassert>
 #include <queue>
+#include <tuple>
 
 #include "gtn/functions/compose.h"
 
