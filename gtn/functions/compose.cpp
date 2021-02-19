@@ -574,29 +574,33 @@ std::
     if ((lVal <= tid) && (tid < rVal)) {
       isValid = true;
       nodePair = toExploreNodePair[i];
-      const int numArcs =
-          arcCrossProductOffset[i + 1] - arcCrossProductOffset[i];
-      arcPair = OneDToTwoDIndex(numArcs, toExploreNumArcs[i].first);
 
       // The range of idx is from
       // [0, toExploreNumArcs[i].first * toExploreNumArcs[i].second)
       const int idx = tid - lVal;
+      const int numArcs =
+          arcCrossProductOffset[i + 1] - arcCrossProductOffset[i];
+
+      assert(idx >= 0);
+      assert(idx < numArcs);
+      assert(numArcs == (toExploreNumArcs[i].first * toExploreNumArcs[i].second));
 
       // We map the tids to 2D grid where the
-      // x-axis is toExploreNumArcs[i].second (row)
-      // y-axis is toExploreNumArcs[i].first (column)
-
-      // Pick the tids from the first column since we need only one
-      // tid per arc of the node from the first graph to check for
-      // epsilon
-      if (idx % toExploreNumArcs[i].second == 0) {
-        checkEpsilonArcPair.first = true;
-      }
+      // x-axis is toExploreNumArcs[i].first (row)
+      // y-axis is toExploreNumArcs[i].second (column)
+      arcPair = OneDToTwoDIndex(idx, toExploreNumArcs[i].first);
 
       // Pick the tids from the first row since we need only one
       // tid per arc of the node from the first graph to check for
       // epsilon
-      if (idx < toExploreNumArcs[i].second) {
+      if (idx < toExploreNumArcs[i].first) {
+        checkEpsilonArcPair.first = true;
+      }
+
+      // Pick the tids from the first column since we need only one
+      // tid per arc of the node from the first graph to check for
+      // epsilon
+      if (idx % toExploreNumArcs[i].first == 0) {
         checkEpsilonArcPair.second = true;
       }
 
