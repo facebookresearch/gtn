@@ -99,12 +99,12 @@ Functions
 
 .. py:function:: project_input(other)
 
-   Removes the input labels from the graph and records the operation in the
+   Removes the output labels from the graph and records the operation in the
    autograd tape. This function makes a copy of the input graph.
 
 .. py:function:: project_output(other)
 
-   Removes the output labels from the graph and records the operation in the
+   Removes the input labels from the graph and records the operation in the
    autograd tape. This function makes a copy of the input graph.
 
 .. py:function:: remove(other, label=gtn.epsilon)
@@ -175,8 +175,8 @@ Comparisons
   large graphs.
 
 
-Parallel	
---------	
+Parallel
+--------
 
 .. py:function:: parallel_for(function, int_list)
 

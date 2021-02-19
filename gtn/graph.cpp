@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <utility>
 
 #include "graph.h"
 
@@ -134,6 +135,10 @@ void Graph::setCalcGrad(bool calcGrad) {
     sharedGrad_->inputs.clear();
     sharedGrad_->grad.reset();
   }
+}
+
+void Graph::setInputs(std::vector<Graph> inputs) {
+  sharedGrad_->inputs = std::move(inputs);
 }
 
 void Graph::zeroGrad() {
