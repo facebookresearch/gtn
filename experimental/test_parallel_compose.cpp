@@ -96,21 +96,31 @@ void testConversion() {
 void testNoEpsilon() {
   auto check = [](const Graph& g1, const Graph& g2) {
     auto gOut = compose(g1, g2);
-    std::cout << gOut << std::endl;
     auto gOutP = gtn::detail::dataparallel::compose(g1, g2);
-    std::cout << gOutP << std::endl;
-    assert(equal(gOut, gOutP));
+    assert(isomorphic(gOut, gOutP));
   };
+
+  // Empty result
+  check(linearGraph(1, 1), linearGraph(2, 1));
+
+  // Accepts empty string
+  {
+    auto g1 = Graph();
+    g1.addNode(true, true);
+    auto g2 = Graph();
+    g2.addNode(true, true);
+    check(g1, g2);
+  }
 
   // Check some simple chain graphs
   check(linearGraph(1, 1), linearGraph(1, 1));
-  check(linearGraph(10, 1), linearGraph(10, 1));
-  check(linearGraph(10, 2), linearGraph(10, 1));
-  check(linearGraph(10, 20), linearGraph(10, 1));
+  check(linearGraph(5, 1), linearGraph(5, 1));
+  check(linearGraph(5, 2), linearGraph(5, 1));
+  check(linearGraph(5, 10), linearGraph(5, 1));
   check(linearGraph(1, 2), linearGraph(1, 2));
-  check(linearGraph(10, 2), linearGraph(10, 2));
-  check(linearGraph(10, 10), linearGraph(10, 5));
-  check(linearGraph(10, 5), linearGraph(10, 10));
+  check(linearGraph(5, 2), linearGraph(5, 2));
+  check(linearGraph(5, 5), linearGraph(5, 3));
+  check(linearGraph(5, 3), linearGraph(5, 5));
 
   // Check some graphs with self-loops!
   {
@@ -120,10 +130,104 @@ void testNoEpsilon() {
     g1.addArc(1, 1, 0, 0);
     check(g1, g2);
 
-    // THIS FAILS!
     g2.addArc(0, 0, 0, 0);
     g2.addArc(1, 1, 0, 0);
     check(g1, g2);
+  }
+
+  // More complex test cases
+  {
+    // Self-loop in the composed graph
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 0, 0);
+    g1.addArc(0, 1, 1);
+    g1.addArc(1, 1, 2);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode();
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 0);
+    g2.addArc(1, 1, 0);
+    g2.addArc(1, 2, 1);
+
+    std::stringstream in(
+        "0\n"
+        "2\n"
+        "0 1 0\n"
+        "1 1 0\n"
+        "1 2 1\n");
+    Graph expected = loadTxt(in);
+    assert(isomorphic(
+      gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    // Loop in the composed graph
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0);
+    g1.addArc(1, 1, 1);
+    g1.addArc(1, 0, 0);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 0, 0);
+    g2.addArc(0, 1, 1);
+    g2.addArc(1, 0, 1);
+
+    std::stringstream in(
+        "0\n"
+        "2\n"
+        "0 1 0\n"
+        "1 0 0\n"
+        "1 2 1\n"
+        "2 1 1\n");
+    Graph expected = loadTxt(in);
+    assert(isomorphic(
+      gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode();
+    g1.addNode();
+    g1.addNode();
+    g1.addNode(false, true);
+    for (int i = 0; i < g1.numNodes() - 1; i++) {
+      for (int j = 0; j < 3; j++) {
+        g1.addArc(i, i + 1, j, j, static_cast<float>(j));
+      }
+    }
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode();
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 0, 0, 3.5);
+    g2.addArc(1, 1, 0, 0, 2.5);
+    g2.addArc(1, 2, 1, 1, 1.5);
+    g2.addArc(2, 2, 1, 1, 4.5);
+    std::stringstream in(
+        "0\n"
+        "6\n"
+        "0 1 0 0 3.5\n"
+        "1 2 0 0 2.5\n"
+        "1 4 1 1 2.5\n"
+        "2 3 0 0 2.5\n"
+        "2 5 1 1 2.5\n"
+        "4 5 1 1 5.5\n"
+        "3 6 1 1 2.5\n"
+        "5 6 1 1 5.5\n");
+    Graph expected = loadTxt(in);
+    // THIS FAILS!
+    assert(isomorphic(
+      gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 }
 

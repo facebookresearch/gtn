@@ -32,27 +32,6 @@ int prefixSumScan(std::vector<int>& input, bool appendSum) {
   return sum;
 }
 
-// Remove all nodes that have 0 in and out arcs - these nodes are unreachable
-// This is essentially a stream compact
-std::tuple<std::vector<int>, std::vector<int>> removeUnreachableNodes(
-    const std::vector<int>& numInArcs,
-    const std::vector<int>& numOutArcs) {
-  std::vector<int> outputInArcs;
-  std::vector<int> outputOutArcs;
-
-  assert(numInArcs.size() == numOutArcs.size());
-
-  for (size_t i = 0; i < numInArcs.size(); ++i) {
-    if ((numInArcs[i] != 0) || (numOutArcs[i] != 0)) {
-      outputInArcs.push_back(numInArcs[i]);
-      outputOutArcs.push_back(numOutArcs[i]);
-    }
-  }
-
-  assert(outputInArcs.size() == outputOutArcs.size());
-  return std::make_tuple(outputInArcs, outputOutArcs);
-}
-
 // TODO: Duplicate - should be removed
 inline int TwoDToOneDIndex(int n1, int n2, int n1Extent) {
   assert(n1 < n1Extent);
@@ -479,14 +458,6 @@ Graph compose(const Graph& first, const Graph& second) {
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, true);
 
-    // If no arcs to process - we are done
-    // This condition should always evaluates to true since we only get here if
-    // toExploreNodePair.size() > 0 and arcCrossProductOffset.size() ==
-    // toExploreNodePair.size()
-    /* if (arcCrossProductOffset.empty()) {
-      break;
-    } */
-
     const int totalArcs = prefixSumScan(arcCrossProductOffset, true);
 
     // No dependence between iterations. tid is thread-id
@@ -599,8 +570,11 @@ Graph compose(const Graph& first, const Graph& second) {
 
     for (auto f : startDP1) {
       for (auto s : startDP2) {
-        toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
-        newNodes[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+        auto startIdx = TwoDToOneDIndex(f, s, numNodesFirst);
+        if (reachable[startIdx]) {
+          toExplore[startIdx] = true;
+          newNodes[startIdx] = true;
+        }
       }
     }
   }
@@ -618,14 +592,6 @@ Graph compose(const Graph& first, const Graph& second) {
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, false);
-
-    // This check is superfluous since we can only get here if toExplore
-    // has a true value in which case arcCrossProductOffset will not be empty.
-    // If no arcs to process we are done. This can happen if we have
-    // reached a set of nodes with no outgoing arc
-    //if (arcCrossProductOffset.empty() == 0) {
-    //  break;
-    //}
 
     const int totalArcs = prefixSumScan(arcCrossProductOffset, true);
 
@@ -710,18 +676,17 @@ Graph compose(const Graph& first, const Graph& second) {
   GraphDataParallel newGraphDP;
 
   // Convert bool array to int for prefix sum
+  // Record arc offsets for new nodes in new graph
   std::vector<int> newNodesOffset(newNodes.size(), 0);
   for (size_t i = 0; i < newNodes.size(); ++i) {
     if (newNodes[i]) {
       newNodesOffset[i] = 1;
+      newGraphDP.inArcOffset.push_back(numInArcs[i]);
+      newGraphDP.outArcOffset.push_back(numOutArcs[i]);
     }
   }
 
   const int totalNodes = prefixSumScan(newNodesOffset, false);
-
-  // Throw out all nodes with no in or out arcs
-  std::tie(newGraphDP.inArcOffset, newGraphDP.outArcOffset) =
-      removeUnreachableNodes(numInArcs, numOutArcs);
 
   // Check that number of nodes match
   assert(totalNodes == newGraphDP.inArcOffset.size());
@@ -767,11 +732,13 @@ Graph compose(const Graph& first, const Graph& second) {
     for (auto f : startDP1) {
       for (auto s : startDP2) {
         const int nodeIdx = TwoDToOneDIndex(f, s, numNodesFirst);
-        toExplore[nodeIdx] = true;
-        newNodesVisited[nodeIdx] = true;
-        newGraphDP.start[newNodesOffset[nodeIdx]] = true;
-        newGraphDP.accept[newNodesOffset[nodeIdx]] =
-            graphDP1.accept[f] && graphDP1.accept[s];
+        if (reachable[nodeIdx]) {
+          toExplore[nodeIdx] = true;
+          newNodesVisited[nodeIdx] = true;
+          newGraphDP.start[newNodesOffset[nodeIdx]] = true;
+          newGraphDP.accept[newNodesOffset[nodeIdx]] =
+              graphDP1.accept[f] && graphDP1.accept[s];
+        }
       }
     }
   }
@@ -910,7 +877,6 @@ Graph compose(const Graph& first, const Graph& second) {
       }
     }
   }
-
   // Shift offset values back down after adding arcs to newGraphDP
   // The offset values got converted from exclusive prefix sum to inclusive
   // Need to convert them back to exclusive prefix sum  by starting with 0
