@@ -96,17 +96,35 @@ void testConversion() {
 void testNoEpsilon() {
   auto check = [](const Graph& g1, const Graph& g2) {
     auto gOut = compose(g1, g2);
+    std::cout << gOut << std::endl;
     auto gOutP = gtn::detail::dataparallel::compose(g1, g2);
+    std::cout << gOutP << std::endl;
     assert(equal(gOut, gOutP));
   };
 
-  // Check a simple chain graphs
+  // Check some simple chain graphs
+  check(linearGraph(1, 1), linearGraph(1, 1));
   check(linearGraph(10, 1), linearGraph(10, 1));
   check(linearGraph(10, 2), linearGraph(10, 1));
   check(linearGraph(10, 20), linearGraph(10, 1));
-
-  // Currently fails!
   check(linearGraph(1, 2), linearGraph(1, 2));
+  check(linearGraph(10, 2), linearGraph(10, 2));
+  check(linearGraph(10, 10), linearGraph(10, 5));
+  check(linearGraph(10, 5), linearGraph(10, 10));
+
+  // Check some graphs with self-loops!
+  {
+    auto g1 = linearGraph(1, 1);
+    auto g2 = linearGraph(1, 1);
+    g1.addArc(0, 0, 0, 0);
+    g1.addArc(1, 1, 0, 0);
+    check(g1, g2);
+
+    // THIS FAILS!
+    g2.addArc(0, 0, 0, 0);
+    g2.addArc(1, 1, 0, 0);
+    check(g1, g2);
+  }
 }
 
 int main() {

@@ -248,8 +248,8 @@ void generateCombinedGraphNodesAndArcs(
     newGraphDP.accept[newNodesOffset[dstIdx]] = dstNodeStartAndAccept.second;
 
     // Both of these increments are atomic
-    int inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]];
-    int outArcIdx = newGraphDP.outArcOffset[newNodesOffset[curIdx]];
+    int inArcIdx = newGraphDP.inArcOffset[newNodesOffset[dstIdx]]++;
+    int outArcIdx = newGraphDP.outArcOffset[newNodesOffset[curIdx]]++;
 
     // outArcIdx is also the arc identifier
     newGraphDP.outArcs[outArcIdx] = outArcIdx;
@@ -909,6 +909,12 @@ Graph compose(const Graph& first, const Graph& second) {
         }
       }
     }
+  }
+
+  // Shift offset values back down after adding arcs to newGraphDP
+  for (int i = newGraphDP.outArcOffset.size() - 1; i >= 0; --i) {
+    newGraphDP.outArcOffset[i] = i == 0 ? 0 : newGraphDP.outArcOffset[i - 1];
+    newGraphDP.inArcOffset[i] = i == 0 ? 0 : newGraphDP.inArcOffset[i - 1];
   }
   // Convert back before returning
   auto nGraph = convertFromDataParallel(newGraphDP);
