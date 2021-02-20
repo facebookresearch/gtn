@@ -912,6 +912,9 @@ Graph compose(const Graph& first, const Graph& second) {
   }
 
   // Shift offset values back down after adding arcs to newGraphDP
+  // The offset values got converted from exclusive prefix sum to inclusive
+  // Need to convert them back to exclusive prefix sum  by starting with 0
+  // and shifting to right by 1
   for (int i = newGraphDP.outArcOffset.size() - 1; i >= 0; --i) {
     newGraphDP.outArcOffset[i] = i == 0 ? 0 : newGraphDP.outArcOffset[i - 1];
     newGraphDP.inArcOffset[i] = i == 0 ? 0 : newGraphDP.inArcOffset[i - 1];
