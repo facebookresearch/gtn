@@ -129,14 +129,24 @@ bool isomorphic(const Graph& g1, const Graph& g2) {
     return false;
   }
 
-  bool isIsomorphic = false;
   NodeMap visited;
+  std::list<int> g2Start(g2.start().begin(), g2.start().end());
   for (auto s1 : g1.start()) {
-    for (auto s2 : g2.start()) {
-      isIsomorphic |= isomorphic(g1, g2, s1, s2, visited);
+    // For each s1, must find isomorphic subgraph starting at a unique s2
+    auto it = g2Start.begin();
+    for (; it != g2Start.end(); it++) {
+      auto s2 = *it;
+      if (isomorphic(g1, g2, s1, s2, visited)) {
+        break;
+      }
     }
+    // Didn't find a match
+    if (it == g2Start.end()) {
+      return false;
+    }
+    g2Start.erase(it);
   }
-  return isIsomorphic;
+  return true;
 }
 
 void save(std::ostream& out, const Graph& g) {
