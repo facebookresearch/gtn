@@ -265,6 +265,100 @@ void testEpsilon() {
     assert(equal(
       gtn::detail::dataparallel::compose(g1, g2), expected));
   }
+
+  {
+    // Simple test case for input epsilon on second graph
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 1, 2);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 2, 3);
+    g2.addArc(1, 1, epsilon, 0, 2.0);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 1, 3);
+    expected.addArc(1, 1, epsilon, 0, 2.0);
+
+    auto gOut = gtn::detail::dataparallel::compose(g1, g2);
+    std::cout << expected << std::endl;
+    std::cout << gOut << std::endl;
+    // THIS FAILS
+    //assert(equal(
+    //  gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    // This test case is taken from "Weighted Automata Algorithms", Mehryar
+    // Mohri, https://cs.nyu.edu/~mohri/pub/hwa.pdf Section 5.1, Figure 7
+    std::unordered_map<std::string, int> symbols = {
+        {"a", 0}, {"b", 1}, {"c", 2}, {"d", 3}, {"e", 4}};
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode();
+    g1.addNode();
+    g1.addNode();
+    g1.addNode(false, true);
+    g1.addArc(0, 1, symbols["a"], symbols["a"]);
+    g1.addArc(1, 2, symbols["b"], epsilon);
+    g1.addArc(2, 3, symbols["c"], epsilon);
+    g1.addArc(3, 4, symbols["d"], symbols["d"]);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode();
+    g2.addNode();
+    g2.addNode(false, true);
+    g2.addArc(0, 1, symbols["a"], symbols["d"]);
+    g2.addArc(1, 2, epsilon, symbols["e"]);
+    g2.addArc(2, 3, symbols["d"], symbols["a"]);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode();
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, symbols["a"], symbols["d"]);
+    expected.addArc(1, 2, symbols["b"], symbols["e"]);
+    expected.addArc(2, 3, symbols["c"], epsilon);
+    expected.addArc(3, 4, symbols["d"], symbols["a"]);
+
+    // THIS FAILS!
+    //assert(randEquivalent(
+    //  gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    // Test multiple input/output epsilon transitions per node
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 0, 1, epsilon, 1.1);
+    g1.addArc(0, 1, 2, epsilon, 2.1);
+    g1.addArc(0, 1, 3, epsilon, 3.1);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 3, 2.1);
+    g2.addArc(0, 1, 1, 2);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode(false, true);
+    expected.addArc(0, 0, 1, epsilon, 1.1);
+    expected.addArc(0, 1, 2, 3, 4.2);
+    expected.addArc(0, 1, 3, 3, 5.2);
+
+    assert(randEquivalent(
+      gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
 }
 
 void testGrad() {
