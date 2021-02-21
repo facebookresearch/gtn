@@ -79,9 +79,9 @@ void testConversion() {
     gIn.addNode(false, true);
     gIn.addNode(true);
     gIn.addNode(false, true);
-    gIn.addArc(0, 1, 0, 2, 2.0);
-    gIn.addArc(0, 1, 0, 2, 3.0);
-    gIn.addArc(2, 2, 1, 0, 0.0);
+    gIn.addArc(0, 1, 0, 2, 2.1);
+    gIn.addArc(0, 1, 0, 2, 3.1);
+    gIn.addArc(2, 2, 1, 0, 0.1);
     gIn.addArc(2, 3, 1, 0, 4.0);
     gIn.addArc(1, 3, 0, 0, 6.0);
   }
@@ -132,6 +132,17 @@ void testNoEpsilon() {
 
     g2.addArc(0, 0, 0, 0);
     g2.addArc(1, 1, 0, 0);
+    check(g1, g2);
+  }
+
+  // Weights combine properly
+  {
+    auto g1 = linearGraph(2, 3);
+    auto g2 = linearGraph(2, 3);
+    std::vector<float> w1 = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
+    std::vector<float> w2 = {1.1, 2.2, 3.3, 4.4, 5.5, 6.6};
+    g1.setWeights(w1.data());
+    g2.setWeights(w2.data());
     check(g1, g2);
   }
 
@@ -225,9 +236,76 @@ void testNoEpsilon() {
         "3 6 1 1 2.5\n"
         "5 6 1 1 5.5\n");
     Graph expected = loadTxt(in);
-    // THIS FAILS!
+    auto gOutP = gtn::detail::dataparallel::compose(g1, g2);
     assert(isomorphic(
       gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+}
+
+void testEpsilon() {
+  {
+    // Simple test case for output epsilon on first graph
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 0, 0, epsilon, 1.0);
+    g1.addArc(0, 1, 1, 2);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, 2, 3);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode(false, true);
+    expected.addArc(0, 0, 0, epsilon, 1.0);
+    expected.addArc(0, 1, 1, 3);
+
+    assert(equal(
+      gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+}
+
+void testGrad() {
+  Graph first;
+  first.addNode(true);
+  first.addNode();
+  first.addNode();
+  first.addNode();
+  first.addNode(false, true);
+  first.addArc(0, 1, 0, 0, 0);
+  first.addArc(0, 1, 1, 1, 1);
+  first.addArc(0, 1, 2, 2, 2);
+  first.addArc(1, 2, 0, 0, 0);
+  first.addArc(1, 2, 1, 1, 1);
+  first.addArc(1, 2, 2, 2, 2);
+  first.addArc(2, 3, 0, 0, 0);
+  first.addArc(2, 3, 1, 1, 1);
+  first.addArc(2, 3, 2, 2, 2);
+  first.addArc(3, 4, 0, 0, 0);
+  first.addArc(3, 4, 1, 1, 1);
+  first.addArc(3, 4, 2, 2, 2);
+
+  Graph second;
+  second.addNode(true);
+  second.addNode();
+  second.addNode(false, true);
+  second.addArc(0, 1, 0, 0, 3.5);
+  second.addArc(1, 1, 0, 0, 2.5);
+  second.addArc(1, 2, 1, 1, 1.5);
+  second.addArc(2, 2, 1, 1, 4.5);
+
+  Graph composed = compose(first, second);
+  backward(composed);
+
+  std::vector<float> gradsFirst = {1, 0, 0, 1, 1, 0, 1, 2, 0, 0, 2, 0};
+  std::vector<float> gradsSecond = {1, 2, 3, 2};
+  for (int i = 0; i < gradsFirst.size(); i++) {
+    assert(gradsFirst[i] == first.grad().weight(i));
+  }
+  for (int i = 0; i < gradsSecond.size(); i++) {
+    assert(gradsSecond[i] == second.grad().weight(i));
   }
 }
 
@@ -237,4 +315,10 @@ int main() {
 
   testNoEpsilon();
   std::cout << "No epsilon compositions passed!" << std::endl;
+
+  testEpsilon();
+  std::cout << "Epsilon compositions passed!" << std::endl;
+
+  testGrad();
+  std::cout << "Composition gradients passed!" << std::endl;
 }
