@@ -210,7 +210,7 @@ void generateCombinedGraphNodesAndArcs(
     std::pair<bool, bool> dstNodeStartAndAccept,
     int ilabel,
     int olabel,
-    int weight) {
+    float weight) {
   if (reachable[dstIdx]) {
     // Atomic test and set for newNodesVisited
     if (!newNodesVisited[dstIdx]) {
@@ -780,11 +780,11 @@ Graph compose(const Graph& first, const Graph& second) {
         const int secondArcIdx =
             graphDP2.outArcs[outArcOffset + arcPair.second];
 
-        std::pair<int, int> dstNodePair = std::make_pair(
-            graphDP1.dstNodes[firstArcIdx], graphDP2.dstNodes[secondArcIdx]);
-
         // Does this node pair match?
         if (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx]) {
+          std::pair<int, int> dstNodePair = std::make_pair(
+              graphDP1.dstNodes[firstArcIdx], graphDP2.dstNodes[secondArcIdx]);
+
           const int dstIdx = TwoDToOneDIndex(
               dstNodePair.first, dstNodePair.second, numNodesFirst);
           const int curIdx = TwoDToOneDIndex(
@@ -816,8 +816,10 @@ Graph compose(const Graph& first, const Graph& second) {
         // The epsilon matches
         if (checkEpsilonArcPair.first &&
             (graphDP1.olabels[firstArcIdx] == epsilon)) {
+          std::pair<int, int> dstNodePair = std::make_pair(
+              graphDP1.dstNodes[firstArcIdx], graphDP2.srcNodes[secondArcIdx]);
           const int dstIdx = TwoDToOneDIndex(
-              dstNodePair.first, srcNodePair.second, numNodesFirst);
+              dstNodePair.first, dstNodePair.second, numNodesFirst);
           const int curIdx = TwoDToOneDIndex(
               srcNodePair.first, srcNodePair.second, numNodesFirst);
 
@@ -826,7 +828,6 @@ Graph compose(const Graph& first, const Graph& second) {
 
           std::tie(srcNodeStartAndAccept, dstNodeStartAndAccept) =
               getStartAndAccept(graphDP1, graphDP2, srcNodePair, dstNodePair);
-
           generateCombinedGraphNodesAndArcs(
               dstIdx,
               curIdx,
@@ -847,8 +848,10 @@ Graph compose(const Graph& first, const Graph& second) {
         // The epsilon matches
         if (checkEpsilonArcPair.second &&
             (graphDP2.ilabels[secondArcIdx] == epsilon)) {
+          std::pair<int, int> dstNodePair = std::make_pair(
+              graphDP1.srcNodes[firstArcIdx], graphDP2.dstNodes[secondArcIdx]);
           const int dstIdx = TwoDToOneDIndex(
-              srcNodePair.first, dstNodePair.second, numNodesFirst);
+              dstNodePair.first, dstNodePair.second, numNodesFirst);
           const int curIdx = TwoDToOneDIndex(
               srcNodePair.first, srcNodePair.second, numNodesFirst);
 
