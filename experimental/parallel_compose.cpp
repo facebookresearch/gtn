@@ -816,8 +816,10 @@ Graph compose(const Graph& first, const Graph& second) {
         // The epsilon matches
         if (checkEpsilonArcPair.first &&
             (graphDP1.olabels[firstArcIdx] == epsilon)) {
+          // When arc from first node has epsilon label then we consider
+          // second node
           std::pair<int, int> dstNodePair = std::make_pair(
-              graphDP1.dstNodes[firstArcIdx], graphDP2.srcNodes[secondArcIdx]);
+              graphDP1.dstNodes[firstArcIdx], srcNodePair.second);
           const int dstIdx = TwoDToOneDIndex(
               dstNodePair.first, dstNodePair.second, numNodesFirst);
           const int curIdx = TwoDToOneDIndex(
@@ -848,8 +850,10 @@ Graph compose(const Graph& first, const Graph& second) {
         // The epsilon matches
         if (checkEpsilonArcPair.second &&
             (graphDP2.ilabels[secondArcIdx] == epsilon)) {
+          // When arc from second node has epsilon label then we consider
+          // first node
           std::pair<int, int> dstNodePair = std::make_pair(
-              graphDP1.srcNodes[firstArcIdx], graphDP2.dstNodes[secondArcIdx]);
+              srcNodePair.first, graphDP2.dstNodes[secondArcIdx]);
           const int dstIdx = TwoDToOneDIndex(
               dstNodePair.first, dstNodePair.second, numNodesFirst);
           const int curIdx = TwoDToOneDIndex(
