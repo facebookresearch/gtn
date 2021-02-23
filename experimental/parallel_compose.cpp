@@ -283,7 +283,7 @@ void generateCombinedGraphNodesAndArcs(
     const std::vector<int>& newNodesOffset,
     std::vector<bool>& newNodesVisited,
     std::vector<bool>& toExplore,
-    std::pair<std::vector<int>, std::vector<int>>& gradInfo,
+    std::vector<std::pair<int, int>>& gradInfo,
     GraphDataParallel& newGraphDP,
     std::pair<bool, bool> srcNodeStartAndAccept,
     std::pair<bool, bool> dstNodeStartAndAccept,
@@ -320,8 +320,7 @@ void generateCombinedGraphNodesAndArcs(
     newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
     newGraphDP.weights[outArcIdx] = weight;
 
-    gradInfo.first[outArcIdx] = arcPair.first;
-    gradInfo.second[outArcIdx] = arcPair.second;
+    gradInfo[outArcIdx] = arcPair;
   }
 }
 
@@ -798,9 +797,8 @@ Graph compose(const Graph& first, const Graph& second) {
   newGraphDP.weights.resize(totalOutArcs);
 
   // SOA for gradInfo
-  std::pair<std::vector<int>, std::vector<int>> gradInfo;
-  gradInfo.first.resize(totalOutArcs);
-  gradInfo.second.resize(totalOutArcs);
+  std::vector<std::pair<int, int>> gradInfo;
+  gradInfo.resize(totalOutArcs);
 
   //////////////////////////////////////////////////////////////////////////
   // Step 4: Generate nodes and arcs in combined graph
@@ -979,9 +977,35 @@ Graph compose(const Graph& first, const Graph& second) {
     newGraphDP.outArcOffset[i] = i == 0 ? 0 : newGraphDP.outArcOffset[i - 1];
     newGraphDP.inArcOffset[i] = i == 0 ? 0 : newGraphDP.inArcOffset[i - 1];
   }
-  // Convert back before returning
+
+  // Convert back and add in autograd metadata
   auto nGraph = convertFromDataParallel(newGraphDP);
   nGraph.setInputs({first, second});
+  // TODO eliminate this copy pasta.
+  auto gradFunc = [gradInfo = std::move(gradInfo)](
+                      std::vector<Graph>& inputs, Graph deltas) {
+    // In this case the arc's parents are always from the
+    // first and second input graphs respectively.
+    bool calcGrad1 = inputs[0].calcGrad();
+    bool calcGrad2 = inputs[1].calcGrad();
+    auto grad1 = calcGrad1 ? std::vector<float>(inputs[0].numArcs(), 0.0)
+                           : std::vector<float>{};
+    auto grad2 = calcGrad2 ? std::vector<float>(inputs[1].numArcs(), 0.0)
+                           : std::vector<float>{};
+    for (int i = 0; i < gradInfo.size(); i++) {
+      auto arcGrad = deltas.weight(i);
+      auto& arcs = gradInfo[i];
+      if (calcGrad1 && arcs.first >= 0) {
+        grad1[arcs.first] += arcGrad;
+      }
+      if (calcGrad2 && arcs.second >= 0) {
+        grad2[arcs.second] += arcGrad;
+      }
+    }
+    inputs[0].addGrad(std::move(grad1));
+    inputs[1].addGrad(std::move(grad2));
+  };
+  nGraph.setGradFunc(std::move(gradFunc));
   return nGraph;
 }
 
