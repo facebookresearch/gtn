@@ -61,13 +61,17 @@ bool checkAnyTrue(const std::vector<bool>& flags) {
 // first graph Same logic happens for checkEpsilonArcPair.second Search to find
 // which node pair this tid will fall into Linear search for now
 // (arcCrossProductOffset is sorted by definition)
-std::
-    tuple<bool, std::pair<int, int>, std::pair<int, int>, bool, std::pair<bool, bool>>
-    computeNodeAndArcPair(
-        int tid,
-        const std::vector<int>& arcCrossProductOffset,
-        const std::vector<std::pair<int, int>>& toExploreNumArcs,
-        const std::vector<std::pair<int, int>>& toExploreNodePair) {
+std::tuple<
+    bool,
+    std::pair<int, int>,
+    std::pair<int, int>,
+    bool,
+    std::pair<bool, bool>>
+computeNodeAndArcPair(
+    int tid,
+    const std::vector<int>& arcCrossProductOffset,
+    const std::vector<std::pair<int, int>>& toExploreNumArcs,
+    const std::vector<std::pair<int, int>>& toExploreNodePair) {
   std::pair<int, int> nodePair;
   std::pair<int, int> arcPair;
 
@@ -93,13 +97,14 @@ std::
       // [0, toExploreNumArcs[i].first * toExploreNumArcs[i].second)
       const int idx = tid - lVal;
       const int numArcs = rVal - lVal;
-          // arcCrossProductOffset[i + 1] - arcCrossProductOffset[i];
+      // arcCrossProductOffset[i + 1] - arcCrossProductOffset[i];
 
       assert(idx >= 0);
       assert(idx < numArcs);
       assert(numArcs > 0);
 
-      const int arcProd = toExploreNumArcs[i].first * toExploreNumArcs[i].second;
+      const int arcProd =
+          toExploreNumArcs[i].first * toExploreNumArcs[i].second;
 
       if (numArcs == arcProd) {
         checkArcPair = true;
@@ -122,13 +127,11 @@ std::
         if (idx % toExploreNumArcs[i].first == 0) {
           checkEpsilonArcPair.second = true;
         }
-      }
-      else if ((arcProd == 0) && (numArcs == toExploreNumArcs[i].first)) {
+      } else if ((arcProd == 0) && (numArcs == toExploreNumArcs[i].first)) {
         // TODO: Likely not the brightest idea to use -1 as sentinel
         arcPair = std::make_pair(idx, -1);
         checkEpsilonArcPair.first = true;
-      }
-      else if ((arcProd == 0) && (numArcs == toExploreNumArcs[i].second)) {
+      } else if ((arcProd == 0) && (numArcs == toExploreNumArcs[i].second)) {
         // TODO: Likely not the brightest idea to use -1 as sentinel
         arcPair = std::make_pair(-1, idx);
         checkEpsilonArcPair.second = true;
@@ -138,7 +141,8 @@ std::
     }
   }
 
-  return std::make_tuple(isValid, nodePair, arcPair, checkArcPair, checkEpsilonArcPair);
+  return std::make_tuple(
+      isValid, nodePair, arcPair, checkArcPair, checkEpsilonArcPair);
 }
 
 // Takes a pair of nodes, where each member of pair comes from a different
@@ -191,6 +195,7 @@ calculateArcCrossProductOffset(
     if (numArcsFirst != 0 && numArcsSecond != 0) {
       arcCrossProductOffset[i] = numArcsFirst * numArcsSecond;
     } else if (numArcsFirst != 0 && numArcsSecond == 0) {
+      /*
       const int startIdx =
           inOrOutArc ? graphDP1.inArcOffset[node] : graphDP1.outArcOffset[node];
       const int endIdx = inOrOutArc ? inArcOffsetGraph1 : outArcOffsetGraph1;
@@ -211,8 +216,10 @@ calculateArcCrossProductOffset(
         }
       }
 
-      arcCrossProductOffset[i] = hasEpsilonArc ? numArcsFirst : 0;
+      arcCrossProductOffset[i] = hasEpsilonArc ? numArcsFirst : 0;*/
+      arcCrossProductOffset[i] = numArcsFirst;
     } else if (numArcsFirst == 0 && numArcsSecond != 0) {
+      /*
       const int startIdx =
           inOrOutArc ? graphDP2.inArcOffset[node] : graphDP2.outArcOffset[node];
       const int endIdx = inOrOutArc ? inArcOffsetGraph2 : outArcOffsetGraph2;
@@ -233,7 +240,8 @@ calculateArcCrossProductOffset(
         }
       }
 
-      arcCrossProductOffset[i] = hasEpsilonArc ? numArcsSecond : 0;
+      arcCrossProductOffset[i] = hasEpsilonArc ? numArcsSecond : 0;*/
+      arcCrossProductOffset[i] = numArcsSecond;
     } else {
       arcCrossProductOffset[i] = 0;
     }
@@ -551,7 +559,8 @@ Graph compose(const Graph& first, const Graph& second) {
         inArcOffset = graphDP2.inArcOffset[nodePair.second];
         const int secondArcIdx = graphDP2.inArcs[inArcOffset + arcPair.second];
 
-        if (checkArcPair && (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx])) {
+        if (checkArcPair &&
+            (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx])) {
           const int idx = TwoDToOneDIndex(
               graphDP1.srcNodes[firstArcIdx],
               graphDP2.srcNodes[secondArcIdx],
@@ -581,9 +590,10 @@ Graph compose(const Graph& first, const Graph& second) {
       // Map tid to corresponding node and arc pair via search
       std::pair<int, int> nodePair;
       std::pair<int, int> arcPair;
+      bool checkArcPair;
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
-      std::tie(isValid, nodePair, arcPair, checkEpsilonArcPair) =
+      std::tie(isValid, nodePair, arcPair, checkArcPair, checkEpsilonArcPair) =
           computeNodeAndArcPair(
               tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
       const bool matched = epsilonMatched[TwoDToOneDIndex(
@@ -687,7 +697,8 @@ Graph compose(const Graph& first, const Graph& second) {
             graphDP2.outArcs[outArcOffset + arcPair.second];
 
         // Does this node pair match?
-        if (checkArcPair && (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx])) {
+        if (checkArcPair &&
+            (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx])) {
           const int dstIdx = TwoDToOneDIndex(
               graphDP1.dstNodes[firstArcIdx],
               graphDP2.dstNodes[secondArcIdx],
@@ -841,7 +852,8 @@ Graph compose(const Graph& first, const Graph& second) {
       bool checkArcPair;
       std::pair<bool, bool> checkEpsilonArcPair;
       bool isValid;
-      std::tie(isValid, srcNodePair, arcPair, checkArcPair, checkEpsilonArcPair) =
+      std::tie(
+          isValid, srcNodePair, arcPair, checkArcPair, checkEpsilonArcPair) =
           computeNodeAndArcPair(
               tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
 
@@ -854,7 +866,8 @@ Graph compose(const Graph& first, const Graph& second) {
             graphDP2.outArcs[outArcOffset + arcPair.second];
 
         // Does this node pair match?
-        if (checkArcPair && (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx])) {
+        if (checkArcPair &&
+            (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx])) {
           std::pair<int, int> dstNodePair = std::make_pair(
               graphDP1.dstNodes[firstArcIdx], graphDP2.dstNodes[secondArcIdx]);
 
