@@ -205,6 +205,11 @@ TEST_CASE("Test Graph equality", "[utils.equal]") {
 
 TEST_CASE("Test Graph isomorphic", "[utils.isomorphic]") {
   {
+    // Empty graphs are isomorphic
+    CHECK(isomorphic(Graph{}, Graph{}));
+  }
+
+  {
     Graph g1;
     g1.addNode(true);
 
@@ -212,6 +217,35 @@ TEST_CASE("Test Graph isomorphic", "[utils.isomorphic]") {
     g2.addNode(true);
 
     CHECK(isomorphic(g1, g2));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(true);
+    g1.addArc(0, 1, 1);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(true);
+    g2.addArc(0, 1, 0);
+
+    CHECK(!isomorphic(g1, g2));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(true);
+    g1.addArc(0, 0, 0);
+    g1.addArc(1, 1, 0);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(true);
+    g2.addArc(0, 0, 0);
+    g2.addArc(1, 1, 1);
+    CHECK(!isomorphic(g1, g2));
   }
 
   {
