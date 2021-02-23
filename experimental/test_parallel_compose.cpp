@@ -27,8 +27,8 @@ Graph makeRandomDAG(int num_nodes, int num_arcs) {
 }
 
 void testConversion() {
-  using gtn::detail::dataparallel::convertToDataParallel;
   using gtn::detail::dataparallel::convertFromDataParallel;
+  using gtn::detail::dataparallel::convertToDataParallel;
 
   auto check = [](const Graph& gIn) {
     auto gOut = convertFromDataParallel(convertToDataParallel(gIn));
@@ -171,8 +171,7 @@ void testNoEpsilon() {
         "1 1 0\n"
         "1 2 1\n");
     Graph expected = loadTxt(in);
-    assert(isomorphic(
-      gtn::detail::dataparallel::compose(g1, g2), expected));
+    assert(isomorphic(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 
   {
@@ -199,8 +198,7 @@ void testNoEpsilon() {
         "1 2 1\n"
         "2 1 1\n");
     Graph expected = loadTxt(in);
-    assert(isomorphic(
-      gtn::detail::dataparallel::compose(g1, g2), expected));
+    assert(isomorphic(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 
   {
@@ -237,8 +235,7 @@ void testNoEpsilon() {
         "5 6 1 1 5.5\n");
     Graph expected = loadTxt(in);
     auto gOutP = gtn::detail::dataparallel::compose(g1, g2);
-    assert(isomorphic(
-      gtn::detail::dataparallel::compose(g1, g2), expected));
+    assert(isomorphic(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 }
 
@@ -262,8 +259,7 @@ void testEpsilon() {
     expected.addArc(0, 0, 0, epsilon, 1.0);
     expected.addArc(0, 1, 1, 3);
 
-    assert(equal(
-      gtn::detail::dataparallel::compose(g1, g2), expected));
+    assert(equal(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 
   {
@@ -286,11 +282,7 @@ void testEpsilon() {
     expected.addArc(1, 1, epsilon, 0, 2.0);
 
     auto gOut = gtn::detail::dataparallel::compose(g1, g2);
-    std::cout << expected << std::endl;
-    std::cout << gOut << std::endl;
-    // THIS FAILS
-    //assert(equal(
-    //  gtn::detail::dataparallel::compose(g1, g2), expected));
+    assert(equal(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 
   {
@@ -330,8 +322,8 @@ void testEpsilon() {
     expected.addArc(3, 4, symbols["d"], symbols["a"]);
 
     // THIS FAILS!
-    //assert(randEquivalent(
-    //  gtn::detail::dataparallel::compose(g1, g2), expected));
+    assert(
+        randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 
   {
@@ -356,8 +348,8 @@ void testEpsilon() {
     expected.addArc(0, 1, 2, 3, 4.2);
     expected.addArc(0, 1, 3, 3, 5.2);
 
-    assert(randEquivalent(
-      gtn::detail::dataparallel::compose(g1, g2), expected));
+    assert(
+        randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 }
 

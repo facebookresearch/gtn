@@ -688,6 +688,7 @@ Graph compose(const Graph& first, const Graph& second) {
       std::tie(isValid, nodePair, arcPair, checkArcPair, checkEpsilonArcPair) =
           computeNodeAndArcPair(
               tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
+
       if (isValid) {
         int outArcOffset = graphDP1.outArcOffset[nodePair.first];
         const int firstArcIdx = graphDP1.outArcs[outArcOffset + arcPair.first];
@@ -716,7 +717,7 @@ Graph compose(const Graph& first, const Graph& second) {
         }
 
         if (checkEpsilonArcPair.first &&
-            (graphDP1.olabels[arcPair.first] == epsilon)) {
+            (graphDP1.olabels[firstArcIdx] == epsilon)) {
           const int dstIdx = TwoDToOneDIndex(
               graphDP1.dstNodes[firstArcIdx], nodePair.second, numNodesFirst);
           const int curIdx =
@@ -733,7 +734,7 @@ Graph compose(const Graph& first, const Graph& second) {
         }
 
         if (checkEpsilonArcPair.second &&
-            (graphDP2.ilabels[arcPair.second] == epsilon)) {
+            (graphDP2.ilabels[secondArcIdx] == epsilon)) {
           const int dstIdx = TwoDToOneDIndex(
               nodePair.first, graphDP2.dstNodes[secondArcIdx], numNodesFirst);
           const int curIdx =
