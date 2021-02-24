@@ -281,7 +281,6 @@ void testEpsilon() {
     expected.addArc(0, 1, 1, 3);
     expected.addArc(1, 1, epsilon, 0, 2.0);
 
-    auto gOut = gtn::detail::dataparallel::compose(g1, g2);
     assert(equal(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
 
@@ -321,7 +320,6 @@ void testEpsilon() {
     expected.addArc(2, 3, symbols["c"], epsilon);
     expected.addArc(3, 4, symbols["d"], symbols["a"]);
 
-    // THIS FAILS!
     assert(
         randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
   }
@@ -382,7 +380,7 @@ void testGrad() {
   second.addArc(1, 2, 1, 1, 1.5);
   second.addArc(2, 2, 1, 1, 4.5);
 
-  Graph composed = compose(first, second);
+  Graph composed = gtn::detail::dataparallel::compose(first, second);
   backward(composed);
 
   std::vector<float> gradsFirst = {1, 0, 0, 1, 1, 0, 1, 2, 0, 0, 2, 0};
@@ -392,6 +390,49 @@ void testGrad() {
   }
   for (int i = 0; i < gradsSecond.size(); i++) {
     assert(gradsSecond[i] == second.grad().weight(i));
+  }
+}
+
+void testEpsilonGrad() {
+  Graph first;
+  first.addNode(true);
+  first.addNode(false, true);
+  first.addArc(0, 0, 0, 3, 0);
+  first.addArc(0, 1, 1, 4, 0);
+  first.addArc(1, 1, 2, 5, 0);
+  first.addArc(0, 1, 2, gtn::epsilon, 0);
+
+  Graph second;
+  second.addNode(true);
+  second.addNode();
+  second.addNode();
+  second.addNode(false, true);
+  second.addArc(0, 1, 3, 0, 0);
+  second.addArc(0, 1, 3, 1, 0);
+  second.addArc(0, 1, 4, 2, 0);
+  second.addArc(0, 1, gtn::epsilon, 2, 0.0); // idx 3
+  second.addArc(1, 2, 3, 0, 0);
+  second.addArc(1, 2, 4, 1, 0);
+  second.addArc(1, 2, 5, 2, 0);
+  second.addArc(1, 2, gtn::epsilon, 2, 0.0); // idx 7
+  second.addArc(2, 3, 4, 0, 0);
+  second.addArc(2, 3, 5, 1, 0);
+  second.addArc(2, 3, 5, 2, 0);
+  second.addArc(2, 3, gtn::epsilon, 2, 0.0); // idx 11
+
+  Graph composed = gtn::detail::dataparallel::compose(first, second);
+
+  backward(composed);
+
+  auto& grad1 = first.grad();
+  auto& grad2 = second.grad();
+  std::vector<float> expectedFirstGrad = {3, 3, 3, 5};
+  std::vector<float> expectedSecondGrad = {1, 1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 2};
+  for (size_t i = 0; i < grad1.numArcs(); ++i) {
+    assert(grad1.weights()[i] == expectedFirstGrad[i]);
+  }
+  for (size_t i = 0; i < grad2.numArcs(); ++i) {
+    assert(grad2.weights()[i] == expectedSecondGrad[i]);
   }
 }
 
@@ -407,4 +448,7 @@ int main() {
 
   testGrad();
   std::cout << "Composition gradients passed!" << std::endl;
+
+  testEpsilonGrad();
+  std::cout << "Epsilon gradients passed!" << std::endl;
 }
