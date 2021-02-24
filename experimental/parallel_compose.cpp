@@ -283,7 +283,7 @@ void generateCombinedGraphNodesAndArcs(
     const std::vector<int>& newNodesOffset,
     std::vector<bool>& newNodesVisited,
     std::vector<bool>& toExplore,
-    std::vector<std::pair<int, int>>& gradInfo,
+    std::pair<std::vector<int>, std::vector<int>>& gradInfo,
     GraphDataParallel& newGraphDP,
     std::pair<bool, bool> srcNodeStartAndAccept,
     std::pair<bool, bool> dstNodeStartAndAccept,
@@ -320,7 +320,8 @@ void generateCombinedGraphNodesAndArcs(
     newGraphDP.dstNodes[outArcIdx] = newNodesOffset[dstIdx];
     newGraphDP.weights[outArcIdx] = weight;
 
-    gradInfo[outArcIdx] = arcPair;
+    gradInfo.first[outArcIdx] = arcPair.first;
+    gradInfo.second[outArcIdx] = arcPair.second;
   }
 }
 
@@ -797,8 +798,9 @@ Graph compose(const Graph& first, const Graph& second) {
   newGraphDP.weights.resize(totalOutArcs);
 
   // SOA for gradInfo
-  std::vector<std::pair<int, int>> gradInfo;
-  gradInfo.resize(totalOutArcs);
+  std::pair<std::vector<int>, std::vector<int>> gradInfo;
+  gradInfo.first.resize(totalOutArcs);
+  gradInfo.second.resize(totalOutArcs);
 
   //////////////////////////////////////////////////////////////////////////
   // Step 4: Generate nodes and arcs in combined graph
@@ -981,8 +983,13 @@ Graph compose(const Graph& first, const Graph& second) {
   // Convert back and add in autograd metadata
   auto nGraph = convertFromDataParallel(newGraphDP);
   nGraph.setInputs({first, second});
+  // Convert gradInfo SOA to AOS
+  std::vector<std::pair<int, int>> gradInfoAOS;
+  for (int i = 0; i < gradInfo.first.size(); ++i) {
+    gradInfoAOS.emplace_back(gradInfo.first[i], gradInfo.second[i]);
+  }
   // TODO eliminate this copy pasta.
-  auto gradFunc = [gradInfo = std::move(gradInfo)](
+  auto gradFunc = [gradInfo = std::move(gradInfoAOS)](
                       std::vector<Graph>& inputs, Graph deltas) {
     // In this case the arc's parents are always from the
     // first and second input graphs respectively.
