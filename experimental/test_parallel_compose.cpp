@@ -436,6 +436,131 @@ void testEpsilonGrad() {
   }
 }
 
+Graph makeChainGraph(const std::vector<int>& input) {
+  Graph chain(false);
+  chain.addNode(true);
+  for (auto i : input) {
+    auto n = chain.addNode(false, chain.numNodes() == input.size());
+    chain.addArc(n - 1, n, i);
+  }
+  return chain;
+}
+
+void testComposeEditDistance() {
+  auto computeEditDistance = [](
+      std::function<Graph(Graph, Graph)> compose,
+      const int numTokens,
+      const std::vector<int>& x,
+      const std::vector<int>& y) {
+    // Make edits graph
+    Graph edits(false);
+    edits.addNode(true, true);
+
+    for (int i = 0; i < numTokens; ++i) {
+      // Add substitutions
+      for (int j = 0; j < numTokens; ++j) {
+        edits.addArc(0, 0, i, j, -(i != j));
+      }
+      // Add insertions and deletions
+      edits.addArc(0, 0, i, gtn::epsilon, -1);
+      edits.addArc(0, 0, gtn::epsilon, i, -1);
+    }
+
+    // Make inputs
+    auto xG = makeChainGraph(x);
+    auto yG = makeChainGraph(y);
+
+    // Compose and viterbi to get distance
+    auto score = viterbiScore(compose(xG, compose(edits, yG)));
+    return -score.item();
+  };
+
+  // Small test case
+  auto dist = computeEditDistance(
+      gtn::detail::dataparallel::compose,
+      5,
+      {0, 1, 0, 1},
+      {0, 0, 0, 1, 1});
+  assert(dist == 2);
+
+  // Larger random test cases
+  const int minLength = 10;
+  const int maxLength = 100;
+  for (int numToks = 50; numToks < 70; numToks++) {
+    // Random lengths in [minLength, maxLength)
+    auto xLen = minLength + rand() % (maxLength - minLength);
+    auto yLen =  minLength + rand() % (maxLength - minLength);
+
+    // Random vectors x, y with tokens in [0, numToks)
+    std::vector<int> x;
+    for (int i = 0; i < xLen; i++) {
+      x.push_back(rand() % numToks);
+    }
+    std::vector<int> y;
+    for (int i = 0; i < yLen; i++) {
+      y.push_back(rand() % numToks);
+    }
+
+    auto dist = computeEditDistance(
+        gtn::detail::dataparallel::compose, numToks, x, y);
+    auto expected = computeEditDistance(compose, numToks, x, y);
+    assert(dist == expected);
+  }
+}
+
+void testComposeCountNgrams() {
+  auto countNgrams = [](
+      std::function<Graph(Graph, Graph)> compose,
+      const int numTokens,
+      const std::vector<int>& input,
+      const std::vector<int>& ngram) {
+    // Make n-gram counting graph
+    const int n = ngram.size();
+    Graph ngramCounter = linearGraph(n, numTokens);
+    for (int i = 0; i < numTokens; ++i) {
+      ngramCounter.addArc(0, 0, i, gtn::epsilon);
+      ngramCounter.addArc(n, n, i, gtn::epsilon);
+    }
+
+    // Make inputs
+    auto inputG = makeChainGraph(input);
+    auto ngramG = makeChainGraph(ngram);
+
+    auto score = forwardScore(compose(inputG, compose(ngramCounter, ngramG)));
+    return round(std::exp(score.item()));
+  };
+
+  // Small test
+  auto counts = countNgrams(
+    gtn::detail::dataparallel::compose, 2, {0, 1, 0, 1}, {0, 1});
+  assert(counts == 2);
+
+  // Larger random test cases
+  const int minLength = 300;
+  const int maxLength = 500;
+  const int n = 3;
+  const int numToks = 5;
+  for (int t = 0; t < 100; t++) {
+    // Random length in [minLength, maxLength)
+    auto inputLen = minLength + rand() % (maxLength - minLength);
+
+    // Random vectors input, ngram with tokens in [0, numToks)
+    std::vector<int> input;
+    for (int i = 0; i < inputLen; i++) {
+      input.push_back(rand() % numToks);
+    }
+    std::vector<int> ngram;
+    for (int i = 0; i < n; i++) {
+      ngram.push_back(rand() % numToks);
+    }
+
+    auto count = countNgrams(
+        gtn::detail::dataparallel::compose, numToks, input, ngram);
+    auto expected = countNgrams(compose, numToks, input, ngram);
+    assert(count == expected);
+  }
+}
+
 int main() {
   testConversion();
   std::cout << "Conversion checks passed!" << std::endl;
@@ -451,4 +576,10 @@ int main() {
 
   testEpsilonGrad();
   std::cout << "Epsilon gradients passed!" << std::endl;
+
+  testComposeEditDistance();
+  std::cout << "Compose edit distance passed!" << std::endl;
+
+  testComposeCountNgrams();
+  std::cout << "Compose count ngrams passed!" << std::endl;
 }
