@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#include <cmath>
 #include <cstdlib>
 
 #include "gtn/gtn.h"
