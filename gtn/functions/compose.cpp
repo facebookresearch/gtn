@@ -446,7 +446,18 @@ Graph compose(
       }
     }
 
-    // Check for output epsilons in the first graph
+    // The logic of when to check for epsilon transitions is as follows:
+    // Case 1: No epsilon match.
+    //   If there was no epsilon match then at most one of the two graphs has
+    //   an epsilon transition and we can check both safely.
+    //
+    // Case 2: Epsilon match.
+    //   If there was an epsilon match then we have to be careful to avoid
+    //   redundant paths.
+    //   1. Follow the epsilon transition out of the non accepting node.
+    //   2. If both nodes are accepting follow both transitions.
+    //   3. If neither node is accepting (arbitrarily) follow only the first
+    //   node's transition.
     if (!epsilon_matched || second.isAccept(curr.second) || !first.isAccept(curr.first)) {
       addEpsilonReachableNodes(
           false,
