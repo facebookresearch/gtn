@@ -81,14 +81,12 @@ auto findReachable(
     auto curr = toExplore.front();
     toExplore.pop();
 
-    bool epsilon_matched = false;
     matcher->match(curr.first, curr.second, true);
     int i, j;
     // Iterate through arcs that end with the curr node - the first arc's olabel
     // is the same as the second arc's ilabel per the matcher
     while (matcher->hasNext()) {
       std::tie(i, j) = matcher->next(); // arcs ending with curr
-      epsilon_matched |= (first.olabel(i) == epsilon);
       // Starting nodes for i and j arcs
       auto un1 = first.srcNode(i);
       auto un2 = second.srcNode(j);
@@ -99,12 +97,10 @@ auto findReachable(
       }
       reachable[idx] = true;
     }
-    if (!epsilon_matched) {
-      // Check for reachable node via output epsilon first graph
-      epsilonReachable(false, first, second, curr, reachable, toExplore);
-      // Check for reachable node via input epsilon in second graph
-      epsilonReachable(true, first, second, curr, reachable, toExplore);
-    }
+    // Check for reachable node via output epsilon first graph
+    epsilonReachable(false, first, second, curr, reachable, toExplore);
+    // Check for reachable node via input epsilon in second graph
+    epsilonReachable(true, first, second, curr, reachable, toExplore);
   }
   return reachable;
 }
@@ -418,6 +414,7 @@ Graph compose(
     // A node in the composed graph
     auto currNode = newNodes[toIndex(curr.first, curr.second, first)];
     int i, j;
+    bool epsilon_matched = false;
     matcher->match(curr.first, curr.second);
     // Each pair of nodes in the initial graph may have multiple outgoing arcs
     // that should be combined in the composed graph
@@ -425,6 +422,12 @@ Graph compose(
       // The matcher invariant remains: arc i's olabel (from the first graph) is
       // arc j's ilabel (from the second graph)
       std::tie(i, j) = matcher->next();
+
+      // Ignore direct epsilon matches
+      if (first.olabel(i) == epsilon) {
+        epsilon_matched = true;
+        continue;
+      }
 
       bool isReachable = addReachableNodeAndArc(
           first,
@@ -444,30 +447,47 @@ Graph compose(
         gradInfo.emplace_back(i, j);
       }
     }
-    // Check for output epsilons in the first graph
-    addEpsilonReachableNodes(
-        false,
-        first,
-        second,
-        currNode, // in the composed graph
-        curr, // in the input graphs
-        reachable,
-        toExplore,
-        newNodes,
-        ngraph,
-        gradInfo);
-    // Check out input epsilons in the second graph
-    addEpsilonReachableNodes(
-        true,
-        first,
-        second,
-        currNode, // in the composed graph
-        curr, // in the input graphs
-        reachable,
-        toExplore,
-        newNodes,
-        ngraph,
-        gradInfo);
+
+    // The logic of when to check for epsilon transitions is as follows:
+    // Case 1: No epsilon match.
+    //   If there was no epsilon match then at most one of the two graphs has
+    //   an epsilon transition and we can check both safely.
+    //
+    // Case 2: Epsilon match.
+    //   If there was an epsilon match then we have to be careful to avoid
+    //   redundant paths.
+    //   1. Follow the epsilon transition out of the non accepting node.
+    //   2. If both nodes are accepting follow both transitions.
+    //   3. If neither node is accepting (arbitrarily) follow only the first
+    //   node's transition.
+    if (!epsilon_matched || second.isAccept(curr.second) || !first.isAccept(curr.first)) {
+      addEpsilonReachableNodes(
+          false,
+          first,
+          second,
+          currNode, // in the composed graph
+          curr, // in the input graphs
+          reachable,
+          toExplore,
+          newNodes,
+          ngraph,
+          gradInfo);
+    }
+
+    // Check for input epsilons in the second graph
+    if (!epsilon_matched || first.isAccept(curr.first)) {
+      addEpsilonReachableNodes(
+          true,
+          first,
+          second,
+          currNode, // in the composed graph
+          curr, // in the input graphs
+          reachable,
+          toExplore,
+          newNodes,
+          ngraph,
+          gradInfo);
+    }
   }
 
   /*

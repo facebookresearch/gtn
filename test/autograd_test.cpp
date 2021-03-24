@@ -214,14 +214,33 @@ TEST_CASE("Test Compose Epsilon Grad", "[functions.compose_epsilon (grad)]") {
   second.addArc(2, 3, 5, 2, 0);
   second.addArc(2, 3, gtn::epsilon, 2, 0.0); // idx 11
 
+  Graph expected =
+      loadTxt(std::stringstream("0\n"
+                                "6\n"
+                                "0 1 0 0 0\n"
+                                "0 1 0 1 0\n"
+                                "0 3 2 -1 0\n"
+                                "0 4 1 2 0\n"
+                                "1 2 0 0 0\n"
+                                "1 4 2 -1 0\n"
+                                "1 5 1 1 0\n"
+                                "2 5 2 -1 0\n"
+                                "2 6 1 0 0\n"
+                                "3 4 -1 2 0\n"
+                                "4 5 2 2 0\n"
+                                "4 5 -1 2 0\n"
+                                "5 6 2 1 0\n"
+                                "5 6 2 2 0\n"
+                                "5 6 -1 2 0\n"));
   Graph composed = compose(first, second);
+  CHECK(randEquivalent(composed, expected));
 
   backward(composed);
 
   auto& grad1 = first.grad();
   auto& grad2 = second.grad();
-  std::vector<float> expectedFirstGrad = {3, 3, 3, 5};
-  std::vector<float> expectedSecondGrad = {1, 1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 2};
+  std::vector<float> expectedFirstGrad = {3, 3, 3, 3};
+  std::vector<float> expectedSecondGrad = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
   for (size_t i = 0; i < grad1.numArcs(); ++i) {
     CHECK(grad1.weights()[i] == expectedFirstGrad[i]);
   }

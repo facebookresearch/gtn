@@ -645,6 +645,142 @@ TEST_CASE("Test Epsilon Composition", "[functions.epsilon_compose]") {
     CHECK(equal(compose(g1, g2), expected));
   }
 
+  // A series of tests making sure we handle redundant epsilon paths correctly
+  {
+    Graph g1;
+    g1.addNode(true, true);
+    g1.addArc(0, 0, 0, epsilon);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0, 1.0);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode(false, true);
+    expected.addArc(0, 0, 0, epsilon);
+    expected.addArc(0, 1, epsilon, 0, 1.0);
+
+    CHECK(randEquivalent(compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true, true);
+    g1.addArc(0, 0, 0, epsilon);
+
+    Graph g2;
+    g2.addNode(true, true);
+    g2.addArc(0, 0, epsilon, 0);
+
+    Graph expected;
+    expected.addNode(true, true);
+    expected.addArc(0, 0, 0, epsilon);
+    expected.addArc(0, 0, epsilon, 0);
+
+    CHECK(randEquivalent(compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true, true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0, epsilon);
+    g1.addArc(1, 0, 0, epsilon);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0, 1.0);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode(false, true);
+    expected.addArc(0, 1, epsilon, 0, 1.0);
+    expected.addArc(1, 1, 0, epsilon);
+
+    CHECK(randEquivalent(compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0, epsilon);
+    g1.addArc(0, 0, 0, 1);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0);
+    g2.addArc(0, 1, 1, 1);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 0, 1);
+    expected.addArc(0, 1, epsilon, 0);
+    expected.addArc(1, 2, 0, epsilon);
+
+    CHECK(randEquivalent(compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0, epsilon);
+    g1.addArc(0, 1, 0, 1);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0);
+    g2.addArc(0, 0, 1, 1);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 0, 1);
+    expected.addArc(0, 1, 0, epsilon);
+    expected.addArc(1, 2, epsilon, 0);
+
+    CHECK(randEquivalent(compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0, epsilon);
+    g1.addArc(0, 1, 0, 1);
+    g1.addArc(0, 0, 1, 0);
+
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0);
+    g2.addArc(0, 0, 1, 0);
+    g2.addArc(0, 1, 0, 1);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 1, 1);
+    expected.addArc(0, 1, epsilon, 0);
+    expected.addArc(0, 2, 0, 0);
+    expected.addArc(2, 3, epsilon, 0);
+    expected.addArc(1, 3, 0, epsilon);
+
+    CHECK(randEquivalent(compose(g1, g2), expected));
+  }
+
   {
     // This test case is taken from "Weighted Automata Algorithms", Mehryar
     // Mohri, https://cs.nyu.edu/~mohri/pub/hwa.pdf Section 5.1, Figure 7
