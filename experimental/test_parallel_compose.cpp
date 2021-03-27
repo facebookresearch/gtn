@@ -351,6 +351,149 @@ void testEpsilon() {
   }
 }
 
+void testMoreEpsilon() {
+  // A series of tests making sure we handle redundant epsilon paths correctly
+  {
+    Graph g1;
+    g1.addNode(true, true);
+    g1.addArc(0, 0, 0, epsilon);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0, 1.0);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode(false, true);
+    expected.addArc(0, 0, 0, epsilon);
+    expected.addArc(0, 1, epsilon, 0, 1.0);
+
+    assert(
+        randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true, true);
+    g1.addArc(0, 0, 0, epsilon);
+
+    Graph g2;
+    g2.addNode(true, true);
+    g2.addArc(0, 0, epsilon, 0);
+
+    Graph expected;
+    expected.addNode(true, true);
+    expected.addArc(0, 0, 0, epsilon);
+    expected.addArc(0, 0, epsilon, 0);
+
+    assert(
+        randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true, true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0, epsilon);
+    g1.addArc(1, 0, 0, epsilon);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0, 1.0);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode(false, true);
+    expected.addArc(0, 1, epsilon, 0, 1.0);
+    expected.addArc(1, 1, 0, epsilon);
+
+    assert(
+        randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0, epsilon);
+    g1.addArc(0, 0, 0, 1);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0);
+    g2.addArc(0, 1, 1, 1);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 0, 1);
+    expected.addArc(0, 1, epsilon, 0);
+    expected.addArc(1, 2, 0, epsilon);
+
+    assert(
+        randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0, epsilon);
+    g1.addArc(0, 1, 0, 1);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0);
+    g2.addArc(0, 0, 1, 1);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 0, 1);
+    expected.addArc(0, 1, 0, epsilon);
+    expected.addArc(1, 2, epsilon, 0);
+
+    assert(
+        randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+
+  {
+    Graph g1;
+    g1.addNode(true);
+    g1.addNode(false, true);
+    g1.addArc(0, 1, 0, epsilon);
+    g1.addArc(0, 1, 0, 1);
+    g1.addArc(0, 0, 1, 0);
+
+    Graph g2;
+    g2.addNode(true);
+    g2.addNode(false, true);
+    g2.addArc(0, 1, epsilon, 0);
+    g2.addArc(0, 0, 1, 0);
+    g2.addArc(0, 1, 0, 1);
+
+    Graph expected;
+    expected.addNode(true);
+    expected.addNode();
+    expected.addNode();
+    expected.addNode(false, true);
+    expected.addArc(0, 1, 1, 1);
+    expected.addArc(0, 1, epsilon, 0);
+    expected.addArc(0, 2, 0, 0);
+    expected.addArc(2, 3, epsilon, 0);
+    expected.addArc(1, 3, 0, epsilon);
+
+    assert(
+        randEquivalent(gtn::detail::dataparallel::compose(g1, g2), expected));
+  }
+}
+
 void testGrad() {
   Graph first;
   first.addNode(true);
@@ -420,14 +563,34 @@ void testEpsilonGrad() {
   second.addArc(2, 3, 5, 2, 0);
   second.addArc(2, 3, gtn::epsilon, 2, 0.0); // idx 11
 
+  Graph expected =
+      loadTxt(std::stringstream("0\n"
+                                "6\n"
+                                "0 1 0 0 0\n"
+                                "0 1 0 1 0\n"
+                                "0 3 2 -1 0\n"
+                                "0 4 1 2 0\n"
+                                "1 2 0 0 0\n"
+                                "1 4 2 -1 0\n"
+                                "1 5 1 1 0\n"
+                                "2 5 2 -1 0\n"
+                                "2 6 1 0 0\n"
+                                "3 4 -1 2 0\n"
+                                "4 5 2 2 0\n"
+                                "4 5 -1 2 0\n"
+                                "5 6 2 1 0\n"
+                                "5 6 2 2 0\n"
+                                "5 6 -1 2 0\n"));
+
   Graph composed = gtn::detail::dataparallel::compose(first, second);
+  assert(randEquivalent(composed, expected));
 
   backward(composed);
 
   auto& grad1 = first.grad();
   auto& grad2 = second.grad();
-  std::vector<float> expectedFirstGrad = {3, 3, 3, 5};
-  std::vector<float> expectedSecondGrad = {1, 1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 2};
+  std::vector<float> expectedFirstGrad = {3, 3, 3, 3};
+  std::vector<float> expectedSecondGrad = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
   for (size_t i = 0; i < grad1.numArcs(); ++i) {
     assert(grad1.weights()[i] == expectedFirstGrad[i]);
   }
@@ -447,11 +610,10 @@ Graph makeChainGraph(const std::vector<int>& input) {
 }
 
 void testComposeEditDistance() {
-  auto computeEditDistance = [](
-      std::function<Graph(Graph, Graph)> compose,
-      const int numTokens,
-      const std::vector<int>& x,
-      const std::vector<int>& y) {
+  auto computeEditDistance = [](std::function<Graph(Graph, Graph)> compose,
+                                const int numTokens,
+                                const std::vector<int>& x,
+                                const std::vector<int>& y) {
     // Make edits graph
     Graph edits(false);
     edits.addNode(true, true);
@@ -477,10 +639,7 @@ void testComposeEditDistance() {
 
   // Small test case
   auto dist = computeEditDistance(
-      gtn::detail::dataparallel::compose,
-      5,
-      {0, 1, 0, 1},
-      {0, 0, 0, 1, 1});
+      gtn::detail::dataparallel::compose, 5, {0, 1, 0, 1}, {0, 0, 0, 1, 1});
   assert(dist == 2);
 
   // Larger random test cases
@@ -489,7 +648,7 @@ void testComposeEditDistance() {
   for (int numToks = 50; numToks < 70; numToks++) {
     // Random lengths in [minLength, maxLength)
     auto xLen = minLength + rand() % (maxLength - minLength);
-    auto yLen =  minLength + rand() % (maxLength - minLength);
+    auto yLen = minLength + rand() % (maxLength - minLength);
 
     // Random vectors x, y with tokens in [0, numToks)
     std::vector<int> x;
@@ -501,19 +660,18 @@ void testComposeEditDistance() {
       y.push_back(rand() % numToks);
     }
 
-    auto dist = computeEditDistance(
-        gtn::detail::dataparallel::compose, numToks, x, y);
+    auto dist =
+        computeEditDistance(gtn::detail::dataparallel::compose, numToks, x, y);
     auto expected = computeEditDistance(compose, numToks, x, y);
     assert(dist == expected);
   }
 }
 
 void testComposeCountNgrams() {
-  auto countNgrams = [](
-      std::function<Graph(Graph, Graph)> compose,
-      const int numTokens,
-      const std::vector<int>& input,
-      const std::vector<int>& ngram) {
+  auto countNgrams = [](std::function<Graph(Graph, Graph)> compose,
+                        const int numTokens,
+                        const std::vector<int>& input,
+                        const std::vector<int>& ngram) {
     // Make n-gram counting graph
     const int n = ngram.size();
     Graph ngramCounter = linearGraph(n, numTokens);
@@ -531,8 +689,8 @@ void testComposeCountNgrams() {
   };
 
   // Small test
-  auto counts = countNgrams(
-    gtn::detail::dataparallel::compose, 2, {0, 1, 0, 1}, {0, 1});
+  auto counts =
+      countNgrams(gtn::detail::dataparallel::compose, 2, {0, 1, 0, 1}, {0, 1});
   assert(counts == 2);
 
   // Larger random test cases
@@ -554,8 +712,8 @@ void testComposeCountNgrams() {
       ngram.push_back(rand() % numToks);
     }
 
-    auto count = countNgrams(
-        gtn::detail::dataparallel::compose, numToks, input, ngram);
+    auto count =
+        countNgrams(gtn::detail::dataparallel::compose, numToks, input, ngram);
     auto expected = countNgrams(compose, numToks, input, ngram);
     assert(count == expected);
   }
@@ -570,6 +728,9 @@ int main() {
 
   testEpsilon();
   std::cout << "Epsilon compositions passed!" << std::endl;
+
+  testMoreEpsilon();
+  std::cout << "More epsilon compositions passed!" << std::endl;
 
   testGrad();
   std::cout << "Composition gradients passed!" << std::endl;
