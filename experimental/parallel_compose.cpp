@@ -865,7 +865,7 @@ Graph compose(const Graph& first, const Graph& second) {
           newNodesVisited[nodeIdx] = true;
           newGraphDP.start[newNodesOffset[nodeIdx]] = true;
           newGraphDP.accept[newNodesOffset[nodeIdx]] =
-              graphDP1.accept[f] && graphDP1.accept[s];
+              graphDP1.accept[f] && graphDP2.accept[s];
         }
       }
     }
@@ -1065,11 +1065,13 @@ Graph compose(const Graph& first, const Graph& second) {
   // Convert back and add in autograd metadata
   auto nGraph = convertFromDataParallel(newGraphDP);
   nGraph.setInputs({first, second});
+
   // Convert gradInfo SOA to AOS
   std::vector<std::pair<int, int>> gradInfoAOS;
   for (int i = 0; i < gradInfo.first.size(); ++i) {
     gradInfoAOS.emplace_back(gradInfo.first[i], gradInfo.second[i]);
   }
+
   // TODO eliminate this copy pasta.
   auto gradFunc = [gradInfo = std::move(gradInfoAOS)](
                       std::vector<Graph>& inputs, Graph deltas) {
