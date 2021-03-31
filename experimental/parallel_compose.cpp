@@ -555,7 +555,7 @@ Graph compose(const Graph& first, const Graph& second) {
   } // end while for findReachable
 
   //////////////////////////////////////////////////////////////////////////
-  // Step 3: Compute a) valid nodes in combined graph
+  // Step 2: Compute a) valid nodes in combined graph
   //                 b) Number of in and out arcs in combined graph
   // This information is used to generate offsets for nodes and arcs
   // in the combined graph
@@ -718,7 +718,7 @@ Graph compose(const Graph& first, const Graph& second) {
   }
 
   //////////////////////////////////////////////////////////////////////////
-  // Step 4: Generate offsets for nodes and arcs in combined graph
+  // Step 3: Generate offsets for nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   // Generate offsets for nodes and arcs
   GraphDataParallel newGraphDP;
@@ -767,7 +767,7 @@ Graph compose(const Graph& first, const Graph& second) {
   gradInfo.second.resize(totalOutArcs);
 
   //////////////////////////////////////////////////////////////////////////
-  // Step 5: Generate nodes and arcs in combined graph
+  // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   std::fill(toExplore.begin(), toExplore.end(), false);
   // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
@@ -832,6 +832,9 @@ Graph compose(const Graph& first, const Graph& second) {
         const int secondArcIdx =
             graphDP2.outArcs[outArcOffset + arcPair.second];
 
+        const bool epsilonMatch = epsilonMatched[TwoDToOneDIndex(
+            srcNodePair.first, srcNodePair.second, numNodesFirst)];
+
         // Does this node pair match?
         if (checkArcPair &&
             (graphDP1.olabels[firstArcIdx] == graphDP2.ilabels[secondArcIdx])) {
@@ -851,10 +854,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
           // We track if any two arcs outgoing from this node pair match
           // on epsilon. We record if they do.
-          if (graphDP1.olabels[firstArcIdx] == epsilon) {
-            // epsilonMatched[TwoDToOneDIndex(
-              //  srcNodePair.first, srcNodePair.second, numNodesFirst)] = true;
-          } else {
+          if (graphDP1.olabels[firstArcIdx] != epsilon) {
             generateCombinedGraphNodesAndArcs(
                 dstIdx,
                 curIdx,
@@ -872,33 +872,6 @@ Graph compose(const Graph& first, const Graph& second) {
                 graphDP1.weights[firstArcIdx] + graphDP2.weights[secondArcIdx]);
           }
         }
-      }
-    }
-
-    // No dependence between iterations
-    for (int tid = 0; tid < totalArcs; ++tid) {
-      // Map tid to corresponding node and arc pair
-      // Search to find which node pair this tid will fall into
-      std::pair<int, int> srcNodePair;
-      std::pair<int, int> arcPair;
-      bool checkArcPair;
-      std::pair<bool, bool> checkEpsilonArcPair;
-      bool isValid;
-      std::tie(
-          isValid, srcNodePair, arcPair, checkArcPair, checkEpsilonArcPair) =
-          computeNodeAndArcPair(
-              tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
-
-      if (isValid) {
-        int outArcOffset = graphDP1.outArcOffset[srcNodePair.first];
-        const int firstArcIdx = graphDP1.outArcs[outArcOffset + arcPair.first];
-
-        outArcOffset = graphDP2.outArcOffset[srcNodePair.second];
-        const int secondArcIdx =
-            graphDP2.outArcs[outArcOffset + arcPair.second];
-
-        const bool epsilonMatch = epsilonMatched[TwoDToOneDIndex(
-            srcNodePair.first, srcNodePair.second, numNodesFirst)];
 
         // The epsilon matches
         if (checkEpsilonArcPair.first &&
