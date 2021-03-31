@@ -628,6 +628,9 @@ Graph compose(const Graph& first, const Graph& second) {
         const int secondArcIdx =
             graphDP2.outArcs[outArcOffset + arcPair.second];
 
+        const bool epsilonMatch = epsilonMatched[TwoDToOneDIndex(
+            nodePair.first, nodePair.second, numNodesFirst)];
+
         // Does this node pair match?
         // Skip epsilon matches
         if (checkArcPair &&
@@ -652,31 +655,6 @@ Graph compose(const Graph& first, const Graph& second) {
                 numInArcs);
           }
         }
-      }
-    }
-
-    for (int tid = 0; tid < totalArcs; ++tid) {
-      // Map tid to corresponding node and arc pair
-      // Search to find which node pair this tid will fall into
-      std::pair<int, int> nodePair;
-      std::pair<int, int> arcPair;
-      bool checkArcPair;
-      std::pair<bool, bool> checkEpsilonArcPair;
-      bool isValid;
-      std::tie(isValid, nodePair, arcPair, checkArcPair, checkEpsilonArcPair) =
-          computeNodeAndArcPair(
-              tid, arcCrossProductOffset, toExploreNumArcs, toExploreNodePair);
-
-      if (isValid) {
-        int outArcOffset = graphDP1.outArcOffset[nodePair.first];
-        const int firstArcIdx = graphDP1.outArcs[outArcOffset + arcPair.first];
-
-        outArcOffset = graphDP2.outArcOffset[nodePair.second];
-        const int secondArcIdx =
-            graphDP2.outArcs[outArcOffset + arcPair.second];
-
-        const bool epsilonMatch = epsilonMatched[TwoDToOneDIndex(
-            nodePair.first, nodePair.second, numNodesFirst)];
 
         if (checkEpsilonArcPair.first &&
             (!epsilonMatch || graphDP2.accept[nodePair.second] ||
