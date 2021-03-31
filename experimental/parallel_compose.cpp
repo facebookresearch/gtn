@@ -593,7 +593,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
     // Reset to pristine state for next frontier to explore
     std::fill(toExplore.begin(), toExplore.end(), false);
-    std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
+    // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
     std::vector<int> arcCrossProductOffset;
     std::vector<std::pair<int, int>> toExploreNumArcs;
@@ -770,7 +770,7 @@ Graph compose(const Graph& first, const Graph& second) {
   // Step 5: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   std::fill(toExplore.begin(), toExplore.end(), false);
-  std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
+  // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
   std::vector<bool> newNodesVisited(
       first.numNodes() * second.numNodes(), false);
 
@@ -800,7 +800,7 @@ Graph compose(const Graph& first, const Graph& second) {
     // Reset so pristine state for next frontier to explore
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
-    std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
+    // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
     std::vector<int> arcCrossProductOffset;
     std::vector<std::pair<int, int>> toExploreNumArcs;
@@ -852,8 +852,8 @@ Graph compose(const Graph& first, const Graph& second) {
           // We track if any two arcs outgoing from this node pair match
           // on epsilon. We record if they do.
           if (graphDP1.olabels[firstArcIdx] == epsilon) {
-            epsilonMatched[TwoDToOneDIndex(
-                srcNodePair.first, srcNodePair.second, numNodesFirst)] = true;
+            // epsilonMatched[TwoDToOneDIndex(
+              //  srcNodePair.first, srcNodePair.second, numNodesFirst)] = true;
           } else {
             generateCombinedGraphNodesAndArcs(
                 dstIdx,
@@ -974,6 +974,7 @@ Graph compose(const Graph& first, const Graph& second) {
       }
     }
   }
+
   // Shift offset values back down after adding arcs to newGraphDP
   // The offset values got converted from exclusive prefix sum to inclusive
   // Need to convert them back to exclusive prefix sum  by starting with 0
