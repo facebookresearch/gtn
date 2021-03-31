@@ -658,7 +658,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
         if (checkEpsilonArcPair.first &&
             (!epsilonMatch || graphDP2.accept[nodePair.second] ||
-            !graphDP1.accept[nodePair.first]) &&
+             !graphDP1.accept[nodePair.first]) &&
             (graphDP1.olabels[firstArcIdx] == epsilon)) {
           const int dstIdx = TwoDToOneDIndex(
               graphDP1.dstNodes[firstArcIdx], nodePair.second, numNodesFirst);
@@ -853,7 +853,7 @@ Graph compose(const Graph& first, const Graph& second) {
         // The epsilon matches
         if (checkEpsilonArcPair.first &&
             (!epsilonMatch || graphDP2.accept[srcNodePair.second] ||
-            !graphDP1.accept[srcNodePair.first]) &&
+             !graphDP1.accept[srcNodePair.first]) &&
             (graphDP1.olabels[firstArcIdx] == epsilon)) {
           // When arc from first node has epsilon label then we consider
           // second node
