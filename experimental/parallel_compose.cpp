@@ -458,6 +458,7 @@ Graph compose(const Graph& first, const Graph& second) {
   // Step 1: Data parallel findReachable
   //////////////////////////////////////////////////////////////////////////
   std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
+  std::vector<bool> epsilonMatched(first.numNodes() * second.numNodes(), false);
 
   std::vector<bool> toExplore(first.numNodes() * second.numNodes(), false);
 
@@ -519,6 +520,11 @@ Graph compose(const Graph& first, const Graph& second) {
               graphDP1.srcNodes[firstArcIdx],
               graphDP2.srcNodes[secondArcIdx],
               numNodesFirst);
+
+          if (graphDP1.olabels[firstArcIdx] == epsilon) {
+            epsilonMatched[idx] = true;
+          }
+
           // idx may not be unique amongst all threads. In particular
           // if two pairs of arcs that have same olabel and ilabel then idx
           // won't be unique and this is a race but both would mark the
@@ -561,14 +567,12 @@ Graph compose(const Graph& first, const Graph& second) {
   // in the combined graph
   //////////////////////////////////////////////////////////////////////////
   std::vector<bool> newNodes(first.numNodes() * second.numNodes(), false);
-  std::vector<bool> epsilonMatched(first.numNodes() * second.numNodes(), false);
 
   // Number of in and out arcs per node
   std::vector<int> numOutArcs(first.numNodes() * second.numNodes(), 0);
   std::vector<int> numInArcs(first.numNodes() * second.numNodes(), 0);
 
   // Tracks the nodes that are going to be present in the combined graph
-  // std::fill(newNodes.begin(), newNodes.end(), false);
   std::fill(toExplore.begin(), toExplore.end(), false);
 
   {
@@ -637,10 +641,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
           // We track if any two arcs outgoing from this node pair match
           // on epsilon. We record if they do.
-          if (graphDP1.olabels[firstArcIdx] == epsilon) {
-            epsilonMatched[TwoDToOneDIndex(
-                nodePair.first, nodePair.second, numNodesFirst)] = true;
-          } else {
+          if (graphDP1.olabels[firstArcIdx] != epsilon) {
             calculateNumArcsAndNodesToExplore(
                 curIdx,
                 dstIdx,
@@ -770,7 +771,6 @@ Graph compose(const Graph& first, const Graph& second) {
   // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   std::fill(toExplore.begin(), toExplore.end(), false);
-  // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
   std::vector<bool> newNodesVisited(
       first.numNodes() * second.numNodes(), false);
 
@@ -800,7 +800,6 @@ Graph compose(const Graph& first, const Graph& second) {
     // Reset so pristine state for next frontier to explore
     // No dependence between iterations
     std::fill(toExplore.begin(), toExplore.end(), false);
-    // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
     std::vector<int> arcCrossProductOffset;
     std::vector<std::pair<int, int>> toExploreNumArcs;
