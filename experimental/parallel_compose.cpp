@@ -531,8 +531,8 @@ Graph compose(const Graph& first, const Graph& second) {
           // destination node as reachable
           if (!reachable[idx]) {
             toExplore[idx] = true;
+            reachable[idx] = true;
           }
-          reachable[idx] = true;
         }
 
         // Only valid for arcs incoming to node from first graph
@@ -542,8 +542,8 @@ Graph compose(const Graph& first, const Graph& second) {
               graphDP1.srcNodes[firstArcIdx], nodePair.second, numNodesFirst);
           if (!reachable[idx]) {
             toExplore[idx] = true;
+            reachable[idx] = true;
           }
-          reachable[idx] = true;
         }
 
         // Only valid for arcs incoming to node from second graph
@@ -553,8 +553,8 @@ Graph compose(const Graph& first, const Graph& second) {
               nodePair.first, graphDP2.srcNodes[secondArcIdx], numNodesFirst);
           if (!reachable[idx]) {
             toExplore[idx] = true;
+            reachable[idx] = true;
           }
-          reachable[idx] = true;
         }
       }
     }
