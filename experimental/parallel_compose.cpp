@@ -45,7 +45,7 @@ inline std::pair<int, int> OneDToTwoDIndex(int n, int n1Extent) {
   return std::make_pair(n1, n2);
 }
 
-bool checkAnyTrue(const std::vector<bool>& flags) {
+bool checkAnyTrue(const std::vector<int>& flags) {
   for (auto i : flags) {
     if (i == true) {
       return i;
@@ -211,9 +211,9 @@ calculateArcCrossProductOffset(
 void calculateNumArcsAndNodesToExplore(
     int curIdx,
     int dstIdx,
-    const std::vector<bool>& reachable,
-    std::vector<bool>& newNodes,
-    std::vector<bool>& toExplore,
+    const std::vector<int>& reachable,
+    std::vector<int>& newNodes,
+    std::vector<int>& toExplore,
     std::vector<int>& numOutArcs,
     std::vector<int>& numInArcs) {
   if (reachable[dstIdx]) {
@@ -235,10 +235,10 @@ void generateCombinedGraphNodesAndArcs(
     int dstIdx,
     int curIdx,
     const std::pair<int, int>& arcPair,
-    const std::vector<bool>& reachable,
+    const std::vector<int>& reachable,
     const std::vector<int>& newNodesOffset,
-    std::vector<bool>& newNodesVisited,
-    std::vector<bool>& toExplore,
+    std::vector<int>& newNodesVisited,
+    std::vector<int>& toExplore,
     std::pair<std::vector<int>, std::vector<int>>& gradInfo,
     GraphDataParallel& newGraphDP,
     std::pair<bool, bool> srcNodeStartAndAccept,
@@ -283,7 +283,7 @@ void generateCombinedGraphNodesAndArcs(
 
 // Convert bool array two pairs for true flags
 std::vector<std::pair<int, int>> convertToNodePair(
-    const std::vector<bool>& flags,
+    const std::vector<int>& flags,
     int extent) {
   std::vector<std::pair<int, int>> toExploreNodePair;
   for (size_t i = 0; i < flags.size(); ++i) {
@@ -297,7 +297,7 @@ std::vector<std::pair<int, int>> convertToNodePair(
 
 // Takes a bool array with flags set for nodes to pick and returns
 // an array with indices that were set as true
-std::vector<int> convertToNodes(const std::vector<bool>& flags) {
+std::vector<int> convertToNodes(const std::vector<int>& flags) {
   std::vector<int> nodes;
 
   for (size_t i = 0; i < flags.size(); ++i) {
@@ -457,10 +457,10 @@ Graph compose(const Graph& first, const Graph& second) {
   //////////////////////////////////////////////////////////////////////////
   // Step 1: Data parallel findReachable
   //////////////////////////////////////////////////////////////////////////
-  std::vector<bool> reachable(first.numNodes() * second.numNodes(), false);
-  std::vector<bool> epsilonMatched(first.numNodes() * second.numNodes(), false);
+  std::vector<int> reachable(first.numNodes() * second.numNodes(), false);
+  std::vector<int> epsilonMatched(first.numNodes() * second.numNodes(), false);
 
-  std::vector<bool> toExplore(first.numNodes() * second.numNodes(), false);
+  std::vector<int> toExplore(first.numNodes() * second.numNodes(), false);
 
   const int numNodesFirst = first.numNodes();
 
@@ -566,7 +566,7 @@ Graph compose(const Graph& first, const Graph& second) {
   // This information is used to generate offsets for nodes and arcs
   // in the combined graph
   //////////////////////////////////////////////////////////////////////////
-  std::vector<bool> newNodes(first.numNodes() * second.numNodes(), false);
+  std::vector<int> newNodes(first.numNodes() * second.numNodes(), false);
 
   // Number of in and out arcs per node
   std::vector<int> numOutArcs(first.numNodes() * second.numNodes(), 0);
@@ -749,7 +749,7 @@ Graph compose(const Graph& first, const Graph& second) {
   // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   std::fill(toExplore.begin(), toExplore.end(), false);
-  std::vector<bool> newNodesVisited(
+  std::vector<int> newNodesVisited(
       first.numNodes() * second.numNodes(), false);
 
   {

@@ -19,8 +19,8 @@ namespace dataparallel {
 // Change AOS to SOA
 struct GraphDataParallel {
   // True if a node is accept or start, false otherwise
-  std::vector<bool> accept;
-  std::vector<bool> start;
+  std::vector<int> accept;
+  std::vector<int> start;
 
   // One value per node - i-th value corresponds to i-th node
   // Last element is the total number of arcs, so that
