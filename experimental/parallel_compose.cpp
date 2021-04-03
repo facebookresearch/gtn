@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cassert>
 #include <tuple>
+#include <vector>
 
 #include "parallel_compose.h"
 
