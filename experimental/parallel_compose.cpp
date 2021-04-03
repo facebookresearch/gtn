@@ -71,8 +71,12 @@ std::tuple<
 computeNodeAndArcPair(
     int tid,
     const std::vector<int>& arcCrossProductOffset,
-    const std::vector<std::pair<int, int>>& toExploreNumArcs,
-    const std::vector<std::pair<int, int>>& toExploreNodePair) {
+    const std::pair<std::vector<int>, std::vector<int>>& toExploreNumArcs,
+    const std::pair<std::vector<int>, std::vector<int>>& toExploreNodePair) {
+  assert(toExploreNodePair.first.size() == toExploreNodePair.second.size());
+  assert(arcCrossProductOffset.size() == (toExploreNodePair.first.size() + 1));
+  assert(toExploreNumArcs.first.size() == toExploreNumArcs.second.size());
+
   std::pair<int, int> nodePair;
   std::pair<int, int> arcPair;
 
@@ -92,47 +96,47 @@ computeNodeAndArcPair(
 
     if ((lVal <= tid) && (tid < rVal)) {
       isValid = true;
-      nodePair = toExploreNodePair[i];
+      nodePair = std::make_pair(
+          (toExploreNodePair.first)[i], (toExploreNodePair.second)[i]);
 
       // The range of idx is from
-      // [0, toExploreNumArcs[i].first * toExploreNumArcs[i].second)
+      // [0, toExploreNumArcs.first[i] * toExploreNumArcs.second[i])
       const int idx = tid - lVal;
       const int numArcs = rVal - lVal;
-      // arcCrossProductOffset[i + 1] - arcCrossProductOffset[i];
 
       assert(idx >= 0);
       assert(idx < numArcs);
       assert(numArcs > 0);
 
       const int arcProd =
-          toExploreNumArcs[i].first * toExploreNumArcs[i].second;
+          (toExploreNumArcs.first)[i] * (toExploreNumArcs.second)[i];
 
       if (numArcs == arcProd) {
         checkArcPair = true;
 
         // We map the tids to 2D grid where the
-        // x-axis is toExploreNumArcs[i].first (row)
-        // y-axis is toExploreNumArcs[i].second (column)
-        arcPair = OneDToTwoDIndex(idx, toExploreNumArcs[i].first);
+        // x-axis is toExploreNumArcs.first[i] (row)
+        // y-axis is toExploreNumArcs.second[i] (column)
+        arcPair = OneDToTwoDIndex(idx, (toExploreNumArcs.first)[i]);
 
         // Pick the tids from the first row since we need only one
         // tid per arc of the node from the first graph to check for
         // epsilon
-        if (idx < toExploreNumArcs[i].first) {
+        if (idx < (toExploreNumArcs.first)[i]) {
           checkEpsilonArcPair.first = true;
         }
 
         // Pick the tids from the first column since we need only one
         // tid per arc of the node from the first graph to check for
         // epsilon
-        if (idx % toExploreNumArcs[i].first == 0) {
+        if (idx % (toExploreNumArcs.first)[i] == 0) {
           checkEpsilonArcPair.second = true;
         }
-      } else if ((arcProd == 0) && (numArcs == toExploreNumArcs[i].first)) {
+      } else if ((arcProd == 0) && (numArcs == (toExploreNumArcs.first)[i])) {
         // TODO: Likely not the brightest idea to use -1 as sentinel
         arcPair = std::make_pair(idx, -1);
         checkEpsilonArcPair.first = true;
-      } else if ((arcProd == 0) && (numArcs == toExploreNumArcs[i].second)) {
+      } else if ((arcProd == 0) && (numArcs == (toExploreNumArcs.second)[i])) {
         // TODO: Likely not the brightest idea to use -1 as sentinel
         arcPair = std::make_pair(-1, idx);
         checkEpsilonArcPair.second = true;
@@ -150,18 +154,23 @@ computeNodeAndArcPair(
 // graph and calculate a vector of number of arcs in the cross product of
 // arcs outgoing from each pair.
 // This should be a kernel call
-std::tuple<std::vector<int>, std::vector<std::pair<int, int>>>
+std::tuple<std::vector<int>, std::pair<std::vector<int>, std::vector<int>>>
 calculateArcCrossProductOffset(
-    const std::vector<std::pair<int, int>>& toExploreNodePair,
+    const std::pair<std::vector<int>, std::vector<int>>& toExploreNodePair,
     const GraphDataParallel& graphDP1,
     const GraphDataParallel& graphDP2,
     bool inOrOutArc) {
-  std::vector<std::pair<int, int>> toExploreNumArcs(toExploreNodePair.size());
-  std::vector<int> arcCrossProductOffset(toExploreNodePair.size());
+  assert(toExploreNodePair.first.size() == toExploreNodePair.second.size());
+
+  std::pair<std::vector<int>, std::vector<int>> toExploreNumArcs;
+  toExploreNumArcs.first.resize(toExploreNodePair.first.size());
+  toExploreNumArcs.second.resize(toExploreNodePair.first.size());
+
+  std::vector<int> arcCrossProductOffset(toExploreNodePair.first.size());
 
   // No dependence between iterations
-  for (size_t i = 0; i < toExploreNodePair.size(); ++i) {
-    int node = toExploreNodePair[i].first;
+  for (size_t i = 0; i < toExploreNodePair.first.size(); ++i) {
+    int node = (toExploreNodePair.first)[i];
     // Special case if it is the last node. Then the offset becomes
     // the number of arcs
     const int inArcOffsetGraph1 = ((node + 1) == graphDP1.inArcOffset.size())
@@ -175,7 +184,7 @@ calculateArcCrossProductOffset(
         ? inArcOffsetGraph1 - graphDP1.inArcOffset[node]
         : outArcOffsetGraph1 - graphDP1.outArcOffset[node];
 
-    node = toExploreNodePair[i].second;
+    node = (toExploreNodePair.second)[i];
     // Special case if it is the last node. Then the offset becomes
     // the number of arcs
     const int inArcOffsetGraph2 = ((node + 1) == graphDP2.inArcOffset.size())
@@ -189,7 +198,8 @@ calculateArcCrossProductOffset(
         ? inArcOffsetGraph2 - graphDP2.inArcOffset[node]
         : outArcOffsetGraph2 - graphDP2.outArcOffset[node];
 
-    toExploreNumArcs[i] = std::make_pair(numArcsFirst, numArcsSecond);
+    (toExploreNumArcs.first)[i] = numArcsFirst;
+    (toExploreNumArcs.second)[i] = numArcsSecond;
 
     // Even when numArcsFirst or numArcsSecond is 0 we have to consider
     // the case when the other graph has arcs with epsilon label
@@ -283,13 +293,16 @@ void generateCombinedGraphNodesAndArcs(
 }
 
 // Convert bool array two pairs for true flags
-std::vector<std::pair<int, int>> convertToNodePair(
+// std::vector<std::pair<int, int>> convertToNodePair(
+std::pair<std::vector<int>, std::vector<int>> convertToNodePair(
     const std::vector<int>& flags,
     int extent) {
-  std::vector<std::pair<int, int>> toExploreNodePair;
+  std::pair<std::vector<int>, std::vector<int>> toExploreNodePair;
   for (size_t i = 0; i < flags.size(); ++i) {
     if (flags[i] == true) {
-      toExploreNodePair.push_back(OneDToTwoDIndex(i, extent));
+      std::pair<int, int> node = OneDToTwoDIndex(i, extent);
+      toExploreNodePair.first.push_back(node.first);
+      toExploreNodePair.second.push_back(node.second);
     }
   }
 
@@ -487,7 +500,7 @@ Graph compose(const Graph& first, const Graph& second) {
     std::fill(toExplore.begin(), toExplore.end(), false);
 
     std::vector<int> arcCrossProductOffset;
-    std::vector<std::pair<int, int>> toExploreNumArcs;
+    std::pair<std::vector<int>, std::vector<int>> toExploreNumArcs;
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, true);
@@ -601,7 +614,7 @@ Graph compose(const Graph& first, const Graph& second) {
     // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
     std::vector<int> arcCrossProductOffset;
-    std::vector<std::pair<int, int>> toExploreNumArcs;
+    std::pair<std::vector<int>, std::vector<int>> toExploreNumArcs;
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, false);
@@ -750,8 +763,7 @@ Graph compose(const Graph& first, const Graph& second) {
   // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   std::fill(toExplore.begin(), toExplore.end(), false);
-  std::vector<int> newNodesVisited(
-      first.numNodes() * second.numNodes(), false);
+  std::vector<int> newNodesVisited(first.numNodes() * second.numNodes(), false);
 
   {
     std::vector<int> startDP1 = convertToNodes(graphDP1.start);
@@ -781,7 +793,7 @@ Graph compose(const Graph& first, const Graph& second) {
     std::fill(toExplore.begin(), toExplore.end(), false);
 
     std::vector<int> arcCrossProductOffset;
-    std::vector<std::pair<int, int>> toExploreNumArcs;
+    std::pair<std::vector<int>, std::vector<int>> toExploreNumArcs;
     std::tie(arcCrossProductOffset, toExploreNumArcs) =
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, false);
