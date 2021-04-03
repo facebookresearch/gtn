@@ -10,6 +10,16 @@ function(build_experimental SRCFILE)
   target_sources(
     ${target}
     PRIVATE
+    ${PROJECT_SOURCE_DIR}/prefix_scan.cpp
+  )
+  target_sources(
+    ${target}
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/converters.cpp
+  )
+  target_sources(
+    ${target}
+    PRIVATE
     ${PROJECT_SOURCE_DIR}/parallel_compose.cpp
   )
   target_link_libraries(
