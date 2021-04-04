@@ -214,9 +214,13 @@ void calculateNumArcsAndNodesToExplore(
     std::vector<int>& numOutArcs,
     std::vector<int>& numInArcs) {
   if (reachable[dstIdx]) {
-    // Atomic test and set for newNodes
+    // Atomic test and set (CAS) for newNodes
+    int oldVal = newNodes[dstIdx];
     if (!newNodes[dstIdx]) {
       newNodes[dstIdx] = true;
+    }
+
+    if (!oldVal) {
       toExplore[dstIdx] = true;
     }
 
@@ -244,9 +248,13 @@ void generateCombinedGraphNodesAndArcs(
     int olabel,
     float weight) {
   if (reachable[dstIdx]) {
-    // Atomic test and set for newNodesVisited
+    // Atomic test and set (CAS) for newNodesVisited
+    int oldVal = newNodesVisited[dstIdx];
     if (!newNodesVisited[dstIdx]) {
       newNodesVisited[dstIdx] = true;
+    }
+
+    if (!oldVal) {
       toExplore[dstIdx] = true;
     }
 
@@ -410,8 +418,11 @@ Graph compose(const Graph& first, const Graph& second) {
           // if two pairs of arcs that have same olabel and ilabel then idx
           // won't be unique and this is a race but both would mark the
           // destination node as reachable
+          int oldVal = reachable[idx];
           if (!reachable[idx]) {
             toExplore[idx] = true;
+          }
+          if (!oldVal) {
             reachable[idx] = true;
           }
         }
@@ -421,8 +432,11 @@ Graph compose(const Graph& first, const Graph& second) {
             (graphDP1.olabels[firstArcIdx] == epsilon)) {
           const int idx = TwoDToOneDIndex(
               graphDP1.srcNodes[firstArcIdx], nodePair.second, numNodesFirst);
+          int oldVal = reachable[idx];
           if (!reachable[idx]) {
             toExplore[idx] = true;
+          }
+          if (!oldVal) {
             reachable[idx] = true;
           }
         }
@@ -432,8 +446,11 @@ Graph compose(const Graph& first, const Graph& second) {
             (graphDP2.ilabels[secondArcIdx] == epsilon)) {
           const int idx = TwoDToOneDIndex(
               nodePair.first, graphDP2.srcNodes[secondArcIdx], numNodesFirst);
+          int oldVal = reachable[idx];
           if (!reachable[idx]) {
             toExplore[idx] = true;
+          }
+          if (!oldVal) {
             reachable[idx] = true;
           }
         }
