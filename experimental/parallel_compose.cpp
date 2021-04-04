@@ -420,10 +420,10 @@ Graph compose(const Graph& first, const Graph& second) {
           // destination node as reachable
           int oldVal = reachable[idx];
           if (!reachable[idx]) {
-            toExplore[idx] = true;
+            reachable[idx] = true;
           }
           if (!oldVal) {
-            reachable[idx] = true;
+            toExplore[idx] = true;
           }
         }
 
@@ -434,10 +434,10 @@ Graph compose(const Graph& first, const Graph& second) {
               graphDP1.srcNodes[firstArcIdx], nodePair.second, numNodesFirst);
           int oldVal = reachable[idx];
           if (!reachable[idx]) {
-            toExplore[idx] = true;
+            reachable[idx] = true;
           }
           if (!oldVal) {
-            reachable[idx] = true;
+            toExplore[idx] = true;
           }
         }
 
@@ -448,10 +448,10 @@ Graph compose(const Graph& first, const Graph& second) {
               nodePair.first, graphDP2.srcNodes[secondArcIdx], numNodesFirst);
           int oldVal = reachable[idx];
           if (!reachable[idx]) {
-            toExplore[idx] = true;
+            reachable[idx] = true;
           }
           if (!oldVal) {
-            reachable[idx] = true;
+            toExplore[idx] = true;
           }
         }
       }
