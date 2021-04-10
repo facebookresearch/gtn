@@ -242,7 +242,6 @@ void generateCombinedGraphNodesAndArcs(
     std::vector<int>& toExplore,
     std::pair<std::vector<int>, std::vector<int>>& gradInfo,
     GraphDataParallel& newGraphDP,
-    std::pair<bool, bool> srcNodeStartAndAccept,
     std::pair<bool, bool> dstNodeStartAndAccept,
     int ilabel,
     int olabel,
@@ -317,22 +316,16 @@ std::vector<int> convertToNodes(const std::vector<int>& flags) {
   return nodes;
 }
 
-std::tuple<std::pair<bool, bool>, std::pair<bool, bool>> getStartAndAccept(
+std::pair<bool, bool> getStartAndAccept(
     const GraphDataParallel& graphDP1,
     const GraphDataParallel& graphDP2,
-    const std::pair<int, int>& srcNodePair,
     const std::pair<int, int>& dstNodePair) {
-  const std::pair<bool, bool> srcNodeStartAndAccept = std::make_pair(
-      graphDP1.start[srcNodePair.first] && graphDP2.start[srcNodePair.second],
-      graphDP1.accept[srcNodePair.first] &&
-          graphDP2.accept[srcNodePair.second]);
-
   const std::pair<bool, bool> dstNodeStartAndAccept = std::make_pair(
       graphDP1.start[dstNodePair.first] && graphDP2.start[dstNodePair.second],
       graphDP1.accept[dstNodePair.first] &&
           graphDP2.accept[dstNodePair.second]);
 
-  return std::make_tuple(srcNodeStartAndAccept, dstNodeStartAndAccept);
+  return dstNodeStartAndAccept;
 }
 
 } // namespace
@@ -720,11 +713,8 @@ Graph compose(const Graph& first, const Graph& second) {
           const int curIdx = TwoDToOneDIndex(
               srcNodePair.first, srcNodePair.second, numNodesFirst);
 
-          std::pair<bool, bool> srcNodeStartAndAccept;
-          std::pair<bool, bool> dstNodeStartAndAccept;
-
-          std::tie(srcNodeStartAndAccept, dstNodeStartAndAccept) =
-              getStartAndAccept(graphDP1, graphDP2, srcNodePair, dstNodePair);
+          std::pair<bool, bool> dstNodeStartAndAccept =
+              getStartAndAccept(graphDP1, graphDP2, dstNodePair);
 
           // We track if any two arcs outgoing from this node pair match
           // on epsilon. We record if they do.
@@ -739,7 +729,6 @@ Graph compose(const Graph& first, const Graph& second) {
                 toExplore,
                 gradInfo,
                 newGraphDP,
-                srcNodeStartAndAccept,
                 dstNodeStartAndAccept,
                 graphDP1.ilabels[firstArcIdx],
                 graphDP2.olabels[secondArcIdx],
@@ -761,11 +750,9 @@ Graph compose(const Graph& first, const Graph& second) {
           const int curIdx = TwoDToOneDIndex(
               srcNodePair.first, srcNodePair.second, numNodesFirst);
 
-          std::pair<bool, bool> srcNodeStartAndAccept;
-          std::pair<bool, bool> dstNodeStartAndAccept;
+          std::pair<bool, bool> dstNodeStartAndAccept =
+              getStartAndAccept(graphDP1, graphDP2, dstNodePair);
 
-          std::tie(srcNodeStartAndAccept, dstNodeStartAndAccept) =
-              getStartAndAccept(graphDP1, graphDP2, srcNodePair, dstNodePair);
           generateCombinedGraphNodesAndArcs(
               dstIdx,
               curIdx,
@@ -776,7 +763,6 @@ Graph compose(const Graph& first, const Graph& second) {
               toExplore,
               gradInfo,
               newGraphDP,
-              srcNodeStartAndAccept,
               dstNodeStartAndAccept,
               graphDP1.ilabels[firstArcIdx],
               epsilon,
@@ -796,11 +782,8 @@ Graph compose(const Graph& first, const Graph& second) {
           const int curIdx = TwoDToOneDIndex(
               srcNodePair.first, srcNodePair.second, numNodesFirst);
 
-          std::pair<bool, bool> srcNodeStartAndAccept;
-          std::pair<bool, bool> dstNodeStartAndAccept;
-
-          std::tie(srcNodeStartAndAccept, dstNodeStartAndAccept) =
-              getStartAndAccept(graphDP1, graphDP2, srcNodePair, dstNodePair);
+          std::pair<bool, bool> dstNodeStartAndAccept =
+              getStartAndAccept(graphDP1, graphDP2, dstNodePair);
 
           generateCombinedGraphNodesAndArcs(
               dstIdx,
@@ -812,7 +795,6 @@ Graph compose(const Graph& first, const Graph& second) {
               toExplore,
               gradInfo,
               newGraphDP,
-              srcNodeStartAndAccept,
               dstNodeStartAndAccept,
               epsilon,
               graphDP2.olabels[secondArcIdx],
