@@ -7,8 +7,9 @@
 
 #include <algorithm>
 #include <cassert>
-#include <tuple>
+#include <numeric>
 #include <vector>
+#include <tuple>
 
 #include "parallel_compose.h"
 #include "prefix_scan.h"
@@ -33,12 +34,8 @@ inline std::pair<int, int> OneDToTwoDIndex(int n, int n1Extent) {
 }
 
 bool checkAnyTrue(const std::vector<int>& flags) {
-  for (auto i : flags) {
-    if (i == true) {
-      return i;
-    }
-  }
-  return false;
+  // Potentially wasteful - but GPU friendly
+  return std::accumulate(flags.begin(), flags.end(), 0) > 0 ? true : false;
 }
 
 // Map thread id to corresponding node and arc pair
@@ -286,20 +283,29 @@ void generateCombinedGraphNodesAndArcs(
 }
 
 // Convert bool array two pairs for true flags
-// std::vector<std::pair<int, int>> convertToNodePair(
 std::pair<std::vector<int>, std::vector<int>> convertToNodePair(
     const std::vector<int>& flags,
     int extent) {
-  std::pair<std::vector<int>, std::vector<int>> toExploreNodePair;
+  std::vector<int> indices(flags);
+  const int numValidNodes = prefixSumScan(indices, false);
+
+  std::vector<int> toExploreNodePairFirst(numValidNodes);
+  std::vector<int> toExploreNodePairSecond(numValidNodes);
+
+  // No loop dependence
   for (size_t i = 0; i < flags.size(); ++i) {
     if (flags[i] == true) {
       std::pair<int, int> node = OneDToTwoDIndex(i, extent);
-      toExploreNodePair.first.push_back(node.first);
-      toExploreNodePair.second.push_back(node.second);
+
+      const int index = indices[i];
+      assert(index >= 0);
+      assert(index < numValidNodes);
+      toExploreNodePairFirst[index] = node.first;
+      toExploreNodePairSecond[index] = node.second;
     }
   }
 
-  return toExploreNodePair;
+  return std::make_pair(toExploreNodePairFirst, toExploreNodePairSecond);
 }
 
 // Takes a bool array with flags set for nodes to pick and returns
