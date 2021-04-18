@@ -998,96 +998,31 @@ Graph compose(const Graph& first, const Graph& second) {
     // Reset so pristine state for next frontier to explore
     cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
 
-    std::vector<int> arcCrossProductOffset;
-    std::pair<std::vector<int>, std::vector<int>> toExploreNumArcs;
-    std::tie(arcCrossProductOffset, toExploreNumArcs) =
-        calculateArcCrossProductOffset(
-            toExploreNodePair, graphDP1, graphDP2, true);
-
     const size_t numToExploreNodePair = toExploreNodePair.first.size();
 
-    {
-      int *aCPGPU;
-      int *tEN1GPU;
-      int *tEN2GPU;
+    int* tVecGPU;
+    int* toExploreNumArcsFirstGPU;
+    int* toExploreNumArcsSecondGPU;
 
-      std::tie(aCPGPU, tEN1GPU, tEN2GPU) = calculateArcCrossProductOffsetGPU(
-        toExploreNodePairFirstGPU, toExploreNodePairSecondGPU,
-        toExploreNodePair.first.size(), graphDP1GPU, graphDP2GPU, true);
-
-      std::vector<int> aCP(toExploreNodePair.first.size());
-      std::vector<int> tEN1(toExploreNodePair.first.size());
-      std::vector<int> tEN2(toExploreNodePair.first.size());
-
-      cudaMemcpy((void *)(aCP.data()), (void *)(aCPGPU), sizeof(int) * toExploreNodePair.first.size(), cudaMemcpyDeviceToHost);
-      cudaMemcpy((void *)(tEN1.data()), (void *)(tEN1GPU), sizeof(int) * toExploreNodePair.first.size(), cudaMemcpyDeviceToHost);
-      cudaMemcpy((void *)(tEN2.data()), (void *)(tEN2GPU), sizeof(int) * toExploreNodePair.first.size(), cudaMemcpyDeviceToHost);
-
-      assert(std::equal(arcCrossProductOffset.begin(), arcCrossProductOffset.end(), aCP.begin()));
-      assert(std::equal(toExploreNumArcs.first.begin(), toExploreNumArcs.first.end(), tEN1.begin()));
-      assert(std::equal(toExploreNumArcs.second.begin(), toExploreNumArcs.second.end(), tEN2.begin()));
-
-      cudaFree(aCPGPU);
-      cudaFree(tEN1GPU);
-      cudaFree(tEN2GPU);
-    }
-
-    /*
-    if(0)
-    {
-      std::vector<int> tVec(arcCrossProductOffset);
-      const size_t numElts = tVec.size();
-      int* tVecGPU;
-      cudaMalloc((void **)(&tVecGPU), sizeof(int) * numElts);
-      cudaMemcpy((void *)tVecGPU, (void *)(tVec.data()), sizeof(int) * numElts, cudaMemcpyHostToDevice);
-
-      const int totalArcs = prefixSumScan(tVec, true);
-      int* tVecScanGPU;
-      size_t tVecScanElts;
-      int tArcsGPU;
-      std::tie(tVecScanGPU, tVecScanElts, tArcsGPU) = prefixSumScanGPU(tVecGPU, numElts, true);
-
-      assert(tVec.size() == (numElts + 1));
-      assert(tVecScanElts == (numElts + 1));
-      std::vector<int> tVecNew(tVec.size());
-      cudaMemcpy((void *)(tVecNew.data()), (void *)(tVecScanGPU), sizeof(int) * tVecScanElts, cudaMemcpyDeviceToHost);
-
-      assert(totalArcs == tArcsGPU);
-      assert(std::equal(tVec.begin(), tVec.end(), tVecNew.begin()));
-
-      cudaFree(tVecGPU);
-      cudaFree(tVecScanGPU);
-    }*/
+    std::tie(tVecGPU, toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU) =
+      calculateArcCrossProductOffsetGPU(toExploreNodePairFirstGPU, toExploreNodePairSecondGPU,
+        numToExploreNodePair, graphDP1GPU, graphDP2GPU, true);
 
     int* arcCrossProductOffsetGPU;
     size_t numArcCrossProductOffset;
     int totalArcs;
     {
-      int* tVecGPU;
-      const size_t numInput = arcCrossProductOffset.size();
-      cudaMalloc((void **)(&tVecGPU), sizeof(int) * numInput);
-      cudaMemcpy((void *)tVecGPU, (void *)(arcCrossProductOffset.data()), sizeof(int) * numInput, cudaMemcpyHostToDevice);
-
-      std::tie(arcCrossProductOffsetGPU, numArcCrossProductOffset, totalArcs) = prefixSumScanGPU(tVecGPU, numInput, true);
-      assert(numArcCrossProductOffset == (arcCrossProductOffset.size() + 1));
+      std::tie(arcCrossProductOffsetGPU, numArcCrossProductOffset, totalArcs) = prefixSumScanGPU(tVecGPU, numToExploreNodePair, true);
+      assert(numArcCrossProductOffset == (numToExploreNodePair + 1));
 
       cudaFree(tVecGPU);
     }
 
     const int gridSize = div_up(totalArcs, NT);
 
-    int* toExploreNumArcsFirstGPU;
-    int* toExploreNumArcsSecondGPU;
-    cudaMalloc((void **)(&toExploreNumArcsFirstGPU), sizeof(int) * toExploreNumArcs.first.size());
-    cudaMalloc((void **)(&toExploreNumArcsSecondGPU), sizeof(int) * toExploreNumArcs.second.size());
-    cudaMemcpy((void *)toExploreNumArcsFirstGPU, (void *)(toExploreNumArcs.first.data()),
-		    sizeof(int) * toExploreNumArcs.first.size(), cudaMemcpyHostToDevice);
-    cudaMemcpy((void *)toExploreNumArcsSecondGPU, (void *)(toExploreNumArcs.second.data()),
-		    sizeof(int) * toExploreNumArcs.second.size(), cudaMemcpyHostToDevice);
-
     findReachableKernel<<<gridSize, NT, 0, 0>>>(graphDP1GPU, graphDP2GPU, arcCrossProductOffsetGPU,
 		    toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU, toExploreNodePairFirstGPU,
-		    toExploreNodePairSecondGPU, numNodesFirst, totalArcs, numArcCrossProductOffset, // arcCrossProductOffset.size(),
+		    toExploreNodePairSecondGPU, numNodesFirst, totalArcs, numArcCrossProductOffset,
 		    toExploreGPU, reachableGPU, epsilonMatchedGPU);
 
     cudaFree(toExploreNodePairFirstGPU);
@@ -1513,3 +1448,59 @@ Graph compose(const Graph& first, const Graph& second) {
 } // namespace dataparallel
 } // namespace detail
 } // namespace gtn
+
+    /*
+    if (0)
+    {
+      int *aCPGPU;
+      int *tEN1GPU;
+      int *tEN2GPU;
+
+      std::tie(aCPGPU, tEN1GPU, tEN2GPU) = calculateArcCrossProductOffsetGPU(
+        toExploreNodePairFirstGPU, toExploreNodePairSecondGPU,
+        toExploreNodePair.first.size(), graphDP1GPU, graphDP2GPU, true);
+
+      std::vector<int> aCP(numToExploreNodePair);
+      std::vector<int> tEN1(numToExploreNodePair);
+      std::vector<int> tEN2(numToExploreNodePair);
+
+      cudaMemcpy((void *)(aCP.data()), (void *)(aCPGPU), sizeof(int) * numToExploreNodePair, cudaMemcpyDeviceToHost);
+      cudaMemcpy((void *)(tEN1.data()), (void *)(tEN1GPU), sizeof(int) * numToExploreNodePair, cudaMemcpyDeviceToHost);
+      cudaMemcpy((void *)(tEN2.data()), (void *)(tEN2GPU), sizeof(int) * numToExploreNodePair, cudaMemcpyDeviceToHost);
+
+      assert(std::equal(arcCrossProductOffset.begin(), arcCrossProductOffset.end(), aCP.begin()));
+      assert(std::equal(toExploreNumArcs.first.begin(), toExploreNumArcs.first.end(), tEN1.begin()));
+      assert(std::equal(toExploreNumArcs.second.begin(), toExploreNumArcs.second.end(), tEN2.begin()));
+
+      cudaFree(aCPGPU);
+      cudaFree(tEN1GPU);
+      cudaFree(tEN2GPU);
+    }*/
+
+    /*
+    if(0)
+    {
+      std::vector<int> tVec(arcCrossProductOffset);
+      const size_t numElts = tVec.size();
+      int* tVecGPU;
+      cudaMalloc((void **)(&tVecGPU), sizeof(int) * numElts);
+      cudaMemcpy((void *)tVecGPU, (void *)(tVec.data()), sizeof(int) * numElts, cudaMemcpyHostToDevice);
+
+      const int totalArcs = prefixSumScan(tVec, true);
+      int* tVecScanGPU;
+      size_t tVecScanElts;
+      int tArcsGPU;
+      std::tie(tVecScanGPU, tVecScanElts, tArcsGPU) = prefixSumScanGPU(tVecGPU, numElts, true);
+
+      assert(tVec.size() == (numElts + 1));
+      assert(tVecScanElts == (numElts + 1));
+      std::vector<int> tVecNew(tVec.size());
+      cudaMemcpy((void *)(tVecNew.data()), (void *)(tVecScanGPU), sizeof(int) * tVecScanElts, cudaMemcpyDeviceToHost);
+
+      assert(totalArcs == tArcsGPU);
+      assert(std::equal(tVec.begin(), tVec.end(), tVecNew.begin()));
+
+      cudaFree(tVecGPU);
+      cudaFree(tVecScanGPU);
+    }*/
+
