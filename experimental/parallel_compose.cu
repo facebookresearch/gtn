@@ -268,6 +268,96 @@ calculateArcCrossProductOffset(
   return std::make_tuple(arcCrossProductOffset, toExploreNumArcs);
 }
 
+__global__
+void calculateArcCrossProductOffsetKernel(
+      const GraphDataParallelGPU graphDP1GPU,
+      const GraphDataParallelGPU graphDP2GPU,
+      const int* toExploreNodePairFirstGPU,
+      const int* toExploreNodePairSecondGPU,
+      int* toExploreNumArcsFirstGPU,
+      int* toExploreNumArcsSecondGPU,
+      int* arcCrossProductOffsetGPU,
+      size_t numToExploreNodePair,
+      bool inOrOutArc) {
+  const int gTid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (gTid < numToExploreNodePair) {
+    int node = toExploreNodePairFirstGPU[gTid];
+    // Special case if it is the last node. Then the offset becomes
+    // the number of arcs
+    const int inArcOffsetGraph1 = ((node + 1) == graphDP1GPU.numNodes)
+        ? graphDP1GPU.numArcs
+        : graphDP1GPU.inArcOffset[node + 1];
+    const int outArcOffsetGraph1 = ((node + 1) == graphDP1GPU.numNodes)
+        ? graphDP1GPU.numArcs
+        : graphDP1GPU.outArcOffset[node + 1];
+
+    const int numArcsFirst = inOrOutArc
+        ? inArcOffsetGraph1 - graphDP1GPU.inArcOffset[node]
+        : outArcOffsetGraph1 - graphDP1GPU.outArcOffset[node];
+
+    node = toExploreNodePairSecondGPU[gTid];
+    // Special case if it is the last node. Then the offset becomes
+    // the number of arcs
+    const int inArcOffsetGraph2 = ((node + 1) == graphDP2GPU.numNodes)
+        ? graphDP2GPU.numArcs
+        : graphDP2GPU.inArcOffset[node + 1];
+    const int outArcOffsetGraph2 = ((node + 1) == graphDP2GPU.numNodes)
+        ? graphDP2GPU.numArcs
+        : graphDP2GPU.outArcOffset[node + 1];
+
+    const int numArcsSecond = inOrOutArc
+        ? inArcOffsetGraph2 - graphDP2GPU.inArcOffset[node]
+        : outArcOffsetGraph2 - graphDP2GPU.outArcOffset[node];
+
+    toExploreNumArcsFirstGPU[gTid] = numArcsFirst;
+    toExploreNumArcsSecondGPU[gTid] = numArcsSecond;
+
+    // Even when numArcsFirst or numArcsSecond is 0 we have to consider
+    // the case when the other graph has arcs with epsilon label
+    if (numArcsFirst != 0 && numArcsSecond != 0) {
+      arcCrossProductOffsetGPU[gTid] = numArcsFirst * numArcsSecond;
+    } else if (numArcsFirst != 0 && numArcsSecond == 0) {
+      arcCrossProductOffsetGPU[gTid] = numArcsFirst;
+    } else if (numArcsFirst == 0 && numArcsSecond != 0) {
+      arcCrossProductOffsetGPU[gTid] = numArcsSecond;
+    } else {
+      arcCrossProductOffsetGPU[gTid] = 0;
+    }
+  }
+}
+
+// Takes a pair of nodes, where each member of pair comes from a different
+// graph and calculate a vector of number of arcs in the cross product of
+// arcs outgoing from each pair.
+// This should be a kernel call
+std::tuple<int*, int*, int*>
+calculateArcCrossProductOffsetGPU(
+    const int* toExploreNodePairFirstGPU,
+    const int* toExploreNodePairSecondGPU,
+    size_t numToExploreNodePair,
+    const GraphDataParallelGPU graphDP1GPU,
+    const GraphDataParallelGPU graphDP2GPU,
+    bool inOrOutArc) {
+
+  int* toExploreNumArcsFirstGPU;
+  int* toExploreNumArcsSecondGPU;
+  int* arcCrossProductOffsetGPU;
+  cudaMalloc((void **)(&(toExploreNumArcsFirstGPU)), sizeof(int) * numToExploreNodePair);
+  cudaMalloc((void **)(&(toExploreNumArcsSecondGPU)), sizeof(int) * numToExploreNodePair);
+  cudaMalloc((void **)(&(arcCrossProductOffsetGPU)), sizeof(int) * numToExploreNodePair);
+
+  const int NT = 128;
+  const int gridSize = div_up(numToExploreNodePair, NT);
+
+  calculateArcCrossProductOffsetKernel<<<gridSize, NT, 0, 0>>>(
+      graphDP1GPU, graphDP2GPU, toExploreNodePairFirstGPU, toExploreNodePairSecondGPU,
+      toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU, arcCrossProductOffsetGPU,
+      numToExploreNodePair, inOrOutArc);
+
+  return std::make_tuple(arcCrossProductOffsetGPU, toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU);
+}
+
 // This function needs to be thread safe since multiple threads can
 // can call it and they will overlap on curIdx and dstIdx
 __device__
@@ -914,6 +1004,35 @@ Graph compose(const Graph& first, const Graph& second) {
         calculateArcCrossProductOffset(
             toExploreNodePair, graphDP1, graphDP2, true);
 
+    const size_t numToExploreNodePair = toExploreNodePair.first.size();
+
+    {
+      int *aCPGPU;
+      int *tEN1GPU;
+      int *tEN2GPU;
+
+      std::tie(aCPGPU, tEN1GPU, tEN2GPU) = calculateArcCrossProductOffsetGPU(
+        toExploreNodePairFirstGPU, toExploreNodePairSecondGPU,
+        toExploreNodePair.first.size(), graphDP1GPU, graphDP2GPU, true);
+
+      std::vector<int> aCP(toExploreNodePair.first.size());
+      std::vector<int> tEN1(toExploreNodePair.first.size());
+      std::vector<int> tEN2(toExploreNodePair.first.size());
+
+      cudaMemcpy((void *)(aCP.data()), (void *)(aCPGPU), sizeof(int) * toExploreNodePair.first.size(), cudaMemcpyDeviceToHost);
+      cudaMemcpy((void *)(tEN1.data()), (void *)(tEN1GPU), sizeof(int) * toExploreNodePair.first.size(), cudaMemcpyDeviceToHost);
+      cudaMemcpy((void *)(tEN2.data()), (void *)(tEN2GPU), sizeof(int) * toExploreNodePair.first.size(), cudaMemcpyDeviceToHost);
+
+      assert(std::equal(arcCrossProductOffset.begin(), arcCrossProductOffset.end(), aCP.begin()));
+      assert(std::equal(toExploreNumArcs.first.begin(), toExploreNumArcs.first.end(), tEN1.begin()));
+      assert(std::equal(toExploreNumArcs.second.begin(), toExploreNumArcs.second.end(), tEN2.begin()));
+
+      cudaFree(aCPGPU);
+      cudaFree(tEN1GPU);
+      cudaFree(tEN2GPU);
+    }
+
+    /*
     if(0)
     {
       std::vector<int> tVec(arcCrossProductOffset);
@@ -938,27 +1057,19 @@ Graph compose(const Graph& first, const Graph& second) {
 
       cudaFree(tVecGPU);
       cudaFree(tVecScanGPU);
-    }
-
-    // const int totalArcs = prefixSumScan(arcCrossProductOffset, true);
-    // const int gridSize = div_up(totalArcs, NT);
-
-    // int* arcCrossProductOffsetGPU;
-    // cudaMalloc((void **)(&arcCrossProductOffsetGPU), sizeof(int) * arcCrossProductOffset.size());
-    // cudaMemcpy((void *)arcCrossProductOffsetGPU, (void *)(arcCrossProductOffset.data()),
-    // 		    sizeof(int) * arcCrossProductOffset.size(), cudaMemcpyHostToDevice);
+    }*/
 
     int* arcCrossProductOffsetGPU;
-    size_t arcCrossProductOffsetElts;
+    size_t numArcCrossProductOffset;
     int totalArcs;
     {
       int* tVecGPU;
-      const size_t numElts = arcCrossProductOffset.size();
-      cudaMalloc((void **)(&tVecGPU), sizeof(int) * numElts);
-      cudaMemcpy((void *)tVecGPU, (void *)(arcCrossProductOffset.data()), sizeof(int) * numElts, cudaMemcpyHostToDevice);
+      const size_t numInput = arcCrossProductOffset.size();
+      cudaMalloc((void **)(&tVecGPU), sizeof(int) * numInput);
+      cudaMemcpy((void *)tVecGPU, (void *)(arcCrossProductOffset.data()), sizeof(int) * numInput, cudaMemcpyHostToDevice);
 
-      std::tie(arcCrossProductOffsetGPU, arcCrossProductOffsetElts, totalArcs) = prefixSumScanGPU(tVecGPU, numElts, true);
-      assert(arcCrossProductOffsetElts == (arcCrossProductOffset.size() + 1));
+      std::tie(arcCrossProductOffsetGPU, numArcCrossProductOffset, totalArcs) = prefixSumScanGPU(tVecGPU, numInput, true);
+      assert(numArcCrossProductOffset == (arcCrossProductOffset.size() + 1));
 
       cudaFree(tVecGPU);
     }
@@ -976,7 +1087,7 @@ Graph compose(const Graph& first, const Graph& second) {
 
     findReachableKernel<<<gridSize, NT, 0, 0>>>(graphDP1GPU, graphDP2GPU, arcCrossProductOffsetGPU,
 		    toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU, toExploreNodePairFirstGPU,
-		    toExploreNodePairSecondGPU, numNodesFirst, totalArcs, arcCrossProductOffsetElts, // arcCrossProductOffset.size(),
+		    toExploreNodePairSecondGPU, numNodesFirst, totalArcs, numArcCrossProductOffset, // arcCrossProductOffset.size(),
 		    toExploreGPU, reachableGPU, epsilonMatchedGPU);
 
     cudaFree(toExploreNodePairFirstGPU);
