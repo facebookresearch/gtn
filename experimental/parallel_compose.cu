@@ -1052,63 +1052,35 @@ Graph compose(const Graph& first, const Graph& second) {
 
   // This is the outer control loop that would spawn DP kernels
   while(checkAnyTrueGPU(toExploreGPU, numAllPairNodes)) {
-    // Convert bits set in toExplore to node pairs
-    cudaMemcpy((void *)(toExplore.data()), (void *)(toExploreGPU), sizeof(int) * numAllPairNodes, cudaMemcpyDeviceToHost);
-    auto toExploreNodePair = convertToNodePair(toExplore, numNodesFirst);
-    assert(toExploreNodePair.first.size() == toExploreNodePair.second.size());
-
-    {
-      int* tEN1GPU;
-      int* tEN2GPU;
-      size_t nTEN;
-
-      std::tie(tEN1GPU, tEN2GPU, nTEN) = convertToNodePairGPU(toExploreGPU, numAllPairNodes, numNodesFirst);
-
-      assert(nTEN == toExploreNodePair.first.size());
-
-      std::vector<int> tEN1(nTEN);
-      std::vector<int> tEN2(nTEN);
-      cudaMemcpy((void *)(tEN1.data()), (void *)(tEN1GPU), sizeof(int) * nTEN, cudaMemcpyDeviceToHost);
-      cudaMemcpy((void *)(tEN2.data()), (void *)(tEN2GPU), sizeof(int) * nTEN, cudaMemcpyDeviceToHost);
-
-      assert(std::equal(toExploreNodePair.first.begin(), toExploreNodePair.first.end(), tEN1.begin()));
-      assert(std::equal(toExploreNodePair.second.begin(), toExploreNodePair.second.end(), tEN2.begin()));
-
-      cudaFree(tEN1GPU);
-      cudaFree(tEN2GPU);
-    }
 
     int* toExploreNodePairFirstGPU;
     int* toExploreNodePairSecondGPU;
-    cudaMalloc((void **)(&toExploreNodePairFirstGPU), sizeof(int) * toExploreNodePair.first.size());
-    cudaMalloc((void **)(&toExploreNodePairSecondGPU), sizeof(int) * toExploreNodePair.second.size());
-    cudaMemcpy((void *)toExploreNodePairFirstGPU, (void *)(toExploreNodePair.first.data()),
-		    sizeof(int) * toExploreNodePair.first.size(), cudaMemcpyHostToDevice);
-    cudaMemcpy((void *)toExploreNodePairSecondGPU, (void *)(toExploreNodePair.second.data()),
-		    sizeof(int) * toExploreNodePair.second.size(), cudaMemcpyHostToDevice);
+    size_t numToExploreNodePair;
 
-    // Reset so pristine state for next frontier to explore
-    cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
+    // Convert bits set in toExplore to node pairs
+    std::tie(toExploreNodePairFirstGPU, toExploreNodePairSecondGPU, numToExploreNodePair) =
+      convertToNodePairGPU(toExploreGPU, numAllPairNodes, numNodesFirst);
 
-    const size_t numToExploreNodePair = toExploreNodePair.first.size();
-
-    int* tVecGPU;
+    int* arcCrossProductIndexGPU;
     int* toExploreNumArcsFirstGPU;
     int* toExploreNumArcsSecondGPU;
 
-    std::tie(tVecGPU, toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU) =
+    std::tie(arcCrossProductIndexGPU, toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU) =
       calculateArcCrossProductOffsetGPU(toExploreNodePairFirstGPU, toExploreNodePairSecondGPU,
         numToExploreNodePair, graphDP1GPU, graphDP2GPU, true);
 
     int* arcCrossProductOffsetGPU;
     size_t numArcCrossProductOffset;
     int totalArcs;
-    {
-      std::tie(arcCrossProductOffsetGPU, numArcCrossProductOffset, totalArcs) = prefixSumScanGPU(tVecGPU, numToExploreNodePair, true);
-      assert(numArcCrossProductOffset == (numToExploreNodePair + 1));
 
-      cudaFree(tVecGPU);
-    }
+    std::tie(arcCrossProductOffsetGPU, numArcCrossProductOffset, totalArcs) =
+      prefixSumScanGPU(arcCrossProductIndexGPU, numToExploreNodePair, true);
+    assert(numArcCrossProductOffset == (numToExploreNodePair + 1));
+
+    cudaFree(arcCrossProductIndexGPU);
+
+    // Reset so pristine state for next frontier to explore
+    cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
 
     const int gridSize = div_up(totalArcs, NT);
 
@@ -1596,3 +1568,25 @@ Graph compose(const Graph& first, const Graph& second) {
       cudaFree(tVecScanGPU);
     }*/
 
+    /*
+    if (0)
+    {
+      int* tEN1GPU;
+      int* tEN2GPU;
+      size_t nTEN;
+
+      std::tie(tEN1GPU, tEN2GPU, nTEN) = convertToNodePairGPU(toExploreGPU, numAllPairNodes, numNodesFirst);
+
+      assert(nTEN == toExploreNodePair.first.size());
+
+      std::vector<int> tEN1(nTEN);
+      std::vector<int> tEN2(nTEN);
+      cudaMemcpy((void *)(tEN1.data()), (void *)(tEN1GPU), sizeof(int) * nTEN, cudaMemcpyDeviceToHost);
+      cudaMemcpy((void *)(tEN2.data()), (void *)(tEN2GPU), sizeof(int) * nTEN, cudaMemcpyDeviceToHost);
+
+      assert(std::equal(toExploreNodePair.first.begin(), toExploreNodePair.first.end(), tEN1.begin()));
+      assert(std::equal(toExploreNodePair.second.begin(), toExploreNodePair.second.end(), tEN2.begin()));
+
+      cudaFree(tEN1GPU);
+      cudaFree(tEN2GPU);
+    }*/
