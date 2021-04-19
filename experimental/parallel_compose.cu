@@ -1082,12 +1082,15 @@ Graph compose(const Graph& first, const Graph& second) {
     // Reset so pristine state for next frontier to explore
     cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
 
-    const int gridSize = div_up(totalArcs, NT);
+    if (totalArcs > 0) {
 
-    findReachableKernel<<<gridSize, NT, 0, 0>>>(graphDP1GPU, graphDP2GPU, arcCrossProductOffsetGPU,
-		    toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU, toExploreNodePairFirstGPU,
-		    toExploreNodePairSecondGPU, numNodesFirst, totalArcs, numArcCrossProductOffset,
-		    toExploreGPU, reachableGPU, epsilonMatchedGPU);
+      const int gridSize = div_up(totalArcs, NT);
+
+      findReachableKernel<<<gridSize, NT, 0, 0>>>(graphDP1GPU, graphDP2GPU, arcCrossProductOffsetGPU,
+		      toExploreNumArcsFirstGPU, toExploreNumArcsSecondGPU, toExploreNodePairFirstGPU,
+		      toExploreNodePairSecondGPU, numNodesFirst, totalArcs, numArcCrossProductOffset,
+		      toExploreGPU, reachableGPU, epsilonMatchedGPU);
+    }
 
     cudaFree(toExploreNodePairFirstGPU);
     cudaFree(toExploreNodePairSecondGPU);
