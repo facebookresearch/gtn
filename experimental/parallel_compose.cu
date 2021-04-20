@@ -78,18 +78,6 @@ inline int2 OneDToTwoDIndexGPU(int n, int n1Extent) {
   return make_int2(n1, n2);
 }
 
-inline std::pair<int, int> OneDToTwoDIndex(int n, int n1Extent) {
-  assert(n1Extent > 0);
-  const int n2 = n / n1Extent;
-  const int n1 = n % n1Extent;
-  return std::make_pair(n1, n2);
-}
-
-bool checkAnyTrue(const std::vector<int>& flags) {
-  // Potentially wasteful - but GPU friendly
-  return std::accumulate(flags.begin(), flags.end(), 0) > 0 ? true : false;
-}
-
 bool checkAnyTrueGPU(const int* flags, int numFlags) {
   thrust::device_ptr<const int> tPtr(flags);
   const int sum = thrust::reduce(tPtr, tPtr + numFlags, int(0));
@@ -207,73 +195,6 @@ nodeAndArcPairGPU computeNodeAndArcPair(
   }
 
   return result;
-}
-
-// Takes a pair of nodes, where each member of pair comes from a different
-// graph and calculate a vector of number of arcs in the cross product of
-// arcs outgoing from each pair.
-// This should be a kernel call
-std::tuple<std::vector<int>, std::pair<std::vector<int>, std::vector<int>>>
-calculateArcCrossProductOffset(
-    const std::pair<std::vector<int>, std::vector<int>>& toExploreNodePair,
-    const GraphDataParallel& graphDP1,
-    const GraphDataParallel& graphDP2,
-    bool inOrOutArc) {
-  assert(toExploreNodePair.first.size() == toExploreNodePair.second.size());
-
-  std::pair<std::vector<int>, std::vector<int>> toExploreNumArcs;
-  toExploreNumArcs.first.resize(toExploreNodePair.first.size());
-  toExploreNumArcs.second.resize(toExploreNodePair.first.size());
-
-  std::vector<int> arcCrossProductOffset(toExploreNodePair.first.size());
-
-  // No dependence between iterations
-  for (size_t i = 0; i < toExploreNodePair.first.size(); ++i) {
-    int node = (toExploreNodePair.first)[i];
-    // Special case if it is the last node. Then the offset becomes
-    // the number of arcs
-    const int inArcOffsetGraph1 = ((node + 1) == graphDP1.inArcOffset.size())
-        ? graphDP1.inArcs.size()
-        : graphDP1.inArcOffset[node + 1];
-    const int outArcOffsetGraph1 = ((node + 1) == graphDP1.outArcOffset.size())
-        ? graphDP1.outArcs.size()
-        : graphDP1.outArcOffset[node + 1];
-
-    const int numArcsFirst = inOrOutArc
-        ? inArcOffsetGraph1 - graphDP1.inArcOffset[node]
-        : outArcOffsetGraph1 - graphDP1.outArcOffset[node];
-
-    node = (toExploreNodePair.second)[i];
-    // Special case if it is the last node. Then the offset becomes
-    // the number of arcs
-    const int inArcOffsetGraph2 = ((node + 1) == graphDP2.inArcOffset.size())
-        ? graphDP2.inArcs.size()
-        : graphDP2.inArcOffset[node + 1];
-    const int outArcOffsetGraph2 = ((node + 1) == graphDP2.outArcOffset.size())
-        ? graphDP2.outArcs.size()
-        : graphDP2.outArcOffset[node + 1];
-
-    const int numArcsSecond = inOrOutArc
-        ? inArcOffsetGraph2 - graphDP2.inArcOffset[node]
-        : outArcOffsetGraph2 - graphDP2.outArcOffset[node];
-
-    (toExploreNumArcs.first)[i] = numArcsFirst;
-    (toExploreNumArcs.second)[i] = numArcsSecond;
-
-    // Even when numArcsFirst or numArcsSecond is 0 we have to consider
-    // the case when the other graph has arcs with epsilon label
-    if (numArcsFirst != 0 && numArcsSecond != 0) {
-      arcCrossProductOffset[i] = numArcsFirst * numArcsSecond;
-    } else if (numArcsFirst != 0 && numArcsSecond == 0) {
-      arcCrossProductOffset[i] = numArcsFirst;
-    } else if (numArcsFirst == 0 && numArcsSecond != 0) {
-      arcCrossProductOffset[i] = numArcsSecond;
-    } else {
-      arcCrossProductOffset[i] = 0;
-    }
-  }
-
-  return std::make_tuple(arcCrossProductOffset, toExploreNumArcs);
 }
 
 __global__
@@ -521,32 +442,6 @@ std::tuple<int*, int*, size_t> convertToNodePairGPU(
 
   cudaFree(indicesGPU);
   return std::make_tuple(toExploreNodePairFirstGPU, toExploreNodePairSecondGPU, numValidNodes);
-}
-
-// Convert int array to pairs for true flags
-std::pair<std::vector<int>, std::vector<int>> convertToNodePair(
-    const std::vector<int>& flags,
-    int extent) {
-  std::vector<int> indices(flags);
-  const int numValidNodes = prefixSumScan(indices, false);
-
-  std::vector<int> toExploreNodePairFirst(numValidNodes);
-  std::vector<int> toExploreNodePairSecond(numValidNodes);
-
-  // No loop dependence
-  for (size_t i = 0; i < flags.size(); ++i) {
-    if (flags[i] == true) {
-      std::pair<int, int> node = OneDToTwoDIndex(i, extent);
-
-      const int index = indices[i];
-      assert(index >= 0);
-      assert(index < numValidNodes);
-      toExploreNodePairFirst[index] = node.first;
-      toExploreNodePairSecond[index] = node.second;
-    }
-  }
-
-  return std::make_pair(toExploreNodePairFirst, toExploreNodePairSecond);
 }
 
 // Takes a bool array with flags set for nodes to pick and returns
@@ -1566,3 +1461,113 @@ Graph compose(const Graph& first, const Graph& second) {
       cudaFree(tEN1GPU);
       cudaFree(tEN2GPU);
     }*/
+
+/*
+inline std::pair<int, int> OneDToTwoDIndex(int n, int n1Extent) {
+  assert(n1Extent > 0);
+  const int n2 = n / n1Extent;
+  const int n1 = n % n1Extent;
+  return std::make_pair(n1, n2);
+}
+
+
+bool checkAnyTrue(const std::vector<int>& flags) {
+  // Potentially wasteful - but GPU friendly
+  return std::accumulate(flags.begin(), flags.end(), 0) > 0 ? true : false;
+}*/
+
+
+/*
+// Convert int array to pairs for true flags
+std::pair<std::vector<int>, std::vector<int>> convertToNodePair(
+    const std::vector<int>& flags,
+    int extent) {
+  std::vector<int> indices(flags);
+  const int numValidNodes = prefixSumScan(indices, false);
+
+  std::vector<int> toExploreNodePairFirst(numValidNodes);
+  std::vector<int> toExploreNodePairSecond(numValidNodes);
+
+  // No loop dependence
+  for (size_t i = 0; i < flags.size(); ++i) {
+    if (flags[i] == true) {
+      std::pair<int, int> node = OneDToTwoDIndex(i, extent);
+
+      const int index = indices[i];
+      assert(index >= 0);
+      assert(index < numValidNodes);
+      toExploreNodePairFirst[index] = node.first;
+      toExploreNodePairSecond[index] = node.second;
+    }
+  }
+
+  return std::make_pair(toExploreNodePairFirst, toExploreNodePairSecond);
+}*/
+
+// Takes a pair of nodes, where each member of pair comes from a different
+// graph and calculate a vector of number of arcs in the cross product of
+// arcs outgoing from each pair.
+// This should be a kernel call
+/*
+std::tuple<std::vector<int>, std::pair<std::vector<int>, std::vector<int>>>
+calculateArcCrossProductOffset(
+    const std::pair<std::vector<int>, std::vector<int>>& toExploreNodePair,
+    const GraphDataParallel& graphDP1,
+    const GraphDataParallel& graphDP2,
+    bool inOrOutArc) {
+  assert(toExploreNodePair.first.size() == toExploreNodePair.second.size());
+
+  std::pair<std::vector<int>, std::vector<int>> toExploreNumArcs;
+  toExploreNumArcs.first.resize(toExploreNodePair.first.size());
+  toExploreNumArcs.second.resize(toExploreNodePair.first.size());
+
+  std::vector<int> arcCrossProductOffset(toExploreNodePair.first.size());
+
+  // No dependence between iterations
+  for (size_t i = 0; i < toExploreNodePair.first.size(); ++i) {
+    int node = (toExploreNodePair.first)[i];
+    // Special case if it is the last node. Then the offset becomes
+    // the number of arcs
+    const int inArcOffsetGraph1 = ((node + 1) == graphDP1.inArcOffset.size())
+        ? graphDP1.inArcs.size()
+        : graphDP1.inArcOffset[node + 1];
+    const int outArcOffsetGraph1 = ((node + 1) == graphDP1.outArcOffset.size())
+        ? graphDP1.outArcs.size()
+        : graphDP1.outArcOffset[node + 1];
+
+    const int numArcsFirst = inOrOutArc
+        ? inArcOffsetGraph1 - graphDP1.inArcOffset[node]
+        : outArcOffsetGraph1 - graphDP1.outArcOffset[node];
+
+    node = (toExploreNodePair.second)[i];
+    // Special case if it is the last node. Then the offset becomes
+    // the number of arcs
+    const int inArcOffsetGraph2 = ((node + 1) == graphDP2.inArcOffset.size())
+        ? graphDP2.inArcs.size()
+        : graphDP2.inArcOffset[node + 1];
+    const int outArcOffsetGraph2 = ((node + 1) == graphDP2.outArcOffset.size())
+        ? graphDP2.outArcs.size()
+        : graphDP2.outArcOffset[node + 1];
+
+    const int numArcsSecond = inOrOutArc
+        ? inArcOffsetGraph2 - graphDP2.inArcOffset[node]
+        : outArcOffsetGraph2 - graphDP2.outArcOffset[node];
+
+    (toExploreNumArcs.first)[i] = numArcsFirst;
+    (toExploreNumArcs.second)[i] = numArcsSecond;
+
+    // Even when numArcsFirst or numArcsSecond is 0 we have to consider
+    // the case when the other graph has arcs with epsilon label
+    if (numArcsFirst != 0 && numArcsSecond != 0) {
+      arcCrossProductOffset[i] = numArcsFirst * numArcsSecond;
+    } else if (numArcsFirst != 0 && numArcsSecond == 0) {
+      arcCrossProductOffset[i] = numArcsFirst;
+    } else if (numArcsFirst == 0 && numArcsSecond != 0) {
+      arcCrossProductOffset[i] = numArcsSecond;
+    } else {
+      arcCrossProductOffset[i] = 0;
+    }
+  }
+
+  return std::make_tuple(arcCrossProductOffset, toExploreNumArcs);
+}*/
