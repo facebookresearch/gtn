@@ -891,6 +891,31 @@ void generateNodeAndArcKernel(
   }
 }
 
+__global__
+void calculateNumArcsKernel(
+  const int* flagsGPU,
+  const int* indicesGPU,
+  const int* inputInArcsGPU,
+  const int* inputOutArcsGPU,
+  int* outputInArcsGPU,
+  int* outputOutArcsGPU,
+  size_t numFlags,
+  size_t numValidNodes) {
+
+  const int gTid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (gTid < numFlags) {
+    if (flagsGPU[gTid] == true) {
+      const int index = indicesGPU[gTid];
+      assert(index >= 0);
+      assert(index < numValidNodes);
+
+      outputInArcsGPU[index] = inputInArcsGPU[gTid];
+      outputOutArcsGPU[index] = inputOutArcsGPU[gTid];
+    }
+  }
+}
+
 } // namespace
 
 Graph compose(const Graph& first, const Graph& second) {
@@ -1102,12 +1127,10 @@ Graph compose(const Graph& first, const Graph& second) {
   // Generate offsets for nodes and arcs
   GraphDataParallel newGraphDP;
 
-  // Convert bool array to int for prefix sum
   // Record arc offsets for new nodes in new graph
   std::vector<int> newNodesOffset(newNodes.size(), 0);
   for (size_t i = 0; i < newNodes.size(); ++i) {
     if (newNodes[i]) {
-      // std::cout << "d " << i << " " << numInArcs[i] << " " << numOutArcs[i] << std::endl;
       newNodesOffset[i] = 1;
       newGraphDP.inArcOffset.push_back(numInArcs[i]);
       newGraphDP.outArcOffset.push_back(numOutArcs[i]);
@@ -1123,6 +1146,67 @@ Graph compose(const Graph& first, const Graph& second) {
   // Prefix sum to generate offsets
   const int totalInArcs = prefixSumScan(newGraphDP.inArcOffset, false);
   const int totalOutArcs = prefixSumScan(newGraphDP.outArcOffset, false);
+
+  // std::cout << "totalNodes " << totalNodes << " totalInArcs " << totalInArcs
+	    // << " totalOutArcs " << totalOutArcs << std::endl;
+
+  if (1)
+  {
+    int tN;
+    int* nOGPU;
+    size_t nE;
+    std::tie(nOGPU, nE, tN) = prefixSumScanGPU(newNodesGPU, numAllPairNodes, false);
+    // std::cout << "tN " << tN << " totalNodes " << totalNodes << std::endl;
+
+    assert(tN == totalNodes);
+    assert(nE == numAllPairNodes);
+    assert(nE == newNodesOffset.size());
+
+    std::vector<int> nO(nE);
+    cudaMemcpy((void *)(nO.data()), (void *)(nOGPU), sizeof(int) * numAllPairNodes, cudaMemcpyDeviceToHost);
+    assert(std::equal(newNodesOffset.begin(), newNodesOffset.end(), nO.begin()));
+
+    if (tN > 0) {
+      int* nIAIGPU;
+      int* nOAIGPU;
+      cudaMalloc((void **)(&nIAIGPU), sizeof(int) * tN);
+      cudaMalloc((void **)(&nOAIGPU), sizeof(int) * tN);
+
+      const int NT = 128;
+      const int gridSize = div_up(numAllPairNodes, NT);
+
+      calculateNumArcsKernel<<<gridSize, NT, 0, 0>>>(newNodesGPU, nOGPU, numInArcsGPU, numOutArcsGPU,
+        nIAIGPU, nOAIGPU, numAllPairNodes, tN);
+
+      int tIA;
+      int tOA;
+      int* nIAIGPU2;
+      int* nOAIGPU2;
+      size_t nIA;
+      size_t nOA;
+      std::tie(nIAIGPU2, nIA, tIA) = prefixSumScanGPU(nIAIGPU, tN, false);
+      std::tie(nOAIGPU2, nOA, tOA) = prefixSumScanGPU(nOAIGPU, tN, false);
+
+      assert(nIA == nOA);
+      assert(nIA == tN);
+      assert(tIA == totalInArcs);
+      assert(tOA == totalOutArcs);
+
+      std::vector<int> nIAI2(tN);
+      std::vector<int> nOAI2(tN);
+      cudaMemcpy((void *)(nIAI2.data()), (void *)(nIAIGPU2), sizeof(int) * tN, cudaMemcpyDeviceToHost);
+      cudaMemcpy((void *)(nOAI2.data()), (void *)(nOAIGPU2), sizeof(int) * tN, cudaMemcpyDeviceToHost);
+      assert(std::equal(newGraphDP.inArcOffset.begin(), newGraphDP.inArcOffset.end(), nIAI2.begin()));
+      assert(std::equal(newGraphDP.outArcOffset.begin(), newGraphDP.outArcOffset.end(), nOAI2.begin()));
+
+      cudaFree(nIAIGPU);
+      cudaFree(nOAIGPU);
+      cudaFree(nIAIGPU2);
+      cudaFree(nOAIGPU2);
+    }
+
+    cudaFree(nOGPU);
+  }
 
   // Allocate space for start and accept nodes
   assert(newGraphDP.start.empty());
