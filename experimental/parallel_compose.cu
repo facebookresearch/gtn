@@ -1320,7 +1320,6 @@ Graph compose(const Graph& first, const Graph& second) {
   cudaMemcpy((void *)(gradInfo.second.data()), (void *)(gradInfoSecondGPU), sizeof(int) * totalOutArcs, cudaMemcpyDeviceToHost);
 
   cudaFree(reachableGPU);
-  /*
   cudaFree(epsilonMatchedGPU);
   cudaFree(toExploreGPU);
   cudaFree(newNodesGPU);
@@ -1331,7 +1330,7 @@ Graph compose(const Graph& first, const Graph& second) {
   cudaFree(outArcOffsetGPU);
   cudaFree(gradInfoFirstGPU);
   cudaFree(gradInfoSecondGPU);
-  cudaFree(newNodesVisitedGPU);*/
+  cudaFree(newNodesVisitedGPU);
 
   if (0)
   {
