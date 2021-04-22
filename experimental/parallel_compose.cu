@@ -78,13 +78,6 @@ inline int2 OneDToTwoDIndexGPU(int n, int n1Extent) {
   return make_int2(n1, n2);
 }
 
-inline std::pair<int, int> OneDToTwoDIndex(int n, int n1Extent) {
-  assert(n1Extent > 0);
-  const int n2 = n / n1Extent;
-  const int n1 = n % n1Extent;
-  return std::make_pair(n1, n2);
-}
-
 bool checkAnyTrueGPU(const int* flags, int numFlags) {
   thrust::device_ptr<const int> tPtr(flags);
   const int sum = thrust::reduce(tPtr, tPtr + numFlags, int(0));
@@ -912,6 +905,77 @@ void calculateNumArcsKernel(
   }
 }
 
+__global__
+void fourthPassInitKernel(
+    const GraphDataParallelGPU graphDP1GPU,
+    const GraphDataParallelGPU graphDP2GPU,
+    const int* reachableGPU,
+    const int* newNodesOffsetGPU,
+    GraphDataParallelGPU newGraphDPGPU,
+    int* toExploreGPU,
+    int* newNodesVisitedGPU,
+    int numNodesFirst,
+    int numNodes) {
+  const int gTid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (gTid < numNodes) {
+    int2 indices = OneDToTwoDIndexGPU(gTid, numNodesFirst);
+
+    if (graphDP1GPU.start[indices.x] && graphDP2GPU.start[indices.y]) {
+      if (reachableGPU[gTid]) {
+        toExploreGPU[gTid] = true;
+        newNodesVisitedGPU[gTid] = true;
+        newGraphDPGPU.start[newNodesOffsetGPU[gTid]] = true;
+        newGraphDPGPU.accept[newNodesOffsetGPU[gTid]] =
+           graphDP1GPU.accept[indices.x] && graphDP2GPU.accept[indices.y];
+      }
+    }
+  }
+}
+
+__global__
+void secondPassInitKernel(
+    const GraphDataParallelGPU graphDP1GPU,
+    const GraphDataParallelGPU graphDP2GPU,
+    const int* reachableGPU,
+    int* toExploreGPU,
+    int* newNodesGPU,
+    int numNodesFirst,
+    int numNodes) {
+  const int gTid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (gTid < numNodes) {
+    int2 indices = OneDToTwoDIndexGPU(gTid, numNodesFirst);
+
+    if (graphDP1GPU.start[indices.x] && graphDP2GPU.start[indices.y]) {
+      if (reachableGPU[gTid]) {
+        toExploreGPU[gTid] = true;
+        newNodesGPU[gTid] = true;
+      }
+    }
+  }
+}
+
+__global__
+void findReachableInitInitKernel(
+    const GraphDataParallelGPU graphDP1GPU,
+    const GraphDataParallelGPU graphDP2GPU,
+    int* reachableGPU,
+    int* toExploreGPU,
+    int numNodesFirst,
+    int numNodes) {
+  const int gTid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (gTid < numNodes) {
+    int2 indices = OneDToTwoDIndexGPU(gTid, numNodesFirst);
+
+    if (graphDP1GPU.accept[indices.x] && graphDP2GPU.accept[indices.y]) {
+      toExploreGPU[gTid] = true;
+      reachableGPU[gTid] = true;
+    }
+  }
+}
+
 } // namespace
 
 Graph compose(const Graph& first, const Graph& second) {
@@ -935,10 +999,6 @@ Graph compose(const Graph& first, const Graph& second) {
   //////////////////////////////////////////////////////////////////////////
   // Step 1: Data parallel findReachable
   //////////////////////////////////////////////////////////////////////////
-  std::vector<int> reachable(numAllPairNodes, false);
-  std::vector<int> epsilonMatched(numAllPairNodes, false);
-
-  std::vector<int> toExplore(numAllPairNodes, false);
 
   int* reachableGPU;
   int* epsilonMatchedGPU;
@@ -948,22 +1008,18 @@ Graph compose(const Graph& first, const Graph& second) {
   cudaMalloc((void **)(&epsilonMatchedGPU), sizeof(int) * numAllPairNodes);
   cudaMalloc((void **)(&toExploreGPU), sizeof(int) * numAllPairNodes);
 
-  cudaMemcpy((void *)epsilonMatchedGPU, (void *)(epsilonMatched.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
+  cudaMemset((void*)reachableGPU, false, sizeof(int) * numAllPairNodes);
+  cudaMemset((void*)epsilonMatchedGPU, false, sizeof(int) * numAllPairNodes);
+  cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
 
   {
-    for (int i = 0; i < numAllPairNodes; ++i) {
-      std::pair<int, int> indices = OneDToTwoDIndex(i, numNodesFirst);
+    const int gridSize = div_up(numAllPairNodes, NT);
 
-      if (graphDP1.accept[indices.first] && graphDP2.accept[indices.second]) {
-        toExplore[i] = true;
-        reachable[i] = true;
-      }
-    }
+    findReachableInitInitKernel<<<gridSize, NT, 0, 0>>>(graphDP1GPU, graphDP2GPU,
+      reachableGPU, toExploreGPU, numNodesFirst, numAllPairNodes);
   }
 
   // std::cout << "num all pair nodes " << numAllPairNodes << std::endl;
-  cudaMemcpy(reachableGPU, (void *)(reachable.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
-  cudaMemcpy((void *)toExploreGPU, (void *)(toExplore.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
 
   // This is the outer control loop that would spawn DP kernels
   while(checkAnyTrueGPU(toExploreGPU, numAllPairNodes)) {
@@ -1014,20 +1070,12 @@ Graph compose(const Graph& first, const Graph& second) {
     cudaFree(toExploreNumArcsSecondGPU);
   } // end while for findReachable
 
-  // Copy back to CPU
-  cudaMemcpy((void *)(reachable.data()), reachableGPU, sizeof(int) * numAllPairNodes, cudaMemcpyDeviceToHost);
-
   //////////////////////////////////////////////////////////////////////////
   // Step 2: Compute a) valid nodes in combined graph
   //                 b) Number of in and out arcs in combined graph
   // This information is used to generate offsets for nodes and arcs
   // in the combined graph
   //////////////////////////////////////////////////////////////////////////
-  std::vector<int> newNodes(numAllPairNodes, false);
-
-  // Number of in and out arcs per node
-  std::vector<int> numOutArcs(numAllPairNodes, 0);
-  std::vector<int> numInArcs(numAllPairNodes, 0);
 
   int* newNodesGPU;
   int* numOutArcsGPU;
@@ -1037,27 +1085,19 @@ Graph compose(const Graph& first, const Graph& second) {
   cudaMalloc((void **)(&numOutArcsGPU), sizeof(int) * numAllPairNodes);
   cudaMalloc((void **)(&numInArcsGPU), sizeof(int) * numAllPairNodes);
 
+  cudaMemset((void*)newNodesGPU, false, sizeof(int) * numAllPairNodes);
+  cudaMemset((void*)numOutArcsGPU, 0, sizeof(int) * numAllPairNodes);
+  cudaMemset((void*)numInArcsGPU, 0, sizeof(int) * numAllPairNodes);
+
   // Tracks the nodes that are going to be present in the combined graph
-  std::fill(toExplore.begin(), toExplore.end(), false);
+  cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
 
   {
-    for (int i = 0; i < numAllPairNodes; ++i) {
-      std::pair<int, int> indices = OneDToTwoDIndex(i, numNodesFirst);
+    const int gridSize = div_up(numAllPairNodes, NT);
 
-      if (graphDP1.start[indices.first] && graphDP2.start[indices.second]) {
-        if (reachable[i]) {
-          toExplore[i] = true;
-          newNodes[i] = true;
-        }
-      }
-    }
+    secondPassInitKernel<<<gridSize, NT, 0, 0>>>(graphDP1GPU, graphDP2GPU, reachableGPU,
+      toExploreGPU, newNodesGPU, numNodesFirst, numAllPairNodes);
   }
-
-  cudaMemcpy(newNodesGPU, (void *)(newNodes.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
-  cudaMemcpy(numOutArcsGPU, (void *)(numOutArcs.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
-  cudaMemcpy(numInArcsGPU, (void *)(numInArcs.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
-
-  cudaMemcpy((void *)toExploreGPU, (void *)(toExplore.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
 
   // This is the outer control loop that would spawn DP kernels
   while(checkAnyTrueGPU(toExploreGPU, numAllPairNodes)) {
@@ -1177,38 +1217,20 @@ Graph compose(const Graph& first, const Graph& second) {
   //////////////////////////////////////////////////////////////////////////
   // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
-  std::fill(toExplore.begin(), toExplore.end(), false);
-  std::vector<int> newNodesVisited(numAllPairNodes, false);
-  std::vector<int> newGraphStart(totalNodes);
-  std::vector<int> newGraphAccept(totalNodes);
-
-  std::vector<int> newNodesOffset(numAllPairNodes);
-  cudaMemcpy((void *)(newNodesOffset.data()), (void *)(newNodesOffsetGPU), sizeof(int) * numAllPairNodes, cudaMemcpyDeviceToHost);
-
-  {
-    for (int i = 0; i < numAllPairNodes; ++i) {
-      std::pair<int, int> indices = OneDToTwoDIndex(i, numNodesFirst);
-
-      if (graphDP1.start[indices.first] && graphDP2.start[indices.second]) {
-        if (reachable[i]) {
-          toExplore[i] = true;
-          newNodesVisited[i] = true;
-          newGraphStart[newNodesOffset[i]] = true;
-          newGraphAccept[newNodesOffset[i]] =
-              graphDP1.accept[indices.first] && graphDP2.accept[indices.second];
-        }
-      }
-    }
-  }
-
-  cudaMemcpy((void *)newGraphDPGPU.start, (void *)(newGraphStart.data()), sizeof(int) * totalNodes, cudaMemcpyHostToDevice);
-  cudaMemcpy((void *)newGraphDPGPU.accept, (void *)(newGraphAccept.data()), sizeof(int) * totalNodes, cudaMemcpyHostToDevice);
 
   int* newNodesVisitedGPU;
   cudaMalloc((void **)(&newNodesVisitedGPU), sizeof(int) * numAllPairNodes);
-  cudaMemcpy((void *)newNodesVisitedGPU, (void *)(newNodesVisited.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
 
-  cudaMemcpy((void *)toExploreGPU, (void *)(toExplore.data()), sizeof(int) * numAllPairNodes, cudaMemcpyHostToDevice);
+  // Reset so pristine state for next frontier to explore
+  cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
+
+  {
+    const int gridSize = div_up(numAllPairNodes, NT);
+
+    fourthPassInitKernel<<<gridSize, NT, 0, 0>>>(graphDP1GPU, graphDP2GPU, reachableGPU,
+      newNodesOffsetGPU, newGraphDPGPU, toExploreGPU, newNodesVisitedGPU,
+      numNodesFirst, numAllPairNodes);
+  }
 
   // This is the outer control loop that would spawn DP kernels
   while(checkAnyTrueGPU(toExploreGPU, numAllPairNodes)) {
