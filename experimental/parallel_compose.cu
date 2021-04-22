@@ -1089,7 +1089,6 @@ Graph compose(const Graph& first, const Graph& second) {
   cudaMemset((void*)numOutArcsGPU, 0, sizeof(int) * numAllPairNodes);
   cudaMemset((void*)numInArcsGPU, 0, sizeof(int) * numAllPairNodes);
 
-  // Tracks the nodes that are going to be present in the combined graph
   cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
 
   {
@@ -1158,7 +1157,7 @@ Graph compose(const Graph& first, const Graph& second) {
   int* newNodesOffsetGPU;
   size_t numElements;
   std::tie(newNodesOffsetGPU, numElements, totalNodes) = prefixSumScanGPU(newNodesGPU, numAllPairNodes, false);
-  assert(numElements = numAllPairNodes);
+  assert(numElements == numAllPairNodes);
 
   newGraphDPGPU.numNodes = totalNodes;
   cudaMalloc((void **)(&(newGraphDPGPU.start)), sizeof(int) * totalNodes);
@@ -1220,9 +1219,12 @@ Graph compose(const Graph& first, const Graph& second) {
 
   int* newNodesVisitedGPU;
   cudaMalloc((void **)(&newNodesVisitedGPU), sizeof(int) * numAllPairNodes);
+  cudaMemset((void*)newNodesVisitedGPU, false, sizeof(int) * numAllPairNodes);
 
   // Reset so pristine state for next frontier to explore
   cudaMemset((void*)toExploreGPU, false, sizeof(int) * numAllPairNodes);
+  cudaMemset((void *)(newGraphDPGPU.start), false, sizeof(int) * totalNodes);
+  cudaMemset((void *)(newGraphDPGPU.accept), false, sizeof(int) * totalNodes);
 
   {
     const int gridSize = div_up(numAllPairNodes, NT);
@@ -1316,6 +1318,20 @@ Graph compose(const Graph& first, const Graph& second) {
   assert(newGraphDPGPU.numArcs == totalOutArcs);
   cudaMemcpy((void *)(gradInfo.first.data()), (void *)(gradInfoFirstGPU), sizeof(int) * totalOutArcs, cudaMemcpyDeviceToHost);
   cudaMemcpy((void *)(gradInfo.second.data()), (void *)(gradInfoSecondGPU), sizeof(int) * totalOutArcs, cudaMemcpyDeviceToHost);
+
+  cudaFree(reachableGPU);
+  /*
+  cudaFree(epsilonMatchedGPU);
+  cudaFree(toExploreGPU);
+  cudaFree(newNodesGPU);
+  cudaFree(numOutArcsGPU);
+  cudaFree(numInArcsGPU);
+  cudaFree(newNodesOffsetGPU);
+  cudaFree(inArcOffsetGPU);
+  cudaFree(outArcOffsetGPU);
+  cudaFree(gradInfoFirstGPU);
+  cudaFree(gradInfoSecondGPU);
+  cudaFree(newNodesVisitedGPU);*/
 
   if (0)
   {
