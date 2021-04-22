@@ -308,20 +308,6 @@ std::pair<std::vector<int>, std::vector<int>> convertToNodePair(
   return std::make_pair(toExploreNodePairFirst, toExploreNodePairSecond);
 }
 
-// Takes a bool array with flags set for nodes to pick and returns
-// an array with indices that were set as true
-std::vector<int> convertToNodes(const std::vector<int>& flags) {
-  std::vector<int> nodes;
-
-  for (size_t i = 0; i < flags.size(); ++i) {
-    if (flags[i]) {
-      nodes.push_back(i);
-    }
-  }
-
-  return nodes;
-}
-
 std::pair<bool, bool> getStartAndAccept(
     const GraphDataParallel& graphDP1,
     const GraphDataParallel& graphDP2,
@@ -342,24 +328,24 @@ Graph compose(const Graph& first, const Graph& second) {
   graphDP1 = convertToDataParallel(first);
   graphDP2 = convertToDataParallel(second);
 
+  const int numAllPairNodes = first.numNodes() * second.numNodes();
+  const int numNodesFirst = first.numNodes();
+
   //////////////////////////////////////////////////////////////////////////
   // Step 1: Data parallel findReachable
   //////////////////////////////////////////////////////////////////////////
-  std::vector<int> reachable(first.numNodes() * second.numNodes(), false);
-  std::vector<int> epsilonMatched(first.numNodes() * second.numNodes(), false);
+  std::vector<int> reachable(numAllPairNodes, false);
+  std::vector<int> epsilonMatched(numAllPairNodes, false);
 
-  std::vector<int> toExplore(first.numNodes() * second.numNodes(), false);
-
-  const int numNodesFirst = first.numNodes();
+  std::vector<int> toExplore(numAllPairNodes, false);
 
   {
-    std::vector<int> acceptDP1 = convertToNodes(graphDP1.accept);
-    std::vector<int> acceptDP2 = convertToNodes(graphDP2.accept);
+    for (int i = 0; i < numAllPairNodes; ++i) {
+      std::pair<int, int> indices = OneDToTwoDIndex(i, numNodesFirst);
 
-    for (auto f : acceptDP1) {
-      for (auto s : acceptDP2) {
-        toExplore[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
-        reachable[TwoDToOneDIndex(f, s, numNodesFirst)] = true;
+      if (graphDP1.accept[indices.first] && graphDP2.accept[indices.second]) {
+        toExplore[i] = true;
+        reachable[i] = true;
       }
     }
   }
@@ -463,25 +449,23 @@ Graph compose(const Graph& first, const Graph& second) {
   // This information is used to generate offsets for nodes and arcs
   // in the combined graph
   //////////////////////////////////////////////////////////////////////////
-  std::vector<int> newNodes(first.numNodes() * second.numNodes(), false);
+  std::vector<int> newNodes(numAllPairNodes, false);
 
   // Number of in and out arcs per node
-  std::vector<int> numOutArcs(first.numNodes() * second.numNodes(), 0);
-  std::vector<int> numInArcs(first.numNodes() * second.numNodes(), 0);
+  std::vector<int> numOutArcs(numAllPairNodes, 0);
+  std::vector<int> numInArcs(numAllPairNodes, 0);
 
   // Tracks the nodes that are going to be present in the combined graph
   std::fill(toExplore.begin(), toExplore.end(), false);
 
   {
-    std::vector<int> startDP1 = convertToNodes(graphDP1.start);
-    std::vector<int> startDP2 = convertToNodes(graphDP2.start);
+    for (int i = 0; i < numAllPairNodes; ++i) {
+      std::pair<int, int> indices = OneDToTwoDIndex(i, numNodesFirst);
 
-    for (auto f : startDP1) {
-      for (auto s : startDP2) {
-        auto startIdx = TwoDToOneDIndex(f, s, numNodesFirst);
-        if (reachable[startIdx]) {
-          toExplore[startIdx] = true;
-          newNodes[startIdx] = true;
+      if (graphDP1.start[indices.first] && graphDP2.start[indices.second]) {
+        if (reachable[i]) {
+          toExplore[i] = true;
+          newNodes[i] = true;
         }
       }
     }
@@ -494,7 +478,6 @@ Graph compose(const Graph& first, const Graph& second) {
 
     // Reset to pristine state for next frontier to explore
     std::fill(toExplore.begin(), toExplore.end(), false);
-    // std::fill(epsilonMatched.begin(), epsilonMatched.end(), false);
 
     std::vector<int> arcCrossProductOffset;
     std::pair<std::vector<int>, std::vector<int>> toExploreNumArcs;
@@ -646,21 +629,19 @@ Graph compose(const Graph& first, const Graph& second) {
   // Step 4: Generate nodes and arcs in combined graph
   //////////////////////////////////////////////////////////////////////////
   std::fill(toExplore.begin(), toExplore.end(), false);
-  std::vector<int> newNodesVisited(first.numNodes() * second.numNodes(), false);
+  std::vector<int> newNodesVisited(numAllPairNodes, false);
 
   {
-    std::vector<int> startDP1 = convertToNodes(graphDP1.start);
-    std::vector<int> startDP2 = convertToNodes(graphDP2.start);
+    for (int i = 0; i < numAllPairNodes; ++i) {
+      std::pair<int, int> indices = OneDToTwoDIndex(i, numNodesFirst);
 
-    for (auto f : startDP1) {
-      for (auto s : startDP2) {
-        const int nodeIdx = TwoDToOneDIndex(f, s, numNodesFirst);
-        if (reachable[nodeIdx]) {
-          toExplore[nodeIdx] = true;
-          newNodesVisited[nodeIdx] = true;
-          newGraphDP.start[newNodesOffset[nodeIdx]] = true;
-          newGraphDP.accept[newNodesOffset[nodeIdx]] =
-              graphDP1.accept[f] && graphDP2.accept[s];
+      if (graphDP1.start[indices.first] && graphDP2.start[indices.second]) {
+        if (reachable[i]) {
+          toExplore[i] = true;
+          newNodesVisited[i] = true;
+          newGraphDP.start[newNodesOffset[i]] = true;
+          newGraphDP.accept[newNodesOffset[i]] =
+              graphDP1.accept[indices.first] && graphDP2.accept[indices.second];
         }
       }
     }
