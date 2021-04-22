@@ -1332,6 +1332,20 @@ Graph compose(const Graph& first, const Graph& second) {
   cudaFree(gradInfoSecondGPU);
   cudaFree(newNodesVisitedGPU);
 
+  cudaFree(newGraphDPGPU.start);
+  cudaFree(newGraphDPGPU.accept);
+  cudaFree(newGraphDPGPU.inArcOffset);
+  cudaFree(newGraphDPGPU.outArcOffset);
+  cudaFree(newGraphDPGPU.inArcs);
+  cudaFree(newGraphDPGPU.outArcs);
+  cudaFree(newGraphDPGPU.ilabels);
+  cudaFree(newGraphDPGPU.olabels);
+  cudaFree(newGraphDPGPU.srcNodes);
+  cudaFree(newGraphDPGPU.dstNodes);
+  cudaFree(newGraphDPGPU.weights);
+  newGraphDPGPU.numNodes = 0;
+  newGraphDPGPU.numArcs = 0;
+
   if (0)
   {
     std::cout << "nodes " << newGraphDP.inArcOffset.size() << std::endl;
