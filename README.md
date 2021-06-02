@@ -1,6 +1,13 @@
+
 <div align="center">
 <img src="gtn.svg" alt="logo" width="300"></img>
 </div>
+
+# Deprecated
+
+This repository has been deprecated. 
+
+Future development will be in the [GTN org](https://github.com/gtn-org/gtn) repository.
 
 # GTN: Automatic Differentiation with WFSTs
 
