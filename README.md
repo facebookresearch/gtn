@@ -1,4 +1,3 @@
-
 <div align="center">
 <img src="gtn.svg" alt="logo" width="300"></img>
 </div>
