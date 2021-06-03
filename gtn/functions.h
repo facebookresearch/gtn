@@ -151,5 +151,8 @@ Graph viterbiScore(const Graph& g);
  */
 Graph viterbiPath(const Graph& g);
 
+/** Minimize an Acyclic FST */
+Graph minimizeAcyclicFST(const Graph& g);
+
 /** @} */
 } // namespace gtn
